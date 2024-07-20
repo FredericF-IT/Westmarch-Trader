@@ -1,168 +1,168 @@
 const sanesItemPrices = {
         '+1 Shield': {
-          price: 1500,
+                price: 1500,
         },
         '+2 Shield': {
-          price: 6000,
+                price: 6000,
         },
         '+3 Shield': {
-          price: 24000,
+                price: 24000,
         },
         'Alchemy Jug': {
-          price: 6000,
+                price: 6000,
         },
         'Ammunition +1 (each)': {
-          price: 25,
+                price: 25,
         },
         'Ammunition +2 (each)': {
-          price: 100,
+                price: 100,
         },
         'Ammunition +3 (each)': {
-          price: 400,
+                price: 400,
         },
         'Amulet of Health': {
-          price: 8000,
+                price: 8000,
         },
         'Amulet of Proof Against Detection and Location': {
-          price: 20000,
+                price: 20000,
         },
         'Amulet of the Planes': {
-          price: 160000,
+                price: 160000,
         },
         'Animated Shield': {
-          price: 6000,
+                price: 6000,
         },
         'Apparatus of Kwalish': {
-          price: 10000,
+                price: 10000,
         },
         'Arrow of Slaying (each)': {
-          price: 600,
+                price: 600,
         },
         'Arrow-Catching Shield': {
-          price: 6000,
+                price: 6000,
         },
         'Bag of Holding': {
-          price: 4000,
+                price: 4000,
         },
         'Bead of Force': {
-          price: 960,
+                price: 960,
         },
         'Belt of Dwarvenkind': {
-          price: 6000,
+                price: 6000,
         },
         'Boots of Elvenkind': {
-          price: 2500,
+                price: 2500,
         },
         'Boots of Levitation': {
-          price: 4000,
+                price: 4000,
         },
         'Boots of Speed': {
-          price: 4000,
+                price: 4000,
         },
         'Boots of Striding and Springing': {
-          price: 5000,
+                price: 5000,
         },
         'Boots of the Winterlands': {
-          price: 10000,
+                price: 10000,
         },
         'Bowl of Commanding Water Elementals': {
-          price: 8000,
+                price: 8000,
         },
         'Bracers of Archery': {
-          price: 1500,
+                price: 1500,
         },
         'Bracers of Defense': {
-          price: 6000,
+                price: 6000,
         },
         'Brass Horn of Valhalla': {
-          price: 8400,
+                price: 8400,
         },
         'Brazier of Commanding Fire Elementals': {
-          price: 8000,
+                price: 8000,
         },
         'Bronze Griffon': {
-          price: 8000,
+                price: 8000,
         },
         'Bronze Horn of Valhalla': {
-          price: 11200,
+                price: 11200,
         },
         'Brooch of Shielding': {
-          price: 7500,
+                price: 7500,
         },
         'Broom of Flying': {
-          price: 8000,
+                price: 8000,
         },
         'Cap of Water Breathing': {
-          price: 1000,
+                price: 1000,
         },
         'Cape of the Mountebank': {
-          price: 8000,
+                price: 8000,
         },
         'Carpet of Flying': {
-          price: 12000,
+                price: 12000,
         },
         'Censer of Controlling Air Elementals': {
-          price: 8000,
+                price: 8000,
         },
         'Chime of Opening': {
-          price: 1500,
+                price: 1500,
         },
         'Circlet of Blasting': {
-          price: 1500,
+                price: 1500,
         },
         'Cloak of Arachnida': {
-          price: 5000,
+                price: 5000,
         },
         'Cloak of Displacement': {
-          price: 60000,
+                price: 60000,
         },
         'Cloak of Elvenkind': {
-          price: 5000,
+                price: 5000,
         },
         'Cloak of Invisibility': {
-          price: 80000,
+                price: 80000,
         },
         'Cloak of Protection': {
-          price: 3500,
+                price: 3500,
         },
         'Cloak of the Bat': {
-          price: 6000,
+                price: 6000,
         },
         'Cloak of the Manta Ray': {
-          price: 6000,
+                price: 6000,
         },
         'Crystal Ball': {
-          price: 50000,
+                price: 50000,
         },
         'Cube of Force': {
-          price: 16000,
+                price: 16000,
         },
         'Cubic Gate': {
-          price: 40000,
+                price: 40000,
         },
         "Daern's Instant Fortress": {
-          price: 75000,
+                price: 75000,
         },
         'Dagger of Venom': {
-          price: 2500,
+                price: 2500,
         },
         'Decanter of Endless Water': {
-          price: 135000,
+                price: 135000,
         },
         'Deck of Illusions': {
-          price: 6120,
+                price: 6120,
         },
         'Dimensional Shackles': {
-          price: 3000,
+                price: 3000,
         },
         'Dragon Scale Mail': {
-          price: 4000,
+                price: 4000,
         },
         'Driftglobe': {
-          price: 750,
+                price: 750,
         },
         'Dust of Disappearance': {
-              price: 300,
+                price: 300,
         },
         'Dust of Dryness (1 pellet)': {
                 price: 120,
@@ -717,7 +717,7 @@ const sanesItemPrices = {
         'Dragonhide Belt +3': {
                 price: 28000,
         },
-        
+
         'Rope of Climbing': {
                 price: 2000,
         },
@@ -910,9 +910,9 @@ const sanesItemPrices = {
         'Wings of Flying': {
                 price: 5000,
         },
-        
+
         // Things with variants (armors  / weapons)
-        
+
         '+1 Padded': {
                 price: 1505,
         },
@@ -1174,7 +1174,7 @@ const sanesItemPrices = {
         'Armor of Invulnerability Plate': {
                 price: 19500,
         },
-          '+1 Battleaxe': {
+                '+1 Battleaxe': {
                 price: 1010,
         },
         '+1 Greataxe': {
@@ -1276,7 +1276,7 @@ const sanesItemPrices = {
         '+1 Whip': {
                 price: 1002,
         },
-        '+1 Bowgun': {
+        '+1 Blowgun': {
                 price: 1010,
         },
         '+1 Crossbow, hand': {
@@ -1393,7 +1393,7 @@ const sanesItemPrices = {
         '+2 Whip': {
                 price: 4002,
         },
-        '+2 Bowgun': {
+        '+2 Blowgun': {
                 price: 4010,
         },
         '+2 Crossbow, hand': {
@@ -1510,7 +1510,7 @@ const sanesItemPrices = {
         '+3 Whip': {
                 price: 16002,
         },
-        '+3 Bowgun': {
+        '+3 Blowgun': {
                 price: 16010,
         },
         '+3 Crossbow, hand': {
@@ -1795,7 +1795,7 @@ const sanesItemPrices = {
         'Vicious Whip': {
                 price: 352,
         },
-        'Vicious Bowgun': {
+        'Vicious Blowgun': {
                 price: 360,
         },
         'Vicious Crossbow, hand': {
@@ -1921,7 +1921,7 @@ const sanesItemPrices = {
         'Whip of Warning': {
                 price: 60002,
         },
-        'Bowgun of Warning': {
+        'Blowgun of Warning': {
                 price: 60010,
         },
         'Crossbow, hand of Warning': {
@@ -1936,7 +1936,7 @@ const sanesItemPrices = {
         'Net of Warning': {
                 price: 60001,
         },
-          'Battleaxe': {
+                'Battleaxe': {
                 price: 10,
         },
         'Greataxe': {
@@ -2038,7 +2038,7 @@ const sanesItemPrices = {
         'Whip': {
                 price: 2,
         },
-        'Bowgun': {
+        'Blowgun': {
                 price: 10,
         },
         'Crossbow, hand': {
@@ -2092,12 +2092,741 @@ const sanesItemPrices = {
         'Shield': {
                 price: 10,
         },
-      };
-      
-      export function getSanesItemPrices() {
+
+        // common items / adventuring gear
+
+        'Abacus': {
+                price: 2,
+        },
+        'Acid (vial)': {
+                price: 1,
+        },
+        'Airship': {
+                price: 20000,
+        },
+        "Alchemist's Fire (flask)": {
+                price: 50,
+        },
+        "Alchemist's Supplies": {
+                price: 50,
+        },
+        'Alexandrite': {
+                price: 500,
+        },
+        'Amber': {
+                price: 100,
+        },
+        'Amethyst': {
+                price: 100,
+        },
+        'Amulet': {
+                price: 5,
+        },
+        'Antitoxin': {
+                price: 50,
+        },
+        'Aquamarine': {
+                price: 500,
+        },
+        'Arrows (each)': {
+                price: 0.05,
+        },
+        "Assassin's Blood (Ingested)": {
+                price: 150,
+        },
+        'Azurite': {
+                price: 10,
+        },
+        'Backpack': {
+                price: 2,
+        },
+        'Bagpipes': {
+                price: 30,
+        },
+        'Ball Bearings (bag of 1000)': {
+                price: 1,
+        },
+        'Banded Agate': {
+                price: 10,
+        },
+        'Barrel': {
+                price: 2,
+        },
+        'Basket': {
+                price: 0.4,
+        },
+        'Bedroll': {
+                price: 1,
+        },
+        'Bell': {
+                price: 1,
+        },
+        'Bit and Bridle': {
+                price: 2,
+        },
+        'Black Opal': {
+                price: 1000,
+        },
+        'Black Pearl': {
+                price: 500,
+        },
+        'Black Sapphire': {
+                price: 5000,
+        },
+        'Blanket': {
+                price: 0.5,
+        },
+        'Block and Tackle': {
+                price: 1,
+        },
+        'Bloodstone': {
+                price: 50,
+        },
+        'Blowgun Needles': {
+                price: 0.02,
+        },
+        'Blue Sapphire': {
+                price: 1000,
+        },
+        'Blue quartz': {
+                price: 10,
+        },
+        'Blue spinel': {
+                price: 500,
+        },
+        'Bomb': {
+                price: 150,
+        },
+        'Book': {
+                price: 25,
+        },
+        'Bottle, Glass': {
+                price: 2,
+        },
+        "Brewer's Supplies": {
+                price: 20,
+        },
+        'Bucket': {
+                price: 0.05,
+        },
+        "Burglar's Pack": {
+                price: 16,
+        },
+        'Burnt Othur Fumes (Inhaled)': {
+                price: 500,
+        },
+        "Calligrapher's Supplies": {
+                price: 10,
+        },
+        'Caltrops (bag of 20)': {
+                price: 0.05,
+        },
+        'Camel': {
+                price: 50,
+        },
+        'Candle': {
+                price: 0.01,
+        },
+        'Carnelian': {
+                price: 50,
+        },
+        "Carpenter's Tools": {
+                price: 8,
+        },
+        'Carriage': {
+                price: 100,
+        },
+        'Cart': {
+                price: 15,
+        },
+        "Cartographer's Tools": {
+                price: 15,
+        },
+        'Case, Crossbow Bolt': {
+                price: 1,
+        },
+        'Case, Map or Scroll': {
+                price: 1,
+        },
+        'Chain (10 feet)': {
+                price: 5,
+        },
+        'Chalcedony': {
+                price: 50,
+        },
+        'Chalk (1 piece)': {
+                price: 0.01,
+        },
+        'Chariot': {
+                price: 250,
+        },
+        'Chest': {
+                price: 5,
+        },
+        'Chrysoberyl': {
+                price: 100,
+        },
+        'Chrysoprase': {
+                price: 50,
+        },
+        'Citrine': {
+                price: 50,
+        },
+        "Climber's Kit": {
+                price: 25,
+        },
+        'Clothes, Common': {
+                price: 0.5,
+        },
+        'Clothes, Costume': {
+                price: 5,
+        },
+        'Clothes, Fine': {
+                price: 15,
+        },
+        "Clothes, Traveler's": {
+                price: 2,
+        },
+        "Cobbler's Tools": {
+                price: 5,
+        },
+        'Component Pouch': {
+                price: 25,
+        },
+        "Cook's Utensils": {
+                price: 1,
+        },
+        'Coral': {
+                price: 100,
+        },
+        'Crawler Mucus (Contact)': {
+                price: 200,
+        },
+        'Crossbow Bolts': {
+                price: 0.05,
+        },
+        'Crowbar': {
+                price: 2,
+        },
+        'Crystal': {
+                price: 10,
+        },
+        'Diamond': {
+                price: 5000,
+        },
+        'Diamond (Revivify)': {
+                price: 300,
+        },
+        'Diamond (Raise Dead)': {
+                price: 500,
+        },
+        'Diamond (Resurrection)': {
+                price: 1000,
+        },
+        'Diamond (True Resurrection)': {
+                price: 25000,
+        },
+        'Dice Set': {
+                price: 0.1,
+        },
+        "Diplomat's Pack": {
+                price: 39,
+        },
+        'Disguise Kit': {
+                price: 25,
+        },
+        'Donkey (or Mule)': {
+                price: 8,
+        },
+        'Draft Horse': {
+                price: 50,
+        },
+        'Dragonchess Set': {
+                price: 1,
+        },
+        'Drow Poison (Injury)': {
+                price: 200,
+        },
+        'Drum': {
+                price: 6,
+        },
+        'Dulcimer': {
+                price: 25,
+        },
+        "Dungeoneer's Pack": {
+                price: 12,
+        },
+        'Elephant': {
+                price: 200,
+        },
+        'Emblem': {
+                price: 5,
+        },
+        'Emerald': {
+                price: 1000,
+        },
+        "Entertainer's Pack": {
+                price: 40,
+        },
+        'Essence of Ether (Inhaled)': {
+                price: 300,
+        },
+        "Explorer's Pack": {
+                price: 10,
+        },
+        'Eye agate': {
+                price: 10,
+        },
+        'Feed (per day)': {
+                price: 0.05,
+        },
+        'Fire Opal': {
+                price: 1000,
+        },
+        'Fishing Tackle': {
+                price: 1,
+        },
+        'Flask or Tankard': {
+                price: 0.02,
+        },
+        'Flute': {
+                price: 2,
+        },
+        'Forgery Kit': {
+                price: 15,
+        },
+        'Galley': {
+                price: 30000,
+        },
+        'Garnet': {
+                price: 100,
+        },
+        "Glassblower's Tools": {
+                price: 30,
+        },
+        'Grappling Hook': {
+                price: 2,
+        },
+        'Gunpowder, Keg': {
+                price: 250,
+        },
+        'Gunpowder, Powder Horn': {
+                price: 35,
+        },
+        'Hammer': {
+                price: 1,
+        },
+        'Hammer, Sledge': {
+                price: 2,
+        },
+        "Healer's Kit": {
+                price: 5,
+        },
+        'Hematite': {
+                price: 10,
+        },
+        'Herbalism Kit': {
+                price: 5,
+        },
+        'Holy Water (flask)': {
+                price: 25,
+        },
+        'Horn': {
+                price: 3,
+        },
+        'Hourglass': {
+                price: 25,
+        },
+        'Hunting Trap': {
+                price: 5,
+        },
+        'Ink (1 ounce bottle)': {
+                price: 10,
+        },
+        'Ink Pen': {
+                price: 0.02,
+        },
+        'Jacinth': {
+                price: 5000,
+        },
+        'Jade': {
+                price: 100,
+        },
+        'Jasper': {
+                price: 50,
+        },
+        'Jet': {
+                price: 100,
+        },
+        "Jeweler's Tools": {
+                price: 25,
+        },
+        'Jug or Pitcher': {
+                price: 0.02,
+        },
+        'Keelboat': {
+                price: 3000,
+        },
+        'Ladder (10 foot)': {
+                price: 0.1,
+        },
+        'Lamp': {
+                price: 0.5,
+        },
+        'Lantern, Bullseye': {
+                price: 10,
+        },
+        'Lantern, Hooded': {
+                price: 5,
+        },
+        'Lapis Lazuli': {
+                price: 10,
+        },
+        "Leatherworker's Tools": {
+                price: 5,
+        },
+        'Lock': {
+                price: 10,
+        },
+        'Longship': {
+                price: 10000,
+        },
+        'Lute': {
+                price: 35,
+        },
+        'Lyre': {
+                price: 30,
+        },
+        'Magnifying Glass': {
+                price: 100,
+        },
+        'Malachite': {
+                price: 10,
+        },
+        'Malice (Inhaled)': {
+                price: 250,
+        },
+        'Manacles': {
+                price: 2,
+        },
+        "Mason's Tools": {
+                price: 10,
+        },
+        'Mastiff': {
+                price: 25,
+        },
+        'Mess Kit': {
+                price: 0.2,
+        },
+        'Midnight Tears (Ingested)': {
+                price: 1500,
+        },
+        'Mirror, Steel': {
+                price: 5,
+        },
+        "Monster Hunter's Pack": {
+                price: 33,
+        },
+        'Moonstone': {
+                price: 50,
+        },
+        'Moss agate': {
+                price: 10,
+        },
+        "Navigator's Tools": {
+                price: 25,
+        },
+        'Obsidian': {
+                price: 10,
+        },
+        'Oil (flask)': {
+                price: 0.1,
+        },
+        'Oil of Taggit (Contact)': {
+                price: 400,
+        },
+        'Onyx': {
+                price: 50,
+        },
+        'Opal': {
+                price: 1000,
+        },
+        'Orb': {
+                price: 20,
+        },
+        "Painter's Supplies": {
+                price: 10,
+        },
+        'Pale Tincture (Ingested)': {
+                price: 250,
+        },
+        'Pan Flute': {
+                price: 12,
+        },
+        'Paper (one sheet)': {
+                price: 0.2,
+        },
+        'Parchment (one sheet)': {
+                price: 0.1,
+        },
+        'Pearl': {
+                price: 100,
+        },
+        'Perfume (vial)': {
+                price: 5,
+        },
+        'Peridot': {
+                price: 500,
+        },
+        "Pick, Miner's": {
+                price: 2,
+        },
+        'Piton': {
+                price: 0.05,
+        },
+        'Playing Card Set': {
+                price: 0.5,
+        },
+        'Poison, Basic (vial)': {
+                price: 100,
+        },
+        "Poisoner's Kit": {
+                price: 50,
+        },
+        'Pole (10-foot)': {
+                price: 0.05,
+        },
+        'Pony': {
+                price: 30,
+        },
+        'Pot, Iron': {
+                price: 2,
+        },
+        "Potter's Tools": {
+                price: 10,
+        },
+        'Pouch': {
+                price: 0.5,
+        },
+        "Priest's Pack": {
+                price: 19,
+        },
+        'Purple Worm Poison (Injury)': {
+                price: 2000,
+        },
+        'Quartz': {
+                price: 50,
+        },
+        'Quiver': {
+                price: 1,
+        },
+        'Ram, Portable': {
+                price: 4,
+        },
+        'Rations (1 day)': {
+                price: 0.5,
+        },
+        'Reliquary': {
+                price: 5,
+        },
+        'Rhodochrosite': {
+                price: 10,
+        },
+        'Riding Horse': {
+                price: 75,
+        },
+        'Robes': {
+                price: 1,
+        },
+        'Rod': {
+                price: 10,
+        },
+        'Rope, Hempen (50 feet)': {
+                price: 1,
+        },
+        'Rope, Silk (50 feet)': {
+                price: 10,
+        },
+        'Rowboat': {
+                price: 50,
+        },
+        'Ruby': {
+                price: 5000,
+        },
+        'Sack': {
+                price: 0.01,
+        },
+        'Saddle, Exotic': {
+                price: 60,
+        },
+        'Saddle, Military': {
+                price: 20,
+        },
+        'Saddle, Pack': {
+                price: 5,
+        },
+        'Saddle, Riding': {
+                price: 10,
+        },
+        'Saddlebags': {
+                price: 4,
+        },
+        'Sailing Ship': {
+                price: 10000,
+        },
+        'Sardonyx': {
+                price: 50,
+        },
+        "Scale, Merchant's": {
+                price: 5,
+        },
+        "Scholar's Pack": {
+                price: 40,
+        },
+        'Sealing Wax': {
+                price: 0.5,
+        },
+        'Serpent Venom (Injury)': {
+                price: 200,
+        },
+        'Shawm': {
+                price: 2,
+        },
+        'Shovel': {
+                price: 2,
+        },
+        'Signal Whistle': {
+                price: 0.05,
+        },
+        'Signet Ring': {
+                price: 5,
+        },
+        'Sled': {
+                price: 20,
+        },
+        "Smith's Tools": {
+                price: 20,
+        },
+        'Soap': {
+                price: 0.02,
+        },
+        'Spellbook': {
+                price: 50,
+        },
+        'Spikes, Iron (10)': {
+                price: 0.1,
+        },
+        'Spinel': {
+                price: 100,
+        },
+        'Sprig of Mistletoe': {
+                price: 1,
+        },
+        'Spyglass': {
+                price: 1000,
+        },
+        'Staff': {
+                price: 5,
+        },
+        'Star Rose Quartz': {
+                price: 50,
+        },
+        'Star Ruby': {
+                price: 1000,
+        },
+        'Star Sapphire': {
+                price: 1000,
+        },
+        'Tent, Two-Person': {
+                price: 2,
+        },
+        "Thieves' Tools": {
+                price: 25,
+        },
+        'Three-Dragon Ante Set': {
+                price: 1,
+        },
+        'Tiger Eye': {
+                price: 10,
+        },
+        'Tinderbox': {
+                price: 0.5,
+        },
+        "Tinker's Tools": {
+                price: 50,
+        },
+        'Topaz': {
+                price: 500,
+        },
+        'Torch': {
+                price: 0.01,
+        },
+        'Torpor (Ingested)': {
+                price: 600,
+        },
+        'Totem': {
+                price: 1,
+        },
+        'Tourmaline': {
+                price: 100,
+        },
+        'Truth Serum (Ingested)': {
+                price: 150,
+        },
+        'Turquoise': {
+                price: 10,
+        },
+        'Vial': {
+                price: 1,
+        },
+        'Viol': {
+                price: 30,
+        },
+        'Wagon': {
+                price: 35,
+        },
+        'Wand': {
+                price: 10,
+        },
+        'Warhorse': {
+                price: 400,
+        },
+        'Warship': {
+                price: 25000,
+        },
+        'Waterskin': {
+                price: 0.2,
+        },
+        "Weaver's Tools": {
+                price: 1,
+        },
+        'Whetstone': {
+                price: 0.01,
+        },
+        "Woodcarver's Tools": {
+                price: 1,
+        },
+        'Wooden Staff': {
+                price: 5,
+        },
+        'Wyvern Poison (Injury)': {
+                price: 1200,
+        },
+        'Yellow sapphire': {
+                price: 1000,
+        },
+        'Yew Wand': {
+                price: 10,
+        },
+        'Zircon': {
+                price: 50,
+        },
+};
+
+export function getSanesItemPrices() {
         return Object.entries(sanesItemPrices);
-      }
-      
-      export function getSanesItemNameIndex() {
+}
+
+export function getSanesItemNameIndex() {
         return Object.keys(sanesItemPrices);
-      }
+}

@@ -66,7 +66,13 @@ def readTable(tableCoordinates):
             format = str(col[row].number_format).replace("\\", "").replace("0", "")
             if(row == startRow):
                 nameLengths[i] += len(format)
-            cells[j][i] = str(ceil(int(col[row].value)))+format if not col[row].value == None else ""
+            if not col[row].value == None:
+                cellString = str(ceil(int(col[row].value)))
+                if(not cellString.startswith('-') and not cellString == "0"):
+                    cellString = "+" + cellString
+                cells[j][i] = cellString+format  
+            else:
+                cells[j][i] = ""
             if(bothCount > 1):
                 cells[j][i-1] = cells[j][i]
                 bothCount = 1
@@ -76,11 +82,18 @@ def readTable(tableCoordinates):
             if(names[i] == 'Both =>'):
                 bothCount = 2
 
+    lines.append("[")
     for row in cells:
-        lineString = ""
+        lineString = "  ["
         for i, cell in enumerate(row):
-            lineString += cell.rjust(max(nameLengths[i], len(cell)+2))
-        lines.append(lineString)
+            #lineString += cell.rjust(max(nameLengths[i], len(cell)+2))
+            j = 1
+            while(cell == ""):
+                cell = row[i-j]
+                j += 1
+            lineString += '"'+cell+'", '
+        lines.append((lineString+"replace").replace(", replace", "],"))
+    lines.append("],")
 
     for line in lines:
         print(line)

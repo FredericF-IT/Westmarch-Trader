@@ -2870,7 +2870,7 @@ const downtimeTables = {
         },
         'Crime': {
                 table: [
-                  ["Large fine", "Mid fine", "Small fine", "Got away", "Successfull crime (3x job money)", "Successfull crime (3x job money)", "Successfull crime (3x job money)", "Successfull crime (3x job money)", "Successfull crime (3x job money)", "Successfull crime (3x job money)"],
+                  ["Large fine", "Medium fine", "Small fine", "Got away", "Successfull crime (3x job money)", "Successfull crime (3x job money)", "Successfull crime (3x job money)", "Successfull crime (3x job money)", "Successfull crime (3x job money)", "Successfull crime (3x job money)"],
                   ["-278gp", "-223gp", "-167gp", "0gp", "+66gp", "+81gp", "+108gp", "+153gp", "+231gp", "+372gp"],
                   ["-397gp", "-317gp", "-238gp", "0gp", "+99gp", "+120gp", "+156gp", "+219gp", "+330gp", "+528gp"],
                   ["-531gp", "-425gp", "-319gp", "0gp", "+132gp", "+159gp", "+207gp", "+291gp", "+438gp", "+702gp"],        

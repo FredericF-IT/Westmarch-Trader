@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { capitalize, InstallGlobalCommands } from './utils.js';
-import { getDowntimes } from './itemsList.js';
+import { getDowntimes, getProficiencies } from './itemsList.js';
 
 /*const BUY_ITEM_COMMAND = {
   name: 'buy',
@@ -152,29 +152,46 @@ const ITEM_RANGE_COMMAND = {
 const EXPLAIN_ME_COMMAND = {
   name: 'explanationtrader',
   description: "Get the explanation of the bot",
+  type: 1,
+};
+
+const TEST_COMMAND = {
+  name: 'woopwoop',
+  description: "testing",
   options: [
     {
-      type: 5,
-      name: 'ethereal',
-      description: 'Should the message be only visible to you?',
-      required: true,
-    },
-    {
-      type: 4,
-      name: 'page',
-      description: 'What page?',
+      type: 6,
+      name: 'players',
+      description: 'players',
       required: true,
     },
   ],
   type: 1,
-};
+  
+}
+
+
+
+export function createProficiencyChoices() {
+  const proficiencies = Object.entries(getProficiencies());
+  const commandChoices = [];
+  for (let i = 0; i < proficiencies.length; i++) {
+    commandChoices.push({
+      value: proficiencies[i][0],
+      label: proficiencies[i][1],
+    });
+  } 
+  return commandChoices;
+}
 
 const WESTMARCH_COMMANDS = {
+  type: 1,
   name: 'westmarch',
   description: "The different westmarch commands",
   options: [
     {
       name: 'buy',
+      type: 1,
       description: 'Find out the buy cost of an item',
       options: [
         {
@@ -185,6 +202,12 @@ const WESTMARCH_COMMANDS = {
           autocomplete: true,
         },
         {
+          type: 4,
+          name: 'amount',
+          description: 'How many of these items to buy',
+          required: true,
+        },
+        {
           type: 3,
           name: 'character',
           description: 'Name of your character',
@@ -192,10 +215,10 @@ const WESTMARCH_COMMANDS = {
           autocomplete: true,
         },
       ],
-      type: 1,
     },
     {
       name: 'sell',
+      type: 1,
       description: 'Find out the sale price of an item',
       options: [
         {
@@ -206,6 +229,12 @@ const WESTMARCH_COMMANDS = {
           autocomplete: true,
         },
         {
+          type: 4,
+          name: 'amount',
+          description: 'How many of these items to sell',
+          required: true,
+        },
+        {
           type: 3,
           name: 'character',
           description: 'Name of your character',
@@ -213,11 +242,11 @@ const WESTMARCH_COMMANDS = {
           autocomplete: true,
         },
       ],
-      type: 1,
     },
     {
+      type: 1,
       name: 'reward',
-      description: 'Calculate what gp and items players get after session',
+      description: 'Logbook template. Calculate what gp and items players get after session',
       options: [
         {
           type: 4,
@@ -225,18 +254,60 @@ const WESTMARCH_COMMANDS = {
           description: 'How much xp does the party receive?',
           required: true,
         },
-        {
-          type: 4,
-          name: 'players',
-          description: 'Number of players to recieve items',
-          required: true,
-        },
       ],
-      type: 1,
     },
     {
+      type: 2,
+      name: 'item-downtime',
+      description: 'Take a downtime action to craft or change items using proficiency ',
+      options: [
+        {
+          type: 1,
+          name: 'craft',
+          description: "Craft an item from materials",
+          options: [
+            {
+              type: 3,
+              name: 'item',
+              description: 'Item of choice',
+              required: true,
+              autocomplete: true,
+            },
+            {
+              type: 3,
+              name: 'character',
+              description: 'Name of your character',
+              required: true,
+              autocomplete: true,
+            },
+            /*{
+              type: 3,
+              name: 'proficiency',
+              description: 'Pick tool proficiency if any',
+              choices: createProficiencyChoices(),
+            },*/
+          ],
+        },
+        {
+          type: 1,
+          name: 'change',
+          description: "Change an items type (e.g.: Longsword -> Mace, Helmet -> Ring)",
+          options: [
+            {
+              type: 3,
+              name: 'testa',
+              description: 'not implmented',
+              required: true,
+              choices: createCommandChoices(),
+            },
+          ],
+        },
+      ],
+    },
+    {
+      type: 1,
       name: 'downtime',
-      description: 'Take a downtime action',
+      description: "Use a downtime action to gain benefits",
       options: [
         {
           type: 3,
@@ -260,10 +331,10 @@ const WESTMARCH_COMMANDS = {
           choices: createLevelChoices(),
         },
       ],
-      type: 1,
     },
     {
       name: 'character',
+      type: 2,
       description: "Add or remove a character's name from the bot record",
       options: [
         {
@@ -299,11 +370,9 @@ const WESTMARCH_COMMANDS = {
           description: "Show all your registered characters",
         },
       ],
-      type: 2,
     },
   ],
-  type: 1,
 };
 
-const ALL_COMMANDS = [ITEM_RANGE_COMMAND, WESTMARCH_COMMANDS, EXPLAIN_ME_COMMAND];
+const ALL_COMMANDS = [ITEM_RANGE_COMMAND, WESTMARCH_COMMANDS, EXPLAIN_ME_COMMAND];//, TEST_COMMAND];
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

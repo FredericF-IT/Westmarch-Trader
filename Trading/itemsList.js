@@ -2928,3 +2928,30 @@ export function getDowntimeNames() {
 export function getDowntimeTables() {
         return Object.entries(downtimeTables);
 }
+
+const profs = {
+  alchemist: "Alchemist’s supplies", 
+  brewer: "Brewer’s supplies", 
+  calligrapher: "Calligrapher's supplies", 
+  carpenter: "Carpenter’s tools",
+  cartographer: "Cartographer’s tools", 
+  cobbler: "Cobbler’s tools", 
+  cook: "Cook’s utensils", 
+  glassblower: "Glassblower’s tools", 	
+  jeweler: "Jeweler’s tools", 
+  leatherworker: "Leatherworker’s tools", 	
+  mason: "Mason’s tools",
+  painter: "Painter’s supplies",
+  potter: "Potter’s tools",
+  smith: "Smith’s tools",
+  tinker: "Tinker’s tools", 
+  weaver: "Weaver’s tools",
+  woodcarver: "Woodcarver’s tools",
+  herbalist: "Herbalism Kit",
+  forger: "Forgery Kit",
+  poisoner: "Poisoner’s Kit",
+};
+
+export function getProficiencies(){
+  return profs;
+}

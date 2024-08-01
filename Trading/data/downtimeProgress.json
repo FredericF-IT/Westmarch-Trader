@@ -1,18 +1,17 @@
 {
 	"367891183344812034": {
-		"Thomson": {
+		"Thomson": {},
+		"Kronk": {},
+		"Kelten": {
 			"crafting": {}
 		}
 	},
-  "329710676169981963": {
-    "Torn": {
-			"crafting": {
-				"1268312492933906503": {
-					"proficiency": null,
-					"profMod": 0,
-					"item": 193
-				}
-			}
+	"329710676169981963": {
+		"Torn": {
+			"crafting": {}
+		},
+		"Prudence": {
+			"crafting": {}
 		}
-  }
+	}
 }

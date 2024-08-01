@@ -6,7 +6,6 @@ export function readDataFile(fileName) {
 
 export function writeDataFile(fileName, dataString) {
   fs.writeFileSync("./"+fileName, dataString);
-  
 }
 
 export function parseMap(dataString) {

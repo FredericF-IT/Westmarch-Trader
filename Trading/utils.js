@@ -1,6 +1,53 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 import { verifyKey } from "discord-interactions";
+import {
+  InteractionResponseType,
+  InteractionResponseFlags
+} from 'discord-interactions';
+
+export function responseMessage(message, ephemeral) {
+  return {
+    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+    data: {
+      content: message,
+      flags: ephemeral ? InteractionResponseFlags.EPHEMERAL : 0,
+    },
+  };
+}
+
+export function errorResponse(errorMessage) {
+  return responseMessage("Error:\n" + errorMessage, true);
+}
+
+export async function sendToChat(channelID, message, components = []) {
+  try {
+    return await DiscordRequest(`/channels/${channelID}/messages`, { 
+      method: "POST",
+      body: {
+        content: message, 
+        components: components,
+      },
+    });
+  } catch (err) {
+    console.error('Error sending message:', err);
+  }
+}
+
+export async function createThread(channelID, messageID, name) {
+  try {
+    return await DiscordRequest(`/channels/${channelID}/messages/${messageID}/threads`, { 
+      method: "POST",
+      body: {
+        type: 11,
+        name: name,
+      },
+    });
+  } catch (err) {
+    console.error('Error sending message:', err);
+  }
+}
+
 
 export function VerifyDiscordRequest(clientKey) {
   return function (req, res, buf, encoding) {

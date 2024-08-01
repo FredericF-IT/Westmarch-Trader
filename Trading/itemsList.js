@@ -2955,3 +2955,15 @@ const profs = {
 export function getProficiencies(){
   return profs;
 }
+
+export function createProficiencyChoices() {
+  const proficiencies = Object.entries(getProficiencies());
+  const commandChoices = [];
+  for (let i = 0; i < proficiencies.length; i++) {
+    commandChoices.push({
+      value: proficiencies[i][0],
+      label: proficiencies[i][1],
+    });
+  } 
+  return commandChoices;
+}

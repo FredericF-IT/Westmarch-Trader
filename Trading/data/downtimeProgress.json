@@ -1,7 +1,9 @@
 {
 	"367891183344812034": {
 		"Thomson": {},
-		"Kronk": {},
+		"Kronk": {
+			"crafting": {}
+		},
 		"Kelten": {
 			"crafting": {}
 		}

@@ -158,6 +158,7 @@ export function startCharacterDowntimeThread(parts, userID, messageID, channelID
 }
 
 export function getSessionRewards(players, xpAll, dm, date) {
+  console.log(players);
   const playerNumber = players.length;
   const xpReceived = Math.ceil(xpAll / playerNumber);
 
@@ -166,37 +167,30 @@ export function getSessionRewards(players, xpAll, dm, date) {
   
   const itemsUnderPrice = filterItems(xpReceived * (goldFactor - 1), xpReceived);
 
-  let rewards = "Session name here (" + date.reverse().join("/") + ")\n" + xpReceived + "xp each\nGold: " + gpReceived + "gp each (if item sold)\n\n";
+  let rewards = `Session name here ("${date}")\nDM: <@${dm}>\n${xpReceived}xp each\nGold: ${gpReceived}gp each (if item sold)\n\n`;
   for (let i = 0; i < playerNumber; i++) {
     const item = itemsUnderPrice[Math.floor(Math.random() * itemsUnderPrice.length)];
-    rewards += "@" + players[i][1].username + "\n  Item: " + item[0] + " (price: " + item[1].price + ")\n  Gold: " + (gpReceived - item[1].price) + "gp (if item kept)\n\n";
+    rewards += players[i].user.username + "\n  Item: " + item[0] + " (price: " + item[1].price + ")\n  Gold: " + (gpReceived - item[1].price) + "gp (if item kept)\n\n";
   }
 
   return {
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      content: rewards,
-      flags: InteractionResponseFlags.EPHEMERAL,
-    },
+      content: rewards, 
+      ephemeral: true,
   };
 }
 
-export function westmarchRewardLogResult(parts, timestamp, data, token, messageID) {
-  const date = timestamp.split("T")[0].split("-");
+export function westmarchRewardLogResult(parts, timestamp, data) {
+  const date = new Date(timestamp);
   const dmID = parts[1];
   const xpReceived = parts[2];
-  const players = Object.entries(data.resolved.users);
+  const players = Array.from(data.users, ([id, user]) => ({ id, user }));
 
-  // Delete previous message
-  const endpoint = `webhooks/${process.env.APP_ID}/${token}/messages/${messageID}`;
-  setTimeout(() => {
-    DiscordRequest(endpoint, { method: 'DELETE' });
-  }, 300);
-  
-  return getSessionRewards(players, xpReceived, dmID, date);
+  data.deleteReply(data.message);
+
+  return getSessionRewards(players, xpReceived, dmID, date.getDate() + '/' + (date.getMonth()+1) + '/' + date.getFullYear());
 }
 
-export function rollCharacterDowntimeThread(parts, userID, messageID, token) {
+export function rollCharacterDowntimeThread(parts, userID, data) {
 
   const creatorID = parts[1];
   if(userID != creatorID) 
@@ -224,7 +218,7 @@ export function rollCharacterDowntimeThread(parts, userID, messageID, token) {
   if(success) {
     setTimeout(() => {
       finishJob(userID, characterName, "crafting", originalMessageID);
-      DiscordRequest(endpoint, { method: 'DELETE' });
+      data.deleteReply(data.message);
     }, 300);
   }
   return responseMessage(result, false);
@@ -239,9 +233,6 @@ export function acceptTransaction(componentId, userID) {
   const characterName = parts[5];
 
   return {
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      content: 'Approved transaction: ' + characterName + " (<@" + userID + ">) " + buyOrSell.toLowerCase() + 's ' + (itemCount > 1 ? itemCount + 'x "' : '"') + itemName + '" for ' + itemCount * price + "gp",
-    },
+    content: 'Approved transaction: ' + characterName + " (<@" + userID + ">) " + buyOrSell.toLowerCase() + 's ' + (itemCount > 1 ? itemCount + 'x "' : '"') + itemName + '" for ' + itemCount * price + "gp",
   };
 }

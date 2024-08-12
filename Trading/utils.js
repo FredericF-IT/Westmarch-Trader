@@ -8,11 +8,8 @@ import {
 
 export function responseMessage(message, ephemeral) {
   return {
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      content: message,
-      flags: ephemeral ? InteractionResponseFlags.EPHEMERAL : 0,
-    },
+    content: message,
+    ephemeral: ephemeral,
   };
 }
 

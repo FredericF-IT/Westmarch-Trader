@@ -1,25 +1,38 @@
 import 'dotenv/config';
-import express from 'express';
 import {
   InteractionType,
   InteractionResponseType,
-  InteractionResponseFlags,
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
 import { VerifyDiscordRequest, DiscordRequest, capitalize, errorResponse, responseMessage, sendToChat } from './utils.js';
-import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeTables, getDowntimeNames, getProficiencies } from './itemsList.js';
+import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeTables, getDowntimes, getDowntimeNames, getProficiencies } from './itemsList.js';
 import { getDX, filterItems, characterExisits, setValueCharacter, requestCharacterRegistration } from './extraUtils.js';
 import { writeDataFile, readDataFile } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
 import { namesCharactersFile } from "./data/fileNames.js";
+import sqlite3 from 'sqlite3';
+import { Client, IntentsBitField } from "discord.js";
 
-// Create an express app
-const app = express();
-// Get port, or default to 3000
-const PORT = process.env.PORT || 3000;
-// Parse request body and verifies incoming requests using discord-interactions package
-app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
+const client = new Client({
+  intents: [
+    IntentsBitField.Flags.Guilds,
+    IntentsBitField.Flags.GuildMessages,
+  ],
+
+});
+
+client.on('ready', (c) => {
+  console.log("Bot is running");
+});
+
+const db = new sqlite3.Database('./trader.db', (err) => {
+  if (err) {
+    console.error('Failed to connect to the database:', err.message);
+  } else {
+    console.log('Connected to the trader.db SQLite database.');
+  }
+});
 
 const allItems = getSanesItemPrices();
 const allItemNames = getSanesItemNameIndex();
@@ -27,10 +40,12 @@ const allItemNamesLower = allItemNames.map(v => v.toLowerCase());
 
 const downtimeTables = getDowntimeTables();
 const downtimeNames = getDowntimeNames();
+const downtimeIDToName = getDowntimeNames();
 const proficiencyNames = getProficiencies();
 
 const lastItemResult = new Map();
 
+const characters = JSON.parse(readDataFile(namesCharactersFile));
 
 function getItemsInRange(options, id) {
   let minPrice = options[0].value;
@@ -58,11 +73,8 @@ function getItemsInRange(options, id) {
 
   if(j == 0){
     return {
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
         content: result[0],
-        flags: InteractionResponseFlags.EPHEMERAL,
-      },
+        ephemeral: true,
     };
   }
 
@@ -75,25 +87,22 @@ function getItemsInRange(options, id) {
     }, 1000 * 60 * minutesTillDeletion);
 
   return {
+    content: result[0],
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-        content: result[0],
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        flags: InteractionResponseFlags.EPHEMERAL,
+    ephemeral: true,
+    components: [
+      {
+        type: MessageComponentTypes.ACTION_ROW,
         components: [
-        {
-          type: MessageComponentTypes.ACTION_ROW,
-          components: [
-            {
-                type: MessageComponentTypes.BUTTON,
-                custom_id: `itemspage_1_`+id,
-                label: "Load more items",
-                style: ButtonStyleTypes.PRIMARY,
-            },
-          ],
-        },
-      ],
-    },
+          {
+              type: MessageComponentTypes.BUTTON,
+              custom_id: `itemspage_1_`+id,
+              label: "Load more items",
+              style: ButtonStyleTypes.PRIMARY,
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -113,11 +122,49 @@ function getDowntime(options, userID) {
   const result = "\nEvent: " + downtimeTables[downtimeType][1].table[0][rollGroup] + "\nEffect: " + downtimeTables[downtimeType][1].table[characterLevel - 1][rollGroup];
 
   return {
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      content: 'Character: "'+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + result,
-    },
+    content: 'Character: "'+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + result,
   };
+}
+
+function getDowntimeQuery(downtimeType, level, roll){
+  let mQuery = "";
+  switch(downtimeType){
+    case "Doing a job":
+      mQuery = "SELECT outcome FROM job_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");"
+    case "Crime":
+      mQuery = "SELECT outcome FROM crime_downtime WHERE (level = " + level +" AND roll_result = "+ roll +");"
+    case "Training to gain xp":
+      mQuery = "SELECT outcome FROM xp_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");"
+  }
+  return mQuery;
+}
+
+function sqlite3Query(query, callback){
+  const sql = query;
+  db.all(sql, [], callback);
+}
+
+function getDowntimeSQLite3(interaction, options, userID) {
+  const downtimeType = options[0].value;
+  const characterName = options[1].value;
+  const characterLevel = options[2].value;
+
+  if(!characterExisits(userID, characterName)){
+    return requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]);
+  }
+
+  const roll = getDX(100);
+  const query = getDowntimeQuery(downtimeIDToName[downtimeType], characterLevel, roll);
+  
+  sqlite3Query(query, (err, rows) => {
+    if (err) {
+      return err.message;
+    }
+    console.log(rows);
+    interaction.reply({
+      content: 'Character: "'+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: \nEffect: " + rows[0].outcome,
+    });
+  })
 }
 
 function downtimeCraftItem(item, characterName, userID) {
@@ -128,29 +175,30 @@ function downtimeCraftItem(item, characterName, userID) {
   }
 
   return {
+    content: `${characterName} (<@${userID}>) wants to craft ${itemName}.\n` +
+      `Material cost: ${price}\n` +
+      `You will need to succeed on a craft check using a tool proficiency.\n` +
+      `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n` +
+      "If you have another item in progress, starting a new item will overwrite that one.",
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      content: `${characterName} (<@${userID}>) wants to craft ${itemName}.\n` +
-        `Material cost: ${price}\n` +
-        `You will need to succeed on a craft check using a tool proficiency.\n` +
-        `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n` +
-        "If you have another item in progress, starting a new item will overwrite that one.",
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      components: [
-        {
-          type: MessageComponentTypes.ACTION_ROW,
-          components: [
-            {
-                type: MessageComponentTypes.BUTTON,
-                custom_id: `characterThread_${userID}_` + item + "_" + characterName,
-                label: "Start crafting",
-                style: ButtonStyleTypes.PRIMARY,
-            },
-          ],
-        },
-      ],
-    },
+    components: [
+      {
+        type: MessageComponentTypes.ACTION_ROW,
+        components: [
+          {
+              type: MessageComponentTypes.BUTTON,
+              custom_id: `characterThread_${userID}_` + item + "_" + characterName,
+              label: "Start crafting",
+              style: ButtonStyleTypes.PRIMARY,
+          },
+        ],
+      },
+    ],
   };
+}
+
+function downtimeChangeItem() {
+  return errorResponse("Not implemented", true);
 }
 
 function doTrade(userID, options, isBuying) {
@@ -175,73 +223,71 @@ function doTrade(userID, options, isBuying) {
 
   const typeName = isBuying ? 'Buy' : "Sell";
   return {
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-        content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? "gp (" + realPrice + "gp each)" : "gp"),
-        flags: InteractionResponseFlags.EPHEMERAL,
+    content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? "gp (" + realPrice + "gp each)" : "gp"),
+    ephemeral: true,
+    components: [
+      {
+        type: MessageComponentTypes.ACTION_ROW,
         components: [
-        {
-          type: MessageComponentTypes.ACTION_ROW,
-          components: [
-            {
-                type: MessageComponentTypes.BUTTON,
-                custom_id: `acceptTransactionButton_${realPrice}_${itemName}_${itemCount}_${typeName}_${characterName}`,
-                label: typeName,
-                style: ButtonStyleTypes.PRIMARY,
-            },
-          ],
-        },
-      ],
-    },
+          {
+              type: MessageComponentTypes.BUTTON,
+              custom_id: `acceptTransactionButton_${realPrice}_${itemName}_${itemCount}_${typeName}_${characterName}`,
+              label: typeName,
+              style: ButtonStyleTypes.PRIMARY,
+          },
+        ],
+      },
+    ],
   };
 }
 
 function registration(isRegister, characterName, user) {
-  const characters = JSON.parse(readDataFile(namesCharactersFile));
-  let userCharacters = characters[user.id];
-  if (userCharacters.length >= 11) 
-    return errorResponse("You already have 10 characters.");
-  
-  if (userCharacters == undefined) 
-    userCharacters = [user.username];
-  
-  const exists = userCharacters.includes(characterName);
-  
-  if(isRegister) {
-    if (exists) 
-      return errorResponse("You have a character with that name already.");
+  try{
+    let userCharacters = characters[user.id];
+    if (userCharacters.length >= 11) 
+      return errorResponse("You already have 10 characters.");
     
-    userCharacters.push(characterName);
+    if (userCharacters == undefined) 
+      userCharacters = [user.username];
+    
+    const exists = userCharacters.includes(characterName);
+    
+    if(isRegister) {
+      if (exists) 
+        return errorResponse("You have a character with that name already.");
+      
+      userCharacters.push(characterName);
+      characters[user.id] = userCharacters;
+      const output = JSON.stringify(characters, null, "\t");
+      writeDataFile(namesCharactersFile, output);
+      return {
+        content: "Character added.",
+        ephemeral: true,
+      };
+    }
+
+    if (!exists) 
+      return errorResponse("Please input a valid name.");
+    
+    const charIndex = userCharacters.indexOf(characterName);
+
+    userCharacters.splice(charIndex, 1);
+    
     characters[user.id] = userCharacters;
     const output = JSON.stringify(characters, null, "\t");
     writeDataFile(namesCharactersFile, output);
     return {
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        content: "Character added.",
-        flags: InteractionResponseFlags.EPHEMERAL,
-      },
-    };
-  }
-  
-  const charIndex = userCharacters.indexOf(characterName);
-  userCharacters.splice(charIndex, 1);
-  
-  characters[user.id] = userCharacters;
-  const output = JSON.stringify(characters, null, "\t");
-  writeDataFile(namesCharactersFile, output);
-  return {
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
       content: "Character removed.",
-      flags: InteractionResponseFlags.EPHEMERAL,
-    },
-  };
+      ephemeral: true,
+    };
+  } catch(err) {
+    console.error('Error sending message:', err);
+  }
+  console.log("if fine");
 }
 
 function showCharacters(user) {
-  const characters = JSON.parse(readDataFile(namesCharactersFile));
-  let userCharacters = characters[user.id];
+  let userCharacters = characters[user.id].slice(0);
   if (userCharacters == undefined) {
     userCharacters = [user.username];
   }
@@ -249,18 +295,13 @@ function showCharacters(user) {
   userCharacters.shift();
   
   return {
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      content: "Your characters:\n- " + userCharacters.join("\n- "),
-      flags: InteractionResponseFlags.EPHEMERAL,
-    },
+    content: "Your characters:\n- " + userCharacters.join("\n- "),
+    ephemeral: true,
   };
 }
 
 function characterNamesAutoComplete(currentInput, user) {
-  const characters = JSON.parse(readDataFile(namesCharactersFile));
-  
-  let userCharacters = characters[user.id];
+  let userCharacters = characters[user.id].slice(0);
   if (userCharacters == undefined) {
     userCharacters = [user.username];
   }
@@ -277,12 +318,7 @@ function characterNamesAutoComplete(currentInput, user) {
 
   const result = matchingOptionsIndex.slice(0, 25);
 
-  return {
-    type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
-    data: {
-        choices: result
-    },
-  };
+  return result;
 }
 
 function itemNamesAutoComplete(currentInput) {
@@ -297,12 +333,7 @@ function itemNamesAutoComplete(currentInput) {
 
   const result = matchingOptionsIndex.slice(0, 25);
 
-  return {
-    type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
-    data: {
-        choices: result
-    },
-  }
+  return result;
 }
 
 function westmarchLog(options, dm) {
@@ -312,10 +343,8 @@ function westmarchLog(options, dm) {
     return errorResponse("Please only use positive values.");
 
   return {
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
       content: `<@${dm.id}>\nSelect participating players`,
-      flags: InteractionResponseFlags.EPHEMERAL,
+      ephemeral: true,
       components: [
         {
           type: MessageComponentTypes.ACTION_ROW,
@@ -329,19 +358,8 @@ function westmarchLog(options, dm) {
           ],
         },
       ],
-    },
   };
 } 
-
-async function deleteMessage(channelID, messageID) {
-  try {
-    return await DiscordRequest(`/channels/${channelID}/messages/${messageID}`, { 
-      method: "DELETE",
-    });
-  } catch (err) {
-    console.error('Error sending message:', err);
-  }
-}
 
 function explainMe(res, channelID) {
   const messages = readDataFile("data/explanation.txt").split("\\newLine");
@@ -353,30 +371,28 @@ function explainMe(res, channelID) {
   }
 }
 
-function parseFullCommand(data) {
+function parseFullCommand(interaction) {
   let commandName = {
-    commandName: data.name,
-    options: Object.hasOwn(data, "options") ? data.options : [],
-  };
-  if(!Object.hasOwn(data, 'options')) return commandName;
-  
-  data = data.options[0];
-  if(data.type == 1) { // is command
-    commandName.commandName += " " + data.name;
-  } 
-  else if(data.type == 2) { // Command groups can only have commands as child options. we know options[0] exists and is command
-    commandName.commandName += " " + data.name + " " + data.options[0].name;
-    data = data.options[0];
+    commandName: interaction.commandName
   }
+  if(!Object.hasOwn(interaction, 'options')) return commandName;
   
-  if(Object.hasOwn(data, "options")) {
-    commandName.options = data.options;
-  }
-  return commandName;
-}
+  const group = interaction.options._group;
+  const subcommand = interaction.options._subcommand;
+  commandName.commandName +=  (group == null ? "" : " " + group) +
+                              (subcommand == null ? "" : " " + subcommand)
+  
+  interaction = interaction.options._hoistedOptions;
+  if(interaction == null) return commandName;
+  
+  commandName.options = interaction;
 
-async function handleAutocomplete(data, res, user) {
-  const { commandName, options } = parseFullCommand(data);
+  console.log(commandName);
+  return commandName;
+} 
+
+function handleAutocomplete(interaction, user) {
+  const { commandName, options } = parseFullCommand(interaction);
     
   let searchType = "";
   let currentInput = "";
@@ -407,53 +423,52 @@ async function handleAutocomplete(data, res, user) {
     //case "westmarch item-downtime change":
     //  break; 
   }
-
   // at this point, current input are the letters given to find the characters name.
   if(searchType == "item") {
     try {
-      await res.send(itemNamesAutoComplete(currentInput));
+      interaction.respond(itemNamesAutoComplete(currentInput));
     } catch (err) {
       console.error('Error sending message:', err);
     }
   }
   else if(searchType == "character") {
     try {
-      await res.send(characterNamesAutoComplete(currentInput, user));
+      interaction.respond(characterNamesAutoComplete(currentInput, user));
     } catch (err) {
       console.error('Error sending message:', err);
     }
   }
 }
 
-async function handleComponentPreEvent(componentId, res, user, token, messageID) {
+function handleComponentPreEvent(interaction, componentId, user, token, messageID) {
   const partsPre = componentId.split("_");
   partsPre.shift();
   
   registration(true, partsPre[1], user);
 
-  const endpoint = `webhooks/${process.env.APP_ID}/${token}/messages/${messageID}`;
   let result = null;
 
   switch(partsPre[0]) {
     case "itemCraft":
-      result = res.send(downtimeCraftItem(partsPre[2], partsPre[1], user.id));
+      result = interaction.reply(downtimeCraftItem(partsPre[2], partsPre[1], user.id));
       break;
     case "doTrade":
       const itemIndex = partsPre[2];
       const itemCount = parseInt(partsPre[3]);
       const isBuying = partsPre[4] === "true";
 
-      result = res.send(doTrade(user.id, [{value: itemIndex}, {value: itemCount}, {value: partsPre[1]}], isBuying));
+      result = interaction.reply(doTrade(user.id, [{value: itemIndex}, {value: itemCount}, {value: partsPre[1]}], isBuying));
       break;
     case "doDowntime":
       const downtimeType = parseInt(partsPre[2]);
       const characterLevel = parseInt(partsPre[3]);
 
-      result = res.send(getDowntime([{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id));
+      result = interaction.reply(getDowntime([{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id));
       break;
   }
 
-  setTimeout(() => DiscordRequest(endpoint, { method: 'DELETE' }), 200);
+
+  interaction.deleteReply(interaction.message);
   return result;
 }
 
@@ -467,152 +482,155 @@ function displayItemsInRange(parts) {
 
   if(j + 1 >= itemPages.length)
     return {
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        content: itemPages[j],
-        flags: InteractionResponseFlags.EPHEMERAL,
-      },
+      content: itemPages[j],
+      ephemeral: true,
     }
 
   return {
+    content: itemPages[j],
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-        content: itemPages[j],
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        flags: InteractionResponseFlags.EPHEMERAL,
+    ephemeral: true,
+    components: [
+      {
+        type: MessageComponentTypes.ACTION_ROW,
         components: [
-        {
-          type: MessageComponentTypes.ACTION_ROW,
-          components: [
-            {
-              type: MessageComponentTypes.BUTTON,
-              custom_id: `itemspage_` + (j + 1) + "_" + originalID,
-              label: "Load more items",
-              style: ButtonStyleTypes.PRIMARY,
-            },
-          ],
-        },
-      ],
-    },
+          {
+            type: MessageComponentTypes.BUTTON,
+            custom_id: `itemspage_` + (j + 1) + "_" + originalID,
+            label: "Load more items",
+            style: ButtonStyleTypes.PRIMARY,
+          },
+        ],
+      },
+    ],
   };
 }
 
-
 const rareSeperator = "$.$=$";
 
-/**
- * Interactions endpoint URL where Discord will send HTTP requests
- */
+process.on('SIGINT', () => {
+  db.close((err) => {
+    if (err) {
+      console.error(err.message);
+    }
+    console.log('Closed the database connection.');
+    process.exit(0);
+  });
+});
 
-app.post('/interactions', async function (req, res) {
-  // Interaction type and data
-  const { type, id, data } = req.body;
-  let { name } = data;
-  const userID = req.body.member.user.id;
-  const channelID = req.body.channel.id;
-  
+client.on('interactionCreate', (interaction) => {
+  try{
+  const { type, id } = interaction; 
+  console.log("From interaction");
   /**
    * Handle verification requests
    */
-  
   if (type === InteractionType.PING) {
-    return res.send({ type: InteractionResponseType.PONG });
+    return interaction.respond({ type: InteractionResponseType.PONG });
   }
+
+  const userID = interaction.member.user.id;
+  const channelID = interaction.channelId;
 
   /**
    * Handle slash command requests
    * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
    */
   if (type === InteractionType.APPLICATION_COMMAND) {
-    const { commandName, options } = parseFullCommand(data);
+    const { commandName, options } = parseFullCommand(interaction);
     console.log(commandName);
     
     let isTrue = false; 
     switch(commandName) {
-        case "explanationtrader": 
-          return explainMe(res, channelID);
-        
-        case "getitemsinrange": 
-          return res.send(getItemsInRange(options, id));
-        
-        case "westmarch downtime": 
-          return res.send(getDowntime(options, userID));
-        
-        case "westmarch item-downtime craft": 
-          return res.send(downtimeCraftItem(options[0].value, options[1].value, userID));
-        
-        case "westmarch item-downtime change": 
-          return res.send(showCharacters(req.body.member.user));
-        
-        case "westmarch reward": 
-          return res.send(westmarchLog(options, req.body.member.user));
-        
-        case "westmarch buy": 
-          isTrue = true;
-        case "westmarch sell": 
-          return res.send(doTrade(userID, options, isTrue));
-        
-        case "westmarch character register": 
-          isTrue = true;
-        case "westmarch character unregister": 
-          return res.send(registration(isTrue, options[0].value, req.body.member.user));
-        
-        case "westmarch character show": 
-          return res.send(showCharacters(req.body.member.user));
+      case "explanationtrader": 
+        return explainMe(res, channelID);
+      
+      case "getitemsinrange": 
+        return interaction.reply(getItemsInRange(options, id));
+      /*
+      case "westmarch downtime": 
+        return c.reply(getDowntime(options, userID));
+      */
+      case "westmarch item-downtime craft": 
+        return interaction.reply(downtimeCraftItem(options[0].value, options[1].value, userID));
+      
+      case "westmarch item-downtime change": 
+        return interaction.reply(downtimeChangeItem());
+      
+      case "westmarch reward": 
+        return interaction.reply(westmarchLog(options, interaction.member.user));
+      
+      case "westmarch buy": 
+        isTrue = true;
+      case "westmarch sell": 
+        return interaction.reply(doTrade(userID, options, isTrue));
+      
+      case "westmarch character register": 
+        isTrue = true;
+      case "westmarch character unregister": 
+        return interaction.reply(registration(isTrue, options[0].value, interaction.member.user));
+      case "westmarch character show": 
+        return interaction.reply(showCharacters(interaction.member.user));
+      //exampleSql
+      case "westmarch downtime":
+        getDowntimeSQLite3(interaction, options, userID); 
     }
   }
-  
+
   else if (type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) { // is Autocomplete
-    handleAutocomplete(data, res, req.body.member.user);
+    return handleAutocomplete(interaction, interaction.member.user);
   }
-  
+
   else if (type === InteractionType.MESSAGE_COMPONENT) {
-    let componentId = data.custom_id;
+    console.log(interaction);
+    let componentId = interaction.customId;
     const parts = componentId.split("_");
 
     try {
       if(componentId.startsWith(rareSeperator)) {
-        return handleComponentPreEvent(componentId, res, req.body.member.user, req.body.token, req.body.message.id);
+        return handleComponentPreEvent(componentId, interaction.member.user, interaction.token, interaction.message.id);
       }
       
       const creatorID = parts[1];
       let isTrue = false;
       switch(parts[0]){
         case "itemspage":
-          return res.send(displayItemsInRange(parts));
+          return interaction.reply(displayItemsInRange(parts));
         case "downtimeItemProfSelect":
           isTrue = true;
         case "downtimeItemProfMod":
-          if(req.body.member.user.id != creatorID) 
+          if(interaction.member.user.id != creatorID) 
             return;
           const messageID = parts[2];
           const characterName = parts[3];
-          let proficiency = data.values[0];
+          let proficiency = interaction.values[0];
           
-          if (isTrue) {
+          if (isTrue) { 
             setValueCharacter(userID, characterName, "crafting", messageID, "proficiency", proficiency)
-            return res.send(responseMessage("Proficiency is set to " + proficiencyNames[proficiency].toLowerCase(), true));
+            return interaction.reply(responseMessage("Proficiency is set to " + proficiencyNames[proficiency].toLowerCase(), true));
           }
           proficiency = parseInt(proficiency);
           setValueCharacter(userID, characterName, "crafting", messageID, "profMod", proficiency)
-          return res.send(responseMessage("Proficiency level is set to " + proficiency, true));
+          return interaction.reply(responseMessage("Proficiency level is set to " + proficiency, true));
           
         case "characterThread":
-          return res.send(startCharacterDowntimeThread(parts, req.body.member.user.id, req.body.message.id, channelID, req.body.token));
+          return interaction.reply(startCharacterDowntimeThread(parts, interaction.member.user.id, interaction.message.id, channelID, interaction.token));
         case "characterThreadFinished":
-          return res.send(rollCharacterDowntimeThread(parts, req.body.member.user.id, req.body.message.id, req.body.token));
+          return interaction.reply(rollCharacterDowntimeThread(parts, interaction.member.user.id, interaction));
         case "westmarchrewardlog":
-          return res.send(westmarchRewardLogResult(parts, req.body.message.timestamp, data, req.body.token, req.body.message.id));
+          return interaction.reply(westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction));
         case "acceptTransactionButton":
-          return res.send(acceptTransaction(componentId, userID));
+          return interaction.reply(acceptTransaction(componentId, userID));
       }
     } 
     catch (err) {
       console.error('Error sending message:', err);
     }
   }
+  } 
+  catch (err) {
+    console.error('Error sending message:', err);
+  }
 });
 
-app.listen(PORT, () => {
-  console.log('Listening on port', PORT);
-});
+client.login(process.env.DISCORD_TOKEN);

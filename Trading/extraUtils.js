@@ -40,26 +40,23 @@ const rareSeperator = "$.$=$";
 
 export function requestCharacterRegistration(type, characterName, data) {
   return {
+    ephemeral: true,
+    content: `${characterName} has not been registered.\n` +
+      "Would you like to do so and continue with the command?",
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      flags: InteractionResponseFlags.EPHEMERAL,
-      content: `${characterName} has not been registered.\n` +
-        "Would you like to do so and continue with the command?",
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      components: [
-        {
-          type: MessageComponentTypes.ACTION_ROW,
-          components: [
-            {
-                type: MessageComponentTypes.BUTTON,
-                custom_id: rareSeperator + `_${type}_${characterName}_${data.join("_")}`,
-                label: "Register & continue",
-                style: ButtonStyleTypes.PRIMARY,
-            },
-          ],
-        },
-      ],
-    },
+    components: [
+      {
+        type: MessageComponentTypes.ACTION_ROW,
+        components: [
+          {
+              type: MessageComponentTypes.BUTTON,
+              custom_id: rareSeperator + `_${type}_${characterName}_${data.join("_")}`,
+              label: "Register & continue",
+              style: ButtonStyleTypes.PRIMARY,
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -68,6 +65,7 @@ export function getDX(sides) {
 }
 
 import { getSanesItemPrices } from './itemsList.js';
+import { escapeHeading } from 'discord.js';
 const allItems = getSanesItemPrices();
 
 export function filterItems(gpReceived, gpMinimumCost) {

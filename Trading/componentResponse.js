@@ -158,7 +158,6 @@ export function startCharacterDowntimeThread(parts, userID, messageID, channelID
 }
 
 export function getSessionRewards(players, xpAll, dm, date) {
-  console.log(players);
   const playerNumber = players.length;
   const xpReceived = Math.ceil(xpAll / playerNumber);
 

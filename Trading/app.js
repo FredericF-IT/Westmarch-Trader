@@ -160,7 +160,6 @@ function getDowntimeSQLite3(interaction, options, userID) {
     if (err) {
       return err.message;
     }
-    console.log(rows);
     interaction.reply({
       content: 'Character: "'+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: \nEffect: " + rows[0].outcome,
     });
@@ -283,7 +282,6 @@ function registration(isRegister, characterName, user) {
   } catch(err) {
     console.error('Error sending message:', err);
   }
-  console.log("if fine");
 }
 
 function showCharacters(user) {
@@ -387,7 +385,6 @@ function parseFullCommand(interaction) {
   
   commandName.options = interaction;
 
-  console.log(commandName);
   return commandName;
 } 
 
@@ -520,8 +517,7 @@ process.on('SIGINT', () => {
 
 client.on('interactionCreate', (interaction) => {
   try{
-  const { type, id } = interaction; 
-  console.log("From interaction");
+  const { type, id } = interaction;
   /**
    * Handle verification requests
    */
@@ -538,7 +534,6 @@ client.on('interactionCreate', (interaction) => {
    */
   if (type === InteractionType.APPLICATION_COMMAND) {
     const { commandName, options } = parseFullCommand(interaction);
-    console.log(commandName);
     
     let isTrue = false; 
     switch(commandName) {
@@ -549,7 +544,7 @@ client.on('interactionCreate', (interaction) => {
         return interaction.reply(getItemsInRange(options, id));
       /*
       case "westmarch downtime": 
-        return c.reply(getDowntime(options, userID));
+        return interaction.reply(getDowntime(options, userID));
       */
       case "westmarch item-downtime craft": 
         return interaction.reply(downtimeCraftItem(options[0].value, options[1].value, userID));
@@ -582,7 +577,6 @@ client.on('interactionCreate', (interaction) => {
   }
 
   else if (type === InteractionType.MESSAGE_COMPONENT) {
-    console.log(interaction);
     let componentId = interaction.customId;
     const parts = componentId.split("_");
 

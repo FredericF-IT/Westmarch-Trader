@@ -243,11 +243,12 @@ function doTrade(userID, options, isBuying) {
 function registration(isRegister, characterName, user) {
   try{
     let userCharacters = characters[user.id];
-    if (userCharacters.length >= 11) 
-      return errorResponse("You already have 10 characters.");
-    
+
     if (userCharacters == undefined) 
       userCharacters = [user.username];
+
+    if (userCharacters.length >= 11) 
+      return errorResponse("You already have 10 characters.");
     
     const exists = userCharacters.includes(characterName);
     
@@ -359,7 +360,7 @@ function westmarchLog(options, dm) {
   };
 } 
 
-function explainMe(res, channelID) {
+function explainMe(channelID) {
   const messages = readDataFile("data/explanation.txt").split("\\newLine");
   const messageResolved = []; 
   for(let i = 0; i < messages.length; i++) {
@@ -538,7 +539,7 @@ client.on('interactionCreate', (interaction) => {
     let isTrue = false; 
     switch(commandName) {
       case "explanationtrader": 
-        return explainMe(res, channelID);
+        return explainMe(channelID);
       
       case "getitemsinrange": 
         return interaction.reply(getItemsInRange(options, id));

@@ -1,11 +1,20 @@
 import "dotenv/config";
 import fetch from "node-fetch";
-import { verifyKey } from "discord-interactions";
-import {
-  InteractionResponseType,
-  InteractionResponseFlags
-} from 'discord-interactions';
 
+/**
+ * @typedef {import("./types.js").responseObject} responseObject
+ * @typedef {import("discord.js").AnyThreadChannel} AnyThreadChannel
+ * @typedef {import("discord.js").Channel} Channel
+ * @typedef {import("discord.js").Message} Message
+ * @typedef {import("discord.js").Client} Client
+ */
+
+/**
+ * Turn string message to replyable object
+ * @param {string} message 
+ * @param {boolean} ephemeral 
+ * @return {responseObject} JS Object for interaction.reply()
+ */
 export function responseMessage(message, ephemeral) {
   return {
     content: message,
@@ -13,53 +22,39 @@ export function responseMessage(message, ephemeral) {
   };
 }
 
+/**
+ * Get message object via {@link responseMessage}() that represents a user error
+ * 
+ * Sets ephemeral = true and prepends "Error:\n"
+ * @param {string} errorMessage 
+ * @return {responseObject} JS Object for interaction.reply()
+ */
 export function errorResponse(errorMessage) {
   return responseMessage("Error:\n" + errorMessage, true);
 }
 
-export async function sendToChat(channelID, message, components = []) {
-  try {
-    return await DiscordRequest(`/channels/${channelID}/messages`, { 
-      method: "POST",
-      body: {
-        content: message, 
-        components: components,
-      },
-    });
-  } catch (err) {
-    console.error('Error sending message:', err);
-  }
+/**
+ * @param {Client} client 
+ * @param {string} channelID 
+ * @return {Channel}
+ */
+export function getChannel(client, channelID){
+  return client.channels.cache.get(channelID);
 }
 
-export async function createThread(channelID, messageID, name) {
-  try {
-    return await DiscordRequest(`/channels/${channelID}/messages/${messageID}/threads`, { 
-      method: "POST",
-      body: {
-        type: 11,
-        name: name,
-      },
-    });
-  } catch (err) {
-    console.error('Error sending message:', err);
-  }
+/**
+ * @param {Message} message 
+ * @param {string} name 
+ * @return {Promise<AnyThreadChannel>}
+ */
+export async function createThread(message, name) {
+  return await message.startThread({
+    type: 11,
+    name: name,
+  });
 }
 
-
-export function VerifyDiscordRequest(clientKey) {
-  return function (req, res, buf, encoding) {
-    const signature = req.get("X-Signature-Ed25519");
-    const timestamp = req.get("X-Signature-Timestamp");
-
-    const isValidRequest = verifyKey(buf, signature, timestamp, clientKey);
-    if (!isValidRequest) {
-      res.status(401).send("Bad request signature");
-      throw new Error("Bad request signature");
-    }
-  };
-}
-
-export async function DiscordRequest(endpoint, options) {
+async function DiscordRequest(endpoint, options) {
   // append endpoint to root API URL
   const url = "https://discord.com/api/v10/" + endpoint;
   // Stringify payloads
@@ -86,7 +81,6 @@ export async function DiscordRequest(endpoint, options) {
 
 const installUpdate = false;
 export async function InstallGlobalCommands(appId, commands) {
-  console.log("Trying");
   if(!installUpdate)
     return;
   // API endpoint to overwrite global commands
@@ -100,6 +94,11 @@ export async function InstallGlobalCommands(appId, commands) {
   }
 }
 
+/**
+ * Capitalize a string
+ * @param {string} str 
+ * @return {string}
+ */
 export function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }

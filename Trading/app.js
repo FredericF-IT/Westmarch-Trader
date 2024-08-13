@@ -5,8 +5,8 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { VerifyDiscordRequest, DiscordRequest, capitalize, errorResponse, responseMessage, sendToChat } from './utils.js';
-import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeTables, getDowntimes, getDowntimeNames, getProficiencies } from './itemsList.js';
+import { capitalize, errorResponse, getChannel, responseMessage } from './utils.js';
+import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeNames, getProficiencies } from './itemsList.js';
 import { getDX, filterItems, characterExisits, setValueCharacter, requestCharacterRegistration } from './extraUtils.js';
 import { writeDataFile, readDataFile } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
@@ -14,18 +14,31 @@ import { namesCharactersFile } from "./data/fileNames.js";
 import sqlite3 from 'sqlite3';
 import { Client, IntentsBitField } from "discord.js";
 
+/**
+ * @typedef {import("./types.js").interaction} interaction
+ * @typedef {import("./types.js").command} command
+ * @typedef {import("./types.js").options} options
+ * @typedef {import("./types.js").option} option
+ * @typedef {import("./types.js").user} user
+ * @typedef {import("./types.js").responseObject} responseObject
+ * @typedef {import("./types.js").autocompleteObject} autocompleteObject
+ * @typedef {import("./types.js").item} item
+ * @typedef {import("discord.js").Message} Message
+ */
+
+/** @type {Client} */
 const client = new Client({
   intents: [
     IntentsBitField.Flags.Guilds,
     IntentsBitField.Flags.GuildMessages,
   ],
-
 });
 
 client.on('ready', (c) => {
   console.log("Bot is running");
 });
 
+/** @type {sqlite3.Database} */
 const db = new sqlite3.Database('./trader.db', (err) => {
   if (err) {
     console.error('Failed to connect to the database:', err.message);
@@ -34,21 +47,27 @@ const db = new sqlite3.Database('./trader.db', (err) => {
   }
 });
 
+/** @type {[string, item][]} */
 const allItems = getSanesItemPrices();
 const allItemNames = getSanesItemNameIndex();
-const allItemNamesLower = allItemNames.map(v => v.toLowerCase());
 
-const downtimeTables = getDowntimeTables();
 const downtimeNames = getDowntimeNames();
-const downtimeIDToName = getDowntimeNames();
 const proficiencyNames = getProficiencies();
 
+/** @type {Map<string, string[]>} */
 const lastItemResult = new Map();
 
 const characters = JSON.parse(readDataFile(namesCharactersFile));
 
+/**
+ * @param {option[]} options 
+ * @param {string} id 
+ * @return {responseObject} JS Object for interaction.reply()
+ */
 function getItemsInRange(options, id) {
+  /** @type {number} */
   let minPrice = options[0].value;
+  /** @type {number} */
   let maxPrice = options[1].value;
 
   // swap the min and max if they're the wrong way around
@@ -88,7 +107,6 @@ function getItemsInRange(options, id) {
 
   return {
     content: result[0],
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     ephemeral: true,
     components: [
       {
@@ -106,33 +124,27 @@ function getItemsInRange(options, id) {
   };
 }
 
-function getDowntime(options, userID) {
-  const downtimeType = options[0].value;
-  const characterName = options[1].value;
-  const characterLevel = options[2].value;
-  
-  if(!characterExisits(userID, characterName)){
-    return requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]);
-  }
+/**
+ * @callback queryMethod
+ * @param {number} level
+ * @param {number} roll
+ * @return {string}
+ */
 
-  const roll = getDX(100);
-
-  const rollGroup = Math.floor((roll - 1) / 10);
-
-  const result = "\nEvent: " + downtimeTables[downtimeType][1].table[0][rollGroup] + "\nEffect: " + downtimeTables[downtimeType][1].table[characterLevel - 1][rollGroup];
-
-  return {
-    content: 'Character: "'+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + result,
-  };
-}
-
+/** @type {Map<number, queryMethod} */
 const downtimeQuery = new Map();
 downtimeQuery.set(0, (level, roll) => "SELECT outcome FROM job_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");");
 downtimeQuery.set(1, (level, roll) => "SELECT outcome FROM crime_downtime WHERE (level = " + level +" AND roll_result = "+ roll +");");
 downtimeQuery.set(2, (level, roll) => "SELECT outcome FROM xp_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");");
 
+/**
+ * @param {number} downtimeType 
+ * @param {number} level 
+ * @param {number} roll 
+ * @return {string}
+ */
 function getDowntimeQuery(downtimeType, level, roll){
-  const queryMethod = downtimeQuery.get(parseInt(downtimeType));
+  const queryMethod = downtimeQuery.get(downtimeType);
   return queryMethod(level, roll);
 }
 
@@ -141,36 +153,46 @@ function sqlite3Query(query, callback){
   db.all(sql, [], callback);
 }
 
+/**
+ * @param {interaction} interaction 
+ * @param {[{value: string},{value: number},{value: number}]} options 
+ * @param {string} userID 
+ * @return {responseObject | void}
+ */
 function getDowntimeSQLite3(interaction, options, userID) {
-  const downtimeType = options[0].value;
+  const downtimeType = parseInt(options[0].value);
   const characterName = options[1].value;
   const characterLevel = options[2].value;
 
   if(!characterExisits(userID, characterName)){
-    return requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]);
+    return interaction.reply(requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]));
   }
 
   const roll = getDX(100);
   const query = getDowntimeQuery(downtimeType, characterLevel, roll);
   
   sqlite3Query(query, (err, rows) => {
-    console.log(rows);
     if (err) {
       console.log(err);
       return err.message;
     }
-    console.log(rows);
     interaction.reply({
-      content: 'Character: "'+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: \nEffect: " + rows[0].outcome,
+      content: `<@${userID}>\nCharacter: "`+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: \nEffect: " + rows[0].outcome,
     });
   })
 }
 
-function downtimeCraftItem(item, characterName, userID) {
-  const [itemName, {price}] = allItems[parseInt(item)];
+/**
+ * @param {string} itemID 
+ * @param {string} characterName 
+ * @param {string} userID 
+ * @return {responseObject} JS Object for interaction.reply()
+ */
+function downtimeCraftItem(itemID, characterName, userID) {
+  const [itemName, {price}] = allItems[parseInt(itemID)];
 
   if(!characterExisits(userID, characterName)){
-    return requestCharacterRegistration("itemCraft", characterName, [item]);
+    return requestCharacterRegistration("itemCraft", characterName, [itemID]);
   }
 
   return {
@@ -179,14 +201,13 @@ function downtimeCraftItem(item, characterName, userID) {
       `You will need to succeed on a craft check using a tool proficiency.\n` +
       `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n` +
       "If you have another item in progress, starting a new item will overwrite that one.",
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     components: [
       {
         type: MessageComponentTypes.ACTION_ROW,
         components: [
           {
               type: MessageComponentTypes.BUTTON,
-              custom_id: `characterThread_${userID}_` + item + "_" + characterName,
+              custom_id: `characterThread_${userID}_` + itemID + "_" + characterName,
               label: "Start crafting",
               style: ButtonStyleTypes.PRIMARY,
           },
@@ -200,6 +221,13 @@ function downtimeChangeItem() {
   return errorResponse("Not implemented", true);
 }
 
+/**
+ * 
+ * @param {string} userID 
+ * @param {[{value: string},{value: number},{value: string}]} options 
+ * @param {bool} isBuying 
+ * @return {responseObject} JS Object for interaction.reply()
+ */
 function doTrade(userID, options, isBuying) {
   const itemIndex = parseInt(options[0].value);
   const itemCount = options[1].value;
@@ -240,6 +268,13 @@ function doTrade(userID, options, isBuying) {
   };
 }
 
+/**
+ * 
+ * @param {boolean} isRegister 
+ * @param {string} characterName 
+ * @param {user} user 
+ * @return {responseObject} JS Object for interaction.reply()
+ */
 function registration(isRegister, characterName, user) {
   try{
     let userCharacters = characters[user.id];
@@ -285,6 +320,10 @@ function registration(isRegister, characterName, user) {
   }
 }
 
+/**
+ * @param {user} user 
+ * @return {responseObject} JS Object for interaction.reply()
+ */
 function showCharacters(user) {
   let userCharacters = characters[user.id].slice(0);
   if (userCharacters == undefined) {
@@ -299,6 +338,11 @@ function showCharacters(user) {
   };
 }
 
+/**
+ * @param {string} currentInput 
+ * @param {user} user 
+ * @return {autocompleteObject[]} JS autocomplete Object for interaction.respond()
+ */
 function characterNamesAutoComplete(currentInput, user) {
   let userCharacters = characters[user.id].slice(0);
   if (userCharacters == undefined) {
@@ -309,6 +353,8 @@ function characterNamesAutoComplete(currentInput, user) {
   const matchingOptions = userCharacters.filter((charName) =>
     charName.toLowerCase().startsWith(currentInput.toLowerCase())
   );
+
+  /** @type {autocompleteObject[]} */
   const matchingOptionsIndex = matchingOptions.map((charName) => {
     return {
       name: `${charName}`,
@@ -320,10 +366,15 @@ function characterNamesAutoComplete(currentInput, user) {
   return result;
 }
 
+/**
+ * @param {string} currentInput 
+ * @return {autocompleteObject[]} JS autocomplete Object for interaction.respond()
+ */
 function itemNamesAutoComplete(currentInput) {
   const matchingOptions = allItemNames.filter((itemName) =>
     itemName.toLowerCase().startsWith(currentInput.toLowerCase())
   );
+  
   const matchingOptionsIndex = matchingOptions.map((itemName) => {
     return {
       name: `${itemName}`,
@@ -335,6 +386,11 @@ function itemNamesAutoComplete(currentInput) {
   return result;
 }
 
+/**
+ * @param {option[]} options 
+ * @param {user} dm 
+ * @return {responseObject} JS Object for interaction.reply()
+ */
 function westmarchLog(options, dm) {
   const xpReceived = options[0].value;
   
@@ -360,35 +416,59 @@ function westmarchLog(options, dm) {
   };
 } 
 
-function explainMe(channelID) {
+/**
+ * Sends the command explanation as mutliple messages.
+ * 
+ * Messages are read from ./data/explanation.txt
+ * 
+ * Start of next message is marked by \newline (use it to stay below discord max message length)
+ * @param {Client} client 
+ * @param {string} channelID 
+ */
+function explainMe(client, channelID) {
   const messages = readDataFile("data/explanation.txt").split("\\newLine");
-  const messageResolved = []; 
+  const channel = getChannel(client, channelID);
+
   for(let i = 0; i < messages.length; i++) {
     setTimeout(() => {
-      sendToChat(channelID, messages[i]);
+      channel.send({ content: messages[i] })
     }, 500 * i);
   }
+
+  return responseMessage("Explanation sent", true);
 }
 
+/** 
+ * @param {interaction} interaction 
+ * @return {command} Parsed command
+*/
 function parseFullCommand(interaction) {
-  let commandName = {
-    commandName: interaction.commandName
+  /** @type {command} */
+  const command = {
+    commandName: interaction.commandName,
+    options: null
   }
-  if(!Object.hasOwn(interaction, 'options')) return commandName;
+  if(!Object.hasOwn(interaction, 'options')) return command;
   
   const group = interaction.options._group;
   const subcommand = interaction.options._subcommand;
-  commandName.commandName +=  (group == null ? "" : " " + group) +
+  command.commandName +=  (group == null ? "" : " " + group) +
                               (subcommand == null ? "" : " " + subcommand)
   
-  interaction = interaction.options._hoistedOptions;
-  if(interaction == null) return commandName;
+  const options = interaction.options._hoistedOptions;
+  if(options == null) return command;
   
-  commandName.options = interaction;
+  command.options = options;
 
-  return commandName;
+  return command;
 } 
 
+/**
+ * Send response with matching items
+ * @param {interaction} interaction 
+ * @param {user} user 
+ * @return {void}
+ */
 function handleAutocomplete(interaction, user) {
   const { commandName, options } = parseFullCommand(interaction);
     
@@ -438,7 +518,14 @@ function handleAutocomplete(interaction, user) {
   }
 }
 
-function handleComponentPreEvent(interaction, componentId, user, token, messageID) {
+/**
+ * 
+ * @param {interaction} interaction 
+ * @param {string} componentId 
+ * @param {user} user 
+ * @return {responseObject | null} JS Object for interaction.reply()
+ */
+function handleComponentPreEvent(interaction, componentId, user) {
   const partsPre = componentId.split("_");
   partsPre.shift();
   
@@ -448,28 +535,34 @@ function handleComponentPreEvent(interaction, componentId, user, token, messageI
 
   switch(partsPre[0]) {
     case "itemCraft":
-      result = interaction.reply(downtimeCraftItem(partsPre[2], partsPre[1], user.id));
+      result = downtimeCraftItem(partsPre[2], partsPre[1], user.id);
       break;
     case "doTrade":
       const itemIndex = partsPre[2];
       const itemCount = parseInt(partsPre[3]);
       const isBuying = partsPre[4] === "true";
 
-      result = interaction.reply(doTrade(user.id, [{value: itemIndex}, {value: itemCount}, {value: partsPre[1]}], isBuying));
+      result = doTrade(user.id, [{value: itemIndex}, {value: itemCount}, {value: partsPre[1]}], isBuying);
       break;
     case "doDowntime":
-      const downtimeType = parseInt(partsPre[2]);
+      const downtimeType = partsPre[2];
       const characterLevel = parseInt(partsPre[3]);
 
-      result = interaction.reply(getDowntime([{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id));
+      getDowntimeSQLite3(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
+      break;
+    default:
+      result = errorResponse("Unknown command");
       break;
   }
-
 
   interaction.deleteReply(interaction.message);
   return result;
 }
 
+/**
+ * @param {string[]} parts 
+ * @return {responseObject} JS Object for interaction.reply()
+ */
 function displayItemsInRange(parts) {
   const j = parseInt(parts[1]);
   const originalID = parts[2];
@@ -516,114 +609,113 @@ process.on('SIGINT', () => {
   });
 });
 
-client.on('interactionCreate', (interaction) => {
+client.on('interactionCreate', 
+  /** @param {interaction} interaction */
+  (interaction) => {
   try{
-  const { type, id } = interaction;
-  /**
-   * Handle verification requests
-   */
-  if (type === InteractionType.PING) {
-    return interaction.respond({ type: InteractionResponseType.PONG });
-  }
-
-  const userID = interaction.member.user.id;
-  const channelID = interaction.channelId;
-
-  /**
-   * Handle slash command requests
-   * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
-   */
-  if (type === InteractionType.APPLICATION_COMMAND) {
-    const { commandName, options } = parseFullCommand(interaction);
-    
-    let isTrue = false; 
-    switch(commandName) {
-      case "explanationtrader": 
-        return explainMe(channelID);
-      
-      case "getitemsinrange": 
-        return interaction.reply(getItemsInRange(options, id));
-      /*
-      case "westmarch downtime": 
-        return interaction.reply(getDowntime(options, userID));
-      */
-      case "westmarch item-downtime craft": 
-        return interaction.reply(downtimeCraftItem(options[0].value, options[1].value, userID));
-      
-      case "westmarch item-downtime change": 
-        return interaction.reply(downtimeChangeItem());
-      
-      case "westmarch reward": 
-        return interaction.reply(westmarchLog(options, interaction.member.user));
-      
-      case "westmarch buy": 
-        isTrue = true;
-      case "westmarch sell": 
-        return interaction.reply(doTrade(userID, options, isTrue));
-      
-      case "westmarch character register": 
-        isTrue = true;
-      case "westmarch character unregister": 
-        return interaction.reply(registration(isTrue, options[0].value, interaction.member.user));
-      case "westmarch character show": 
-        return interaction.reply(showCharacters(interaction.member.user));
-      //exampleSql
-      case "westmarch downtime":
-        getDowntimeSQLite3(interaction, options, userID); 
+    const { type, id } = interaction;
+    /**
+     * Handle verification requests
+     */
+    if (type === InteractionType.PING) {
+      return interaction.respond({ type: InteractionResponseType.PONG });
     }
-  }
 
-  else if (type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) { // is Autocomplete
-    return handleAutocomplete(interaction, interaction.member.user);
-  }
+    const userID = interaction.member.user.id;
+    const channelID = interaction.channelId;
 
-  else if (type === InteractionType.MESSAGE_COMPONENT) {
-    let componentId = interaction.customId;
-    const parts = componentId.split("_");
-
-    try {
-      if(componentId.startsWith(rareSeperator)) {
-        return handleComponentPreEvent(componentId, interaction.member.user, interaction.token, interaction.message.id);
-      }
+    /**
+     * Handle slash command requests
+     * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
+     */
+    if (type === InteractionType.APPLICATION_COMMAND) {
+      const { commandName, options } = parseFullCommand(interaction);
       
-      const creatorID = parts[1];
-      let isTrue = false;
-      switch(parts[0]){
-        case "itemspage":
-          return interaction.reply(displayItemsInRange(parts));
-        case "downtimeItemProfSelect":
+      let isTrue = false; 
+      switch(commandName) {
+        case "explanationtrader": 
+          return interaction.reply(explainMe(client, channelID));
+        case "getitemsinrange": 
+          return interaction.reply(getItemsInRange(options, id));
+        case "westmarch item-downtime craft": 
+          return interaction.reply(downtimeCraftItem(options[0].value, options[1].value, userID));
+        
+        case "westmarch item-downtime change": 
+          return interaction.reply(downtimeChangeItem());
+        
+        case "westmarch reward": 
+          return interaction.reply(westmarchLog(options, interaction.member.user));
+        
+        case "westmarch buy": 
           isTrue = true;
-        case "downtimeItemProfMod":
-          if(interaction.member.user.id != creatorID) 
-            return;
-          const messageID = parts[2];
-          const characterName = parts[3];
-          let proficiency = interaction.values[0];
-          
-          if (isTrue) { 
-            setValueCharacter(userID, characterName, "crafting", messageID, "proficiency", proficiency)
-            return interaction.reply(responseMessage("Proficiency is set to " + proficiencyNames[proficiency].toLowerCase(), true));
-          }
-          proficiency = parseInt(proficiency);
-          setValueCharacter(userID, characterName, "crafting", messageID, "profMod", proficiency)
-          return interaction.reply(responseMessage("Proficiency level is set to " + proficiency, true));
-          
-        case "characterThread":
-          return interaction.reply(startCharacterDowntimeThread(parts, interaction.member.user.id, interaction.message.id, channelID, interaction.token));
-        case "characterThreadFinished":
-          return interaction.reply(rollCharacterDowntimeThread(parts, interaction.member.user.id, interaction));
-        case "westmarchrewardlog":
-          return interaction.reply(westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction));
-        case "acceptTransactionButton":
-          return interaction.reply(acceptTransaction(componentId, userID));
+        case "westmarch sell": 
+          return interaction.reply(doTrade(userID, options, isTrue));
+        
+        case "westmarch character register": 
+          isTrue = true;
+        case "westmarch character unregister": 
+          return interaction.reply(registration(isTrue, options[0].value, interaction.member.user));
+        case "westmarch character show": 
+          return interaction.reply(showCharacters(interaction.member.user));
+        case "westmarch downtime":
+          getDowntimeSQLite3(interaction, options, userID); 
       }
-    } 
-    catch (err) {
-      console.error('Error sending message:', err);
     }
-  }
-  } 
-  catch (err) {
+
+    else if (type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) { // is Autocomplete
+      return handleAutocomplete(interaction, interaction.member.user);
+    }
+
+    else if (type === InteractionType.MESSAGE_COMPONENT) {
+      let componentId = interaction.customId;
+      const parts = componentId.split("_");
+
+      /** @type {Message} */
+      const message = interaction.message;
+
+      try {
+        if(componentId.startsWith(rareSeperator)) {
+          const response = handleComponentPreEvent(interaction, componentId, interaction.member.user);
+          return response !== null ? interaction.reply(response) : null;
+        }
+        
+        const creatorID = parts[1];
+        let isTrue = false;
+        switch(parts[0]){
+          case "itemspage":
+            return interaction.reply(displayItemsInRange(parts));
+          case "downtimeItemProfSelect":
+            isTrue = true;
+          case "downtimeItemProfMod":
+            if(interaction.member.user.id != creatorID) 
+              return;
+            const messageID = parts[2];
+            const characterName = parts[3];
+            let proficiency = interaction.values[0];
+            
+            if (isTrue) { 
+              setValueCharacter(userID, characterName, "crafting", messageID, "proficiency", proficiency)
+              return interaction.reply(responseMessage("Proficiency is set to " + proficiencyNames[proficiency].toLowerCase(), true));
+            }
+            proficiency = parseInt(proficiency);
+            setValueCharacter(userID, characterName, "crafting", messageID, "profMod", proficiency)
+            return interaction.reply(responseMessage("Proficiency level is set to " + proficiency, true));
+            
+          case "characterThread":
+            return interaction.reply(startCharacterDowntimeThread(message, parts, interaction.member.user.id, interaction.message.id, interaction.token));
+          case "characterThreadFinished":
+            return interaction.reply(rollCharacterDowntimeThread(parts, interaction.member.user.id, interaction));
+          case "westmarchrewardlog":
+            return interaction.reply(westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction));
+          case "acceptTransactionButton":
+            return interaction.reply(acceptTransaction(componentId, userID));
+        }
+      } 
+      catch (err) {
+        console.error('Error sending message:', err);
+      }
+    }
+  } catch (err) {
     console.error('Error sending message:', err);
   }
 });

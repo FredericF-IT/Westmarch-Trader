@@ -126,17 +126,14 @@ function getDowntime(options, userID) {
   };
 }
 
+const downtimeQuery = new Map();
+downtimeQuery.set(0, (level, roll) => "SELECT outcome FROM job_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");");
+downtimeQuery.set(1, (level, roll) => "SELECT outcome FROM crime_downtime WHERE (level = " + level +" AND roll_result = "+ roll +");");
+downtimeQuery.set(2, (level, roll) => "SELECT outcome FROM xp_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");");
+
 function getDowntimeQuery(downtimeType, level, roll){
-  let mQuery = "";
-  switch(downtimeType){
-    case "Doing a job":
-      mQuery = "SELECT outcome FROM job_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");"
-    case "Crime":
-      mQuery = "SELECT outcome FROM crime_downtime WHERE (level = " + level +" AND roll_result = "+ roll +");"
-    case "Training to gain xp":
-      mQuery = "SELECT outcome FROM xp_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");"
-  }
-  return mQuery;
+  const queryMethod = downtimeQuery.get(parseInt(downtimeType));
+  return queryMethod(level, roll);
 }
 
 function sqlite3Query(query, callback){
@@ -154,12 +151,15 @@ function getDowntimeSQLite3(interaction, options, userID) {
   }
 
   const roll = getDX(100);
-  const query = getDowntimeQuery(downtimeIDToName[downtimeType], characterLevel, roll);
+  const query = getDowntimeQuery(downtimeType, characterLevel, roll);
   
   sqlite3Query(query, (err, rows) => {
+    console.log(rows);
     if (err) {
+      console.log(err);
       return err.message;
     }
+    console.log(rows);
     interaction.reply({
       content: 'Character: "'+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: \nEffect: " + rows[0].outcome,
     });

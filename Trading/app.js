@@ -7,10 +7,9 @@ import {
 } from 'discord-interactions';
 import { capitalize, errorResponse, getChannel, responseMessage } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeNames, getProficiencies } from './itemsList.js';
-import { getDX, filterItems, characterExisits, setValueCharacter, requestCharacterRegistration } from './extraUtils.js';
-import { writeDataFile, readDataFile } from './data/dataIO.js';
+import { getDX, filterItems, requestCharacterRegistration } from './extraUtils.js';
+import { readDataFile, characterExists, setValueDowntime, getCharacters, setCharacters } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
-import { namesCharactersFile } from "./data/fileNames.js";
 import sqlite3 from 'sqlite3';
 import { Client, IntentsBitField, ThreadChannel } from "discord.js";
 
@@ -56,8 +55,6 @@ const proficiencyNames = getProficiencies();
 
 /** @type {Map<string, string[]>} */
 const lastItemResult = new Map();
-
-const characters = JSON.parse(readDataFile(namesCharactersFile));
 
 /**
  * @param {option[]} options 
@@ -164,7 +161,7 @@ function getDowntimeSQLite3(interaction, options, userID) {
   const characterName = options[1].value;
   const characterLevel = options[2].value;
 
-  if(!characterExisits(userID, characterName)){
+  if(!characterExists(userID, characterName)){
     return interaction.reply(requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]));
   }
 
@@ -191,7 +188,7 @@ function getDowntimeSQLite3(interaction, options, userID) {
 function downtimeCraftItem(itemID, characterName, userID) {
   const [itemName, {price}] = allItems[parseInt(itemID)];
 
-  if(!characterExisits(userID, characterName)){
+  if(!characterExists(userID, characterName)){
     return requestCharacterRegistration("itemCraft", characterName, [itemID]);
   }
 
@@ -233,7 +230,7 @@ function doTrade(userID, options, isBuying) {
   const itemCount = options[1].value;
   const characterName = options[2].value;
   
-  if(!characterExisits(userID, characterName)){
+  if(!characterExists(userID, characterName)){
     return requestCharacterRegistration("doTrade", characterName, [itemIndex, itemCount, isBuying]);
   }
 
@@ -271,16 +268,13 @@ function doTrade(userID, options, isBuying) {
 /**
  * 
  * @param {boolean} isRegister 
- * @param {string} characterName 
+ * @param {string} characterName
  * @param {user} user 
  * @return {responseObject} JS Object for interaction.reply()
  */
 function registration(isRegister, characterName, user) {
   try{
-    let userCharacters = characters[user.id];
-
-    if (userCharacters == undefined) 
-      userCharacters = [user.username];
+    let userCharacters = getCharacters(user);
 
     if (userCharacters.length >= 11) 
       return errorResponse("You already have 10 characters.");
@@ -292,9 +286,8 @@ function registration(isRegister, characterName, user) {
         return errorResponse("You have a character with that name already.");
       
       userCharacters.push(characterName);
-      characters[user.id] = userCharacters;
-      const output = JSON.stringify(characters, null, "\t");
-      writeDataFile(namesCharactersFile, output);
+      setCharacters(user.id, userCharacters);
+
       return {
         content: "Character added.",
         ephemeral: true,
@@ -308,9 +301,7 @@ function registration(isRegister, characterName, user) {
 
     userCharacters.splice(charIndex, 1);
     
-    characters[user.id] = userCharacters;
-    const output = JSON.stringify(characters, null, "\t");
-    writeDataFile(namesCharactersFile, output);
+    setCharacters(user.id, userCharacters);
     return {
       content: "Character removed.",
       ephemeral: true,
@@ -325,11 +316,9 @@ function registration(isRegister, characterName, user) {
  * @return {responseObject} JS Object for interaction.reply()
  */
 function showCharacters(user) {
-  let userCharacters = characters[user.id].slice(0);
-  if (userCharacters == undefined) {
-    userCharacters = [user.username];
-  }
+  let userCharacters = getCharacters(user);
   
+  //remove username from list
   userCharacters.shift();
   
   return {
@@ -344,10 +333,9 @@ function showCharacters(user) {
  * @return {autocompleteObject[]} JS autocomplete Object for interaction.respond()
  */
 function characterNamesAutoComplete(currentInput, user) {
-  let userCharacters = characters[user.id].slice(0);
-  if (userCharacters == undefined) {
-    userCharacters = [user.username];
-  }
+  let userCharacters = getCharacters(user);
+
+  //remove username from list
   userCharacters.shift();
 
   const matchingOptions = userCharacters.filter((charName) =>
@@ -696,11 +684,11 @@ client.on('interactionCreate',
             let proficiency = interaction.values[0];
             
             if (isTrue) { 
-              setValueCharacter(userID, characterName, "crafting", messageID, "proficiency", proficiency)
+              setValueDowntime(userID, characterName, "crafting", messageID, "proficiency", proficiency)
               return interaction.reply(responseMessage("Proficiency is set to " + proficiencyNames[proficiency].toLowerCase(), true));
             }
             proficiency = parseInt(proficiency);
-            setValueCharacter(userID, characterName, "crafting", messageID, "profMod", proficiency)
+            setValueDowntime(userID, characterName, "crafting", messageID, "profMod", proficiency)
             return interaction.reply(responseMessage("Proficiency level is set to " + proficiency, true));
             
           case "characterThread":

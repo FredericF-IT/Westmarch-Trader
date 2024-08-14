@@ -12,7 +12,7 @@ import { writeDataFile, readDataFile } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
 import { namesCharactersFile } from "./data/fileNames.js";
 import sqlite3 from 'sqlite3';
-import { Client, IntentsBitField } from "discord.js";
+import { Client, IntentsBitField, ThreadChannel } from "discord.js";
 
 /**
  * @typedef {import("./types.js").interaction} interaction
@@ -638,6 +638,8 @@ client.on('interactionCreate',
         case "getitemsinrange": 
           return interaction.reply(getItemsInRange(options, id));
         case "westmarch item-downtime craft": 
+          if(interaction.channel instanceof ThreadChannel) 
+            return interaction.reply(errorResponse("Needed thread can't be created in thread or forum"));
           return interaction.reply(downtimeCraftItem(options[0].value, options[1].value, userID));
         
         case "westmarch item-downtime change": 

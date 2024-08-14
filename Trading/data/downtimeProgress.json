@@ -1,13 +1,7 @@
 {
 	"367891183344812034": {
 		"Thomson": {
-			"crafting": {
-				"1273044167471140975": {
-					"proficiency": "carpenter",
-					"profMod": 0,
-					"item": 10
-				}
-			}
+			"crafting": {}
 		},
 		"Kronk": {
 			"crafting": {}

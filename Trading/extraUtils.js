@@ -1,3 +1,4 @@
+// @ts-check
 import {
   MessageComponentTypes,
   ButtonStyleTypes,
@@ -25,12 +26,15 @@ export function requestCharacterRegistration(type, characterName, data) {
     //type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     components: [
       {
+        // @ts-ignore
         type: MessageComponentTypes.ACTION_ROW,
         components: [
           {
+            // @ts-ignore
               type: MessageComponentTypes.BUTTON,
               custom_id: rareSeperator + `_${type}_${characterName}_${data.join("_")}`,
               label: "Register & continue",
+              // @ts-ignore
               style: ButtonStyleTypes.PRIMARY,
           },
         ],
@@ -52,13 +56,12 @@ import { getSanesItemPrices } from './itemsList.js';
 const allItems = getSanesItemPrices();
 
  /**
- * Returns 
- * @param {number} gpReceived 
- * @param {number} gpMinimumCost 
- * @return {[string, item][]}
+ * @param {number} lowestPrice 
+ * @param {number} highestPrice 
+ * @return {[string, ...item][]}
  */
-export function filterItems(gpReceived, gpMinimumCost) {
+export function filterItems(lowestPrice, highestPrice) {
   return allItems.filter(function(element) {
-      return element[1].price <= gpReceived && element[1].price >= gpMinimumCost;
+      return lowestPrice <= element[1].price && element[1].price <= highestPrice;
   });
 }

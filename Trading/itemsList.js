@@ -1,3 +1,8 @@
+// @ts-check
+/**
+ * @typedef {import("./types.js").item} item
+ */
+
 const sanesItemPrices = {
         '+1 Shield': {
                 price: 1500,
@@ -3413,10 +3418,16 @@ const sanesItemPrices = {
         },
 };
 
+/**
+ * @returns {[string, ... {price: number, rarity: string }][]}
+ */
 export function getSanesItemPrices() {
         return Object.entries(sanesItemPrices);
 }
 
+/**
+ * @return {string[]}
+ */
 export function getSanesItemNameIndex() {
         return Object.keys(sanesItemPrices);
 }
@@ -3505,16 +3516,24 @@ const downtimeTables = {
         },
 };
 
+/**
+ * @return {[string, {id: number}][]}
+ */
 export function getDowntimes() {
         return Object.entries(downtimes);
 }
 
-
+/**
+ * @return {string[]}
+ */
 export function getDowntimeNames() {
         return Object.keys(downtimes);
 }
 
-
+/**
+ * 
+ * @returns {[string, {table: string[][]}][]}
+ */
 export function getDowntimeTables() {
         return Object.entries(downtimeTables);
 }

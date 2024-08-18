@@ -1,3 +1,4 @@
+// @ts-check
 import 'dotenv/config';
 import {
   InteractionType,
@@ -5,13 +6,14 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { capitalize, errorResponse, getChannel, responseMessage } from './utils.js';
+import { capitalize, errorResponse, getChannel, InstallGlobalCommands, responseMessage } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeNames, getProficiencies } from './itemsList.js';
 import { getDX, filterItems, requestCharacterRegistration } from './extraUtils.js';
 import { readDataFile, characterExists, setValueDowntime, getCharacters, setCharacters } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
 import { Client, IntentsBitField, ThreadChannel } from "discord.js";
+import { ALL_COMMANDS } from './commands.js';
 
 /**
  * @typedef {import("./types.js").interaction} interaction
@@ -46,7 +48,7 @@ const db = new sqlite3.Database('./trader.db', (err) => {
   }
 });
 
-/** @type {[string, item][]} */
+/** @type {[string, ...item[]][]} */
 const allItems = getSanesItemPrices();
 const allItemNames = getSanesItemNameIndex();
 
@@ -74,7 +76,7 @@ function getItemsInRange(options, id) {
     minPrice = minPrice ^ maxPrice;
   }
 
-  const itemsInRange = filterItems(maxPrice, minPrice).sort((a, b) => a[1].price - b[1].price);
+  const itemsInRange = filterItems(minPrice, maxPrice).sort((a, b) => a[1].price - b[1].price);
 
   let result = [""];
   let j = 0;
@@ -107,13 +109,14 @@ function getItemsInRange(options, id) {
     ephemeral: true,
     components: [
       {
-        type: MessageComponentTypes.ACTION_ROW,
+        type: MessageComponentTypes.ACTION_ROW.valueOf(),
         components: [
           {
-              type: MessageComponentTypes.BUTTON,
+              type: MessageComponentTypes.BUTTON.valueOf(),
+              // @ts-ignore
               custom_id: `itemspage_1_`+id,
               label: "Load more items",
-              style: ButtonStyleTypes.PRIMARY,
+              style: ButtonStyleTypes.PRIMARY.valueOf(),
           },
         ],
       },
@@ -128,7 +131,7 @@ function getItemsInRange(options, id) {
  * @return {string}
  */
 
-/** @type {Map<number, queryMethod} */
+/** @type {Map<number, queryMethod>} */
 const downtimeQuery = new Map();
 downtimeQuery.set(0, (level, roll) => "SELECT outcome FROM job_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");");
 downtimeQuery.set(1, (level, roll) => "SELECT outcome FROM crime_downtime WHERE (level = " + level +" AND roll_result = "+ roll +");");
@@ -142,6 +145,7 @@ downtimeQuery.set(2, (level, roll) => "SELECT outcome FROM xp_rewards WHERE (lev
  */
 function getDowntimeQuery(downtimeType, level, roll){
   const queryMethod = downtimeQuery.get(downtimeType);
+  // @ts-ignore
   return queryMethod(level, roll);
 }
 
@@ -152,9 +156,9 @@ function sqlite3Query(query, callback){
 
 /**
  * @param {interaction} interaction 
- * @param {[{value: string},{value: number},{value: number}]} options 
+ * @param {[{value: string},{value: string},{value: number}] | option[]} options 
  * @param {string} userID 
- * @return {responseObject | void}
+ * @return {Promise | void}
  */
 function getDowntimeSQLite3(interaction, options, userID) {
   const downtimeType = parseInt(options[0].value);
@@ -200,12 +204,15 @@ function downtimeCraftItem(itemID, characterName, userID) {
       "If you have another item in progress, starting a new item will overwrite that one.",
     components: [
       {
+        // @ts-ignore
         type: MessageComponentTypes.ACTION_ROW,
         components: [
           {
+            // @ts-ignore
               type: MessageComponentTypes.BUTTON,
               custom_id: `characterThread_${userID}_` + itemID + "_" + characterName,
               label: "Start crafting",
+              // @ts-ignore
               style: ButtonStyleTypes.PRIMARY,
           },
         ],
@@ -215,14 +222,14 @@ function downtimeCraftItem(itemID, characterName, userID) {
 }
 
 function downtimeChangeItem() {
-  return errorResponse("Not implemented", true);
+  return errorResponse("Not implemented");
 }
 
 /**
  * 
  * @param {string} userID 
- * @param {[{value: string},{value: number},{value: string}]} options 
- * @param {bool} isBuying 
+ * @param {[{value: string},{value: number},{value: string}] | option[]} options 
+ * @param {boolean} isBuying 
  * @return {responseObject} JS Object for interaction.reply()
  */
 function doTrade(userID, options, isBuying) {
@@ -251,12 +258,15 @@ function doTrade(userID, options, isBuying) {
     ephemeral: true,
     components: [
       {
+        // @ts-ignore
         type: MessageComponentTypes.ACTION_ROW,
         components: [
           {
+            // @ts-ignore
               type: MessageComponentTypes.BUTTON,
               custom_id: `acceptTransactionButton_${realPrice}_${itemName}_${itemCount}_${typeName}_${characterName}`,
               label: typeName,
+              // @ts-ignore
               style: ButtonStyleTypes.PRIMARY,
           },
         ],
@@ -308,6 +318,7 @@ function registration(isRegister, characterName, user) {
     };
   } catch(err) {
     console.error('Error sending message:', err);
+    return errorResponse("Something went wrong...");
   }
 }
 
@@ -380,7 +391,8 @@ function itemNamesAutoComplete(currentInput) {
  * @return {responseObject} JS Object for interaction.reply()
  */
 function westmarchLog(options, dm) {
-  const xpReceived = options[0].value;
+  const tier = options[0].value;
+  const xpReceived = options[1].value;
   
   if(xpReceived < 0)
     return errorResponse("Please only use positive values.");
@@ -390,11 +402,13 @@ function westmarchLog(options, dm) {
       ephemeral: true,
       components: [
         {
+          // @ts-ignore
           type: MessageComponentTypes.ACTION_ROW,
           components: [
             {
+              // @ts-ignore
               type: MessageComponentTypes.USER_SELECT,
-              custom_id: `westmarchrewardlog_` + dm.id + "_" + xpReceived,
+              custom_id: `westmarchrewardlog_` + dm.id + "_" + xpReceived + "_" + tier,
               min_values: 1,
               max_values: 20,
             },
@@ -415,10 +429,12 @@ function westmarchLog(options, dm) {
  */
 function explainMe(client, channelID) {
   const messages = readDataFile("data/explanation.txt").split("\\newLine");
+
   const channel = getChannel(client, channelID);
 
   for(let i = 0; i < messages.length; i++) {
     setTimeout(() => {
+      // @ts-ignore
       channel.send({ content: messages[i] })
     }, 500 * i);
   }
@@ -434,8 +450,9 @@ function parseFullCommand(interaction) {
   /** @type {command} */
   const command = {
     commandName: interaction.commandName,
-    options: null
+    options: []
   }
+  // @ts-ignore
   if(!Object.hasOwn(interaction, 'options')) return command;
   
   const group = interaction.options._group;
@@ -444,6 +461,7 @@ function parseFullCommand(interaction) {
                               (subcommand == null ? "" : " " + subcommand)
   
   const options = interaction.options._hoistedOptions;
+
   if(options == null) return command;
   
   command.options = options;
@@ -564,19 +582,22 @@ function displayItemsInRange(parts) {
       content: itemPages[j],
       ephemeral: true,
     }
-
+  
   return {
     content: itemPages[j],
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     ephemeral: true,
     components: [
       {
+        // @ts-ignore
         type: MessageComponentTypes.ACTION_ROW,
         components: [
           {
+            // @ts-ignore
             type: MessageComponentTypes.BUTTON,
             custom_id: `itemspage_` + (j + 1) + "_" + originalID,
             label: "Load more items",
+            // @ts-ignore
             style: ButtonStyleTypes.PRIMARY,
           },
         ],
@@ -597,18 +618,12 @@ process.on('SIGINT', () => {
   });
 });
 
+// @ts-ignore
 client.on('interactionCreate', 
   /** @param {interaction} interaction */
   (interaction) => {
   try{
     const { type, id } = interaction;
-    /**
-     * Handle verification requests
-     */
-    if (type === InteractionType.PING) {
-      return interaction.respond({ type: InteractionResponseType.PONG });
-    }
-
     const userID = interaction.member.user.id;
     const channelID = interaction.channelId;
 
@@ -660,7 +675,6 @@ client.on('interactionCreate',
       let componentId = interaction.customId;
       const parts = componentId.split("_");
 
-      /** @type {Message} */
       const message = interaction.message;
 
       try {
@@ -681,6 +695,7 @@ client.on('interactionCreate',
               return;
             const messageID = parts[2];
             const characterName = parts[3];
+            // @ts-ignore
             let proficiency = interaction.values[0];
             
             if (isTrue) { 
@@ -692,7 +707,7 @@ client.on('interactionCreate',
             return interaction.reply(responseMessage("Proficiency level is set to " + proficiency, true));
             
           case "characterThread":
-            return interaction.reply(startCharacterDowntimeThread(message, parts, interaction.member.user.id, interaction.message.id, interaction.token));
+            return interaction.reply(startCharacterDowntimeThread(message, parts, interaction.member.user.id, interaction.message.id));
           case "characterThreadFinished":
             return interaction.reply(rollCharacterDowntimeThread(parts, interaction.member.user.id, interaction));
           case "westmarchrewardlog":
@@ -711,3 +726,8 @@ client.on('interactionCreate',
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
+const shouldUpdate = false;
+if(shouldUpdate) {
+  InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);
+}

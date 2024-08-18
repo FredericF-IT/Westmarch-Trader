@@ -10,7 +10,7 @@ export function readDataFile(fileName) {
   return fs.readFileSync("./"+fileName).toString('utf-8');
 }
 
-export function writeDataFile(fileName, dataString) {
+function writeDataFile(fileName, dataString) {
   writeDataFileRequest("./"+fileName, dataString);
 }
 

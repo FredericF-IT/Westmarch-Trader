@@ -1,5 +1,8 @@
+// @ts-check
 /** @typedef {import("discord.js").MessageActionRowComponent} MessageActionRowComponent*/
 /** @typedef {import("discord.js").ActionRow<MessageActionRowComponent>} ActionRow*/
+/** @typedef {import("discord.js").Message} Message*/
+/** @typedef {import("discord.js").Channel} Channel*/
 
 /**
  * @typedef {Object} choice
@@ -16,8 +19,8 @@
  * @property {*=} attachments
  * @property {*=} poll
  * @property {*=} embeds
- * @property {bool=} ephemeral
- * @property {bool=} tts
+ * @property {boolean=} ephemeral
+ * @property {boolean=} tts
  */
 
 /**
@@ -52,9 +55,16 @@
  * @property {string} id 
  * @property {string} channelId
  * @property {string} commandName
+ * @property {string} customId
  * @property {number} type
  * @property {options} options
  * @property {member} member
+ * @property {Message} message
+ * @property {Channel} channel
+ * @property {(message: Message) => void} deleteReply
+ * @property {(object: responseObject) => Promise} reply
+ * @property {(objects: autocompleteObject[]) => Promise} respond
+ * @property {Map<string, user>} users
 */
 
 /**
@@ -63,12 +73,13 @@
  * @property {string} name
  * @property {number} type
  * @property {Object} value
+ * @property {boolean=} focused
  */
 
 /**
  * @typedef {Object} command
  * @property {string} commandName
- * @property {option[] | null} options
+ * @property {option[]} options
  */
 
 /**

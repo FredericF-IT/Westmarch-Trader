@@ -1,3 +1,4 @@
+// @ts-check
 import { errorResponse, responseMessage, createThread } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex, createProficiencyChoices, getProficiencies } from './itemsList.js';
 import { getDX, filterItems } from './extraUtils.js';
@@ -25,10 +26,9 @@ const allItems = getSanesItemPrices();
  * @param {string[]} parts 
  * @param {string} userID 
  * @param {string} messageID 
- * @param {string} token 
  * @return {responseObject} JS Object for interaction.reply()
  */
-export function startCharacterDowntimeThread(message, parts, userID, messageID, token) {
+export function startCharacterDowntimeThread(message, parts, userID, messageID) {
   const creatorID = parts[1];
   if(userID != creatorID) 
     return errorResponse("Not your character.");;
@@ -42,10 +42,10 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID, 
         content: "Make choices:", 
         components: [
           {
-            type: MessageComponentTypes.ACTION_ROW,
+            type: MessageComponentTypes.ACTION_ROW.valueOf(),
             components: [
               {
-                type: MessageComponentTypes.STRING_SELECT,
+                type: MessageComponentTypes.STRING_SELECT.valueOf(),
                 custom_id: `downtimeItemProfSelect_${userID}_${messageID}_${characterName}`,
                 placeholder: "Select your tool proficiency",
                 options: createProficiencyChoices(),
@@ -55,10 +55,10 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID, 
             ],
           },
           {
-            type: MessageComponentTypes.ACTION_ROW,
+            type: MessageComponentTypes.ACTION_ROW.valueOf(),
             components: [
               {
-                type: MessageComponentTypes.STRING_SELECT,
+                type: MessageComponentTypes.STRING_SELECT.valueOf(),
                 custom_id: `downtimeItemProfMod_${userID}_${messageID}_${characterName}`,
                 placeholder: "What is your proficiency bonus?",
                 options: [
@@ -89,13 +89,13 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID, 
             ],
           },       
           {
-            type: MessageComponentTypes.ACTION_ROW,
+            type: MessageComponentTypes.ACTION_ROW.valueOf(),
             components: [
               {
-                type: MessageComponentTypes.BUTTON,
+                type: MessageComponentTypes.BUTTON.valueOf(),
                 custom_id: `characterThreadFinished_${userID}_${messageID}_${characterName}`,
                 label: "Roll tool check",
-                style: ButtonStyleTypes.PRIMARY,
+                style: ButtonStyleTypes.PRIMARY.valueOf(),
               },
             ],
           },
@@ -149,21 +149,32 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID, 
  * @param {number} xpAll 
  * @param {string} dmID 
  * @param {string} date 
+ * @param {number} tier 
  * @return {responseObject} JS Object for interaction.reply()
  */
-export function getSessionRewards(players, xpAll, dmID, date) {
+export function getSessionRewards(players, xpAll, dmID, date, tier) {
+  /** @type {Map<number, {min: number, max: number}>} */
+  const tierToCostLimits = new Map();
+  tierToCostLimits.set(1, {min: 500, max: 1000});
+  tierToCostLimits.set(2, {min: 1000, max: 3000});
+  tierToCostLimits.set(3, {min: 3000, max: 5000});
+  tierToCostLimits.set(4, {min: 5000, max: 10000});
+
+  const priceRange = tierToCostLimits.get(tier);
+
   const playerNumber = players.length;
   const xpReceived = Math.ceil(xpAll / playerNumber);
 
-  const goldFactor = 4;
-  const gpReceived = xpReceived * goldFactor;
+  // @ts-ignore we know that tier can only be one from the list of options
+  const gpReceived = priceRange.min / 2;
   
-  const itemsUnderPrice = filterItems(xpReceived * (goldFactor - 1), xpReceived);
+  // @ts-ignore we know that tier can only be one from the list of options
+  const itemsUnderPrice = filterItems(priceRange.min, priceRange.max);
 
-  let rewards = `Session name here (${date})\nDM: <@${dmID}>\n${xpReceived}xp each\nGold: ${gpReceived}gp each (if item sold)\n\n`;
+  let rewards = `Session name here (${date})\nDM: <@${dmID}>\n${xpAll}xp earned by party\nGold: ${gpReceived}gp each\n\n`;
   for (let i = 0; i < playerNumber; i++) {
     const item = itemsUnderPrice[Math.floor(Math.random() * itemsUnderPrice.length)];
-    rewards += players[i].username + `\n  Item: ${item[0]} (price: ${item[1].price})\n  Gold: ${(gpReceived - item[1].price)}gp (if item kept)\n\n`;
+    rewards += players[i].username + `\n  Item: ${item[0]} (price: ${item[1].price})\n  ${xpReceived}xp\n\n`;
   }
 
   return {
@@ -183,13 +194,13 @@ export function westmarchRewardLogResult(parts, timestamp, interaction) {
   const date = new Date(timestamp);
   const dmID = parts[1];
   const xpReceived = parseInt(parts[2]);
+  const tier = parseInt(parts[3]);
 
-  /** @type {user[]} */
   const players = Array.from(interaction.users, ([id, user]) => user);
 
   interaction.deleteReply(interaction.message);
 
-  return getSessionRewards(players, xpReceived, dmID, `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`);
+  return getSessionRewards(players, xpReceived, dmID, `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`, tier);
 }
 
 /**
@@ -223,7 +234,7 @@ export function rollCharacterDowntimeThread(parts, userID, interaction) {
   const DC = 15;
   const roll = getDX(20); 
   const success = (roll + profMod >= DC);
-  const result = `DC: ${DC}\nResult: ${(roll + profMod)} (${roll}+${profMod})\n${(success ? `Successfully crafted ${allItemNames[itemID]} using ${proficiencyNames[profType].toLowerCase()}.\nWait until a dm approves this activity.` : `Try again with your next downtime action!`)}`;
+  const result = `DC: ${DC}\nResult: ${(roll + profMod)} (${roll}+${profMod}) using ${proficiencyNames[profType].toLowerCase()}.\n${(success ? `Successfully crafted ${allItemNames[itemID]}.\nWait until a dm approves this activity.` : `Try again with your next downtime action!`)}`;
 
   if(success) {
     setTimeout(() => {

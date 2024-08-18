@@ -236,6 +236,25 @@ const WESTMARCH_COMMANDS = {
       options: [
         {
           type: 4,
+          name: 'tier',
+          description: 'What was the recommended tier?',
+          choices: [{
+            name: "Tier 1 (2-4)",
+            value: "1",
+          },{
+            name: "Tier 2 (5-10)",
+            value: "2",
+          },{
+            name: "Tier 3 (11-16)",
+            value: "3",
+          },{
+            name: "Tier 4 (17-20)",
+            value: "4",
+          }],
+          required: true,
+        },
+        {
+          type: 4,
           name: 'xp',
           description: 'How much xp does the party receive?',
           required: true,
@@ -360,5 +379,5 @@ const WESTMARCH_COMMANDS = {
   ],
 };
 
-const ALL_COMMANDS = [ITEM_RANGE_COMMAND, WESTMARCH_COMMANDS, EXPLAIN_ME_COMMAND];//, TEST_COMMAND];
-InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);
+export const ALL_COMMANDS = [ITEM_RANGE_COMMAND, WESTMARCH_COMMANDS, EXPLAIN_ME_COMMAND];//, TEST_COMMAND];
+//InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

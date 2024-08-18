@@ -79,7 +79,7 @@ async function DiscordRequest(endpoint, options) {
   return res;
 }
 
-const installUpdate = false;
+const installUpdate = true;
 export async function InstallGlobalCommands(appId, commands) {
   if(!installUpdate)
     return;

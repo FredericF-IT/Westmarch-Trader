@@ -24,19 +24,16 @@ export function requestCharacterRegistration(type, characterName, data) {
     ephemeral: true,
     content: `${characterName} has not been registered.\n` +
       "Would you like to do so and continue with the command?",
-    //type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     components: [
       {
-        // @ts-ignore
-        type: MessageComponentTypes.ACTION_ROW,
+        type: MessageComponentTypes.ACTION_ROW.valueOf(),
         components: [
           {
-            // @ts-ignore
-              type: MessageComponentTypes.BUTTON,
+              type: MessageComponentTypes.BUTTON.valueOf(),
+              // @ts-ignore
               custom_id: rareSeperator + `_${type}_${characterName}_${data.join("_")}`,
               label: "Register & continue",
-              // @ts-ignore
-              style: ButtonStyleTypes.PRIMARY,
+              style: ButtonStyleTypes.PRIMARY.valueOf(),
           },
         ],
       },
@@ -69,7 +66,7 @@ export function filterItems(lowestPrice, highestPrice) {
 
 /**
  * 
- * @param {import('./types.js').guildMember} member 
+ * @param {guildMember} member 
  */
 export function isAdmin(member) {
   return member.permissions.has("Administrator");
@@ -77,7 +74,7 @@ export function isAdmin(member) {
 
 /**
  * 
- * @param {import('./types.js').guildMember} member 
+ * @param {guildMember} member 
  * @param {string} roleID 
  */
 export function hasRole(member, roleID) {

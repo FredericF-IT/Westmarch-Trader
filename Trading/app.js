@@ -213,15 +213,12 @@ function downtimeCraftItem(interaction, itemID, characterName, userID) {
       "If you have another item in progress, starting a new item will overwrite that one.",
     components: [
       {
-        // @ts-ignore
         type: MessageComponentTypes.ACTION_ROW,
         components: [
           {
-            // @ts-ignore
               type: MessageComponentTypes.BUTTON,
               custom_id: `characterThread_${userID}_` + itemID + "_" + characterName,
               label: "Start crafting",
-              // @ts-ignore
               style: ButtonStyleTypes.PRIMARY,
           },
         ],
@@ -269,16 +266,14 @@ function doTrade(userID, options, isBuying) {
     ephemeral: true,
     components: [
       {
-        // @ts-ignore
-        type: MessageComponentTypes.ACTION_ROW,
+        type: MessageComponentTypes.ACTION_ROW.valueOf(),
         components: [
           {
-            // @ts-ignore
-              type: MessageComponentTypes.BUTTON,
+              type: MessageComponentTypes.BUTTON.valueOf(),
+              // @ts-ignore
               custom_id: `acceptTransactionButton_${realPrice}_${itemName}_${itemCount}_${typeName}_${characterName}`,
               label: typeName,
-              // @ts-ignore
-              style: ButtonStyleTypes.PRIMARY,
+              style: ButtonStyleTypes.PRIMARY.valueOf(),
           },
         ],
       },
@@ -408,12 +403,11 @@ function westmarchLog(options, dm) {
       ephemeral: true,
       components: [
         {
-          // @ts-ignore
-          type: MessageComponentTypes.ACTION_ROW,
+          type: MessageComponentTypes.ACTION_ROW.valueOf(),
           components: [
             {
+              type: MessageComponentTypes.USER_SELECT.valueOf(),
               // @ts-ignore
-              type: MessageComponentTypes.USER_SELECT,
               custom_id: `westmarchrewardlog_` + dm.id + "_" + xpReceived + "_" + tier,
               min_values: 1,
               max_values: 20,
@@ -587,16 +581,14 @@ function displayItemsInRange(parts) {
     ephemeral: true,
     components: [
       {
-        // @ts-ignore
-        type: MessageComponentTypes.ACTION_ROW,
+        type: MessageComponentTypes.ACTION_ROW.valueOf(),
         components: [
           {
+            type: MessageComponentTypes.BUTTON.valueOf(),
             // @ts-ignore
-            type: MessageComponentTypes.BUTTON,
             custom_id: `itemspage_` + (j + 1) + "_" + originalID,
             label: "Load more items",
-            // @ts-ignore
-            style: ButtonStyleTypes.PRIMARY,
+            style: ButtonStyleTypes.PRIMARY.valueOf(),
           },
         ],
       },

@@ -1,5 +1,5 @@
 // @ts-check
-import { errorResponse, responseMessage, createThread } from './utils.js';
+import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex, createProficiencyChoices, getProficiencies } from './itemsList.js';
 import { getDX, filterItems } from './extraUtils.js';
 import { getValueDowntime, finishDowntimeActivity, getUserDowntimes, setUserDowntimes } from './data/dataIO.js';
@@ -13,6 +13,7 @@ import {
  * @typedef {import('./types.js').responseObject} responseObject
  * @typedef {import("./types.js").interaction} interaction
  * @typedef {import("./types.js").user} user
+ * @typedef {import("./types.js").guildMember} guildMember
  */
 
 const proficiencyNames = getProficiencies();
@@ -36,86 +37,81 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
   const itemIndex = parseInt(parts[2]);
   const characterName = parts[3];
 
-  try {
-    createThread(message, `${characterName} crafts ${allItemNames[itemIndex]}`).then(channel => {
-      return channel.send({
-        content: "Make choices:", 
-        components: [
-          {
-            type: MessageComponentTypes.ACTION_ROW.valueOf(),
-            components: [
-              {
-                type: MessageComponentTypes.STRING_SELECT.valueOf(),
-                custom_id: `downtimeItemProfSelect_${userID}_${messageID}_${characterName}`,
-                placeholder: "Select your tool proficiency",
-                options: createProficiencyChoices(),
-                min_values: 1,
-                max_values: 1,
-              },
-            ],
-          },
-          {
-            type: MessageComponentTypes.ACTION_ROW.valueOf(),
-            components: [
-              {
-                type: MessageComponentTypes.STRING_SELECT.valueOf(),
-                custom_id: `downtimeItemProfMod_${userID}_${messageID}_${characterName}`,
-                placeholder: "What is your proficiency bonus?",
-                options: [
-                  {
-                    label: "2",
-                    value: "2"
-                  },
-                  {
-                    label: "3",
-                    value: "3"
-                  },
-                  {
-                    label: "4",
-                    value: "4"
-                  },
-                  {
-                    label: "5",
-                    value: "5"
-                  },
-                  {
-                    label: "6",
-                    value: "6"
-                  },
-                ],
-                min_values: 1,
-                max_values: 1,
-              },
-            ],
-          },       
-          {
-            type: MessageComponentTypes.ACTION_ROW.valueOf(),
-            components: [
-              {
-                type: MessageComponentTypes.BUTTON.valueOf(),
-                custom_id: `characterThreadFinished_${userID}_${messageID}_${characterName}`,
-                label: "Roll tool check",
-                style: ButtonStyleTypes.PRIMARY.valueOf(),
-              },
-            ],
-          },
-        ],
-      });
-    }).then(() => {
-      const [itemName, {price}] = allItems[itemIndex];
-
-      message.edit({
-        content: `${characterName} (<@${userID}>) wants to craft ${itemName}.\n` +
-                 `Material cost: ${price}\n` +
-                 `You will need to succeed on a craft check using a tool proficiency.\n` +
-                 `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n`,
-        components: [],
-      });
+  createThread(message, `${characterName} crafts ${allItemNames[itemIndex]}`).then(channel => {
+    return channel.send({
+      content: "Make choices:", 
+      components: [
+        {
+          type: MessageComponentTypes.ACTION_ROW.valueOf(),
+          components: [
+            {
+              type: MessageComponentTypes.STRING_SELECT.valueOf(),
+              custom_id: `downtimeItemProfSelect_${userID}_${messageID}_${characterName}`,
+              placeholder: "Select your tool proficiency",
+              options: createProficiencyChoices(),
+              min_values: 1,
+              max_values: 1,
+            },
+          ],
+        },
+        {
+          type: MessageComponentTypes.ACTION_ROW.valueOf(),
+          components: [
+            {
+              type: MessageComponentTypes.STRING_SELECT.valueOf(),
+              custom_id: `downtimeItemProfMod_${userID}_${messageID}_${characterName}`,
+              placeholder: "What is your proficiency bonus?",
+              options: [
+                {
+                  label: "2",
+                  value: "2"
+                },
+                {
+                  label: "3",
+                  value: "3"
+                },
+                {
+                  label: "4",
+                  value: "4"
+                },
+                {
+                  label: "5",
+                  value: "5"
+                },
+                {
+                  label: "6",
+                  value: "6"
+                },
+              ],
+              min_values: 1,
+              max_values: 1,
+            },
+          ],
+        },       
+        {
+          type: MessageComponentTypes.ACTION_ROW.valueOf(),
+          components: [
+            {
+              type: MessageComponentTypes.BUTTON.valueOf(),
+              custom_id: `characterThreadFinished_${userID}_${messageID}_${characterName}`,
+              label: "Roll tool check",
+              style: ButtonStyleTypes.PRIMARY.valueOf(),
+            },
+          ],
+        },
+      ],
     });
-  } catch (err) {
-    console.error('Error sending message:', err);
-    return errorResponse("Error when creating thread");
-  }
+  }).then(() => {
+    const [itemName, {price}] = allItems[itemIndex];
+
+    message.edit({
+      content: `${characterName} (<@${userID}>) wants to craft ${itemName}.\n` +
+                `Material cost: ${price}\n` +
+                `You will need to succeed on a craft check using a tool proficiency.\n` +
+                `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n`,
+      components: [],
+    });
+  });
 
   let userBuilds = getUserDowntimes(userID);
 
@@ -145,7 +141,7 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
 }
 
 /**
- * @param {user[]} players 
+ * @param {guildMember[]} players 
  * @param {number} xpAll 
  * @param {string} dmID 
  * @param {string} date 
@@ -174,11 +170,11 @@ export function getSessionRewards(players, xpAll, dmID, date, tier) {
   let rewards = `Session name here (${date})\nDM: <@${dmID}>\n${xpAll}xp earned by party\nGold: ${gpReceived}gp each\n\n`;
   for (let i = 0; i < playerNumber; i++) {
     const item = itemsUnderPrice[Math.floor(Math.random() * itemsUnderPrice.length)];
-    rewards += players[i].username + `\n  Item: ${item[0]} (price: ${item[1].price})\n  ${xpReceived}xp\n\n`;
+    rewards += `<@${players[i].user.id}> (${players[i].user.username})\n  Item: ${item[0]} (price: ${item[1].price})\n  ${xpReceived}xp\n\n`;
   }
 
   return {
-      content: rewards, 
+      content: "`"+rewards.trim()+`\`\nCopy this to <#${GAME_LOG_CHANNEL}> with any needed changes.`, 
       ephemeral: true,
   };
 }
@@ -196,7 +192,7 @@ export function westmarchRewardLogResult(parts, timestamp, interaction) {
   const xpReceived = parseInt(parts[2]);
   const tier = parseInt(parts[3]);
 
-  const players = Array.from(interaction.users, ([id, user]) => user);
+  const players = Array.from(interaction.members, ([id, user]) => user);
 
   interaction.deleteReply(interaction.message);
 

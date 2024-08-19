@@ -9,6 +9,14 @@ import fetch from "node-fetch";
  * @typedef {import("discord.js").Client} Client
  */
 
+// Actual server
+export const DOWNTIME_LOG_CHANNEL = "1267551725242290196";
+export const TRANSACTION_LOG_CHANNEL = "1271800109620924436";
+export const GAME_LOG_CHANNEL = "1267604931465052336";
+// Bot test server
+//export const DOWNTIME_LOG_CHANNEL = "1275214859717578822";
+//export const TRANSACTION_LOG_CHANNEL = "1275214894429376522";
+
 /**
  * Turn string message to replyable object
  * @param {string} message 
@@ -79,10 +87,7 @@ async function DiscordRequest(endpoint, options) {
   return res;
 }
 
-const installUpdate = true;
 export async function InstallGlobalCommands(appId, commands) {
-  if(!installUpdate)
-    return;
   // API endpoint to overwrite global commands
   const endpoint = `applications/${appId}/commands`;
 

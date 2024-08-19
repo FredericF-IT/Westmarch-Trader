@@ -3,6 +3,7 @@
 /** @typedef {import("discord.js").ActionRow<MessageActionRowComponent>} ActionRow*/
 /** @typedef {import("discord.js").Message} Message*/
 /** @typedef {import("discord.js").Channel} Channel*/
+/** @typedef {import("discord.js").PermissionsBitField} PermissionsBitField*/
 
 /**
  * @typedef {Object} choice
@@ -43,11 +44,14 @@
  * @property {string} id
  * @property {boolean} bot
  * @property {string} username
+ * @property {string | null} globalName
  */
 
 /** 
- * @typedef {Object} member
+ * @typedef {Object} guildMember
  * @property {user} user
+ * @property {Readonly<PermissionsBitField>} permissions
+ * @property {string[]} _roles
 */
 
 /** 
@@ -58,13 +62,14 @@
  * @property {string} customId
  * @property {number} type
  * @property {options} options
- * @property {member} member
+ * @property {guildMember} member
  * @property {Message} message
  * @property {Channel} channel
  * @property {(message: Message) => void} deleteReply
  * @property {(object: responseObject) => Promise} reply
  * @property {(objects: autocompleteObject[]) => Promise} respond
  * @property {Map<string, user>} users
+ * @property {Map<string, guildMember>} members
 */
 
 /**

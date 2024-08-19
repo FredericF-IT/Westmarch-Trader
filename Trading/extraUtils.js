@@ -7,6 +7,7 @@ import {
 /**
 * @typedef {import("./types.js").item} item
  * @typedef {import("./types.js").responseObject} responseObject
+ * @typedef {import("./types.js").guildMember} guildMember
 */
 
 const rareSeperator = "$.$=$";
@@ -64,4 +65,21 @@ export function filterItems(lowestPrice, highestPrice) {
   return allItems.filter(function(element) {
       return lowestPrice <= element[1].price && element[1].price <= highestPrice;
   });
+}
+
+/**
+ * 
+ * @param {import('./types.js').guildMember} member 
+ */
+export function isAdmin(member) {
+  return member.permissions.has("Administrator");
+}
+
+/**
+ * 
+ * @param {import('./types.js').guildMember} member 
+ * @param {string} roleID 
+ */
+export function hasRole(member, roleID) {
+  return member._roles.includes(roleID);
 }

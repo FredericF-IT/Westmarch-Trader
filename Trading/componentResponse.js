@@ -163,7 +163,7 @@ export function getSessionRewards(players, xpAll, dmID, date, tier, rewardType) 
   const xpReceived = Math.ceil(xpAll / playerNumber);
 
   // @ts-ignore we know that tier can only be one from the list of options
-  const gpReceived = priceRange.min / 2;
+  const gpReceived = ((priceRange.max - priceRange.min) / 2) + priceRange.min;
   
   // @ts-ignore we know that tier can only be one from the list of options
   const itemsUnderPrice = filterItems(priceRange.min, priceRange.max);

@@ -153,9 +153,10 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
  * @param {string} dmID 
  * @param {string} date 
  * @param {number} tier 
+ * @param {number} rewardType
  * @return {responseObject} JS Object for interaction.reply()
  */
-export function getSessionRewards(players, xpAll, dmID, date, tier) {
+export function getSessionRewards(players, xpAll, dmID, date, tier, rewardType) {
   const priceRange = tierToCostLimits.get(tier);
 
   const playerNumber = players.length;
@@ -167,14 +168,25 @@ export function getSessionRewards(players, xpAll, dmID, date, tier) {
   // @ts-ignore we know that tier can only be one from the list of options
   const itemsUnderPrice = filterItems(priceRange.min, priceRange.max);
 
-  let rewards = `Session name here (${date})\nDM: <@${dmID}>\n${xpAll}xp earned by party\nGold: ${gpReceived}gp each\n\n`;
-  for (let i = 0; i < playerNumber; i++) {
-    const item = itemsUnderPrice[Math.floor(Math.random() * itemsUnderPrice.length)];
-    rewards += `<@${players[i].user.id}> (${players[i].user.username})\n  Item: ${item[0]} (price: ${item[1].price})\n  ${xpReceived}xp\n\n`;
+  let rewards = `\`Session name\` (${date})\nDM: <@${dmID}>\n`;
+
+  if(rewardType == 1){
+    rewards += `Gold: ${gpReceived}gp each\nExperience: ${xpReceived}xp each\n\nPlayers:\n`
+    
+    for (let i = 0; i < playerNumber; i++) {
+      rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`character name\`\n`;
+    }
+  } else {
+    rewards += `${xpAll}xp earned by party\n\n`;
+    for (let i = 0; i < playerNumber; i++) {
+      const item = itemsUnderPrice[Math.floor(Math.random() * itemsUnderPrice.length)];
+      rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`character name\`\n  Item: ${item[0]} (price: ${item[1].price})\n  ${xpReceived}xp\n\n`;
+    }
+    rewards = rewards.trim();
   }
 
   return {
-      content: "`"+rewards.trim()+`\`\nCopy this to <#${GAME_LOG_CHANNEL}> with any needed changes.`, 
+      content: "```"+rewards+`\`\`\`\nCopy this to <#${GAME_LOG_CHANNEL}> with any needed changes.`, 
       ephemeral: true,
   };
 }
@@ -191,12 +203,13 @@ export function westmarchRewardLogResult(parts, timestamp, interaction) {
   const dmID = parts[1];
   const xpReceived = parseInt(parts[2]);
   const tier = parseInt(parts[3]);
+  const rewardType = parseInt(parts[4]); // 0: item  1: Gold 
 
   const players = Array.from(interaction.members, ([id, user]) => user);
 
   interaction.deleteReply(interaction.message);
 
-  return getSessionRewards(players, xpReceived, dmID, `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`, tier);
+  return getSessionRewards(players, xpReceived, dmID, `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`, tier, rewardType);
 }
 
 /**

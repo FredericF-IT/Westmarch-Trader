@@ -259,6 +259,19 @@ const WESTMARCH_COMMANDS = {
           description: 'How much xp does the party receive?',
           required: true,
         },
+        {
+          type: 4,
+          name: 'reward',
+          description: 'What reward does the party receive?',
+          required: false,
+          choices: [{
+            name: "Items",
+            value: 0
+          },{
+            name: "Gold",
+            value: 1
+          }],
+        },
       ],
     },
     {

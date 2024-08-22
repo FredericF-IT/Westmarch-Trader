@@ -6,7 +6,7 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { capitalize, DOWNTIME_LOG_CHANNEL, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
+import { capitalize, CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeNames, getProficiencies } from './itemsList.js';
 import { getDX, filterItems, requestCharacterRegistration, isAdmin } from './extraUtils.js';
 import { characterExists, setValueDowntime, getCharacters, setCharacters } from './data/dataIO.js';
@@ -52,6 +52,7 @@ const db = new sqlite3.Database('./trader.db', (err) => {
 /** @type {[string, ...item[]][]} */
 const allItems = getSanesItemPrices();
 const allItemNames = getSanesItemNameIndex();
+const allItemNamesLower = allItemNames.map(v => v.toLowerCase());
 
 const downtimeNames = getDowntimeNames();
 const proficiencyNames = getProficiencies();
@@ -150,6 +151,11 @@ function getDowntimeQuery(downtimeType, level, roll){
   return queryMethod(level, roll);
 }
 
+/**
+ * 
+ * @param {string} query 
+ * @param {(err: Error | null, rows: Object[]) => void} callback 
+ */
 function sqlite3Query(query, callback){
   const sql = query;
   db.all(sql, [], callback);
@@ -173,7 +179,7 @@ function getDowntimeSQLite3(interaction, options, userID) {
   const roll = getDX(100);
   const query = getDowntimeQuery(downtimeType, characterLevel, roll);
   
-  sqlite3Query(query, (err, rows) => {
+  sqlite3Query(query, async (err, rows) => {
     if (err) {
       console.error(`SQL error:\n  Query: ${query}`, err);
       return err.message;
@@ -181,11 +187,15 @@ function getDowntimeSQLite3(interaction, options, userID) {
 
     const channel = getChannel(client, DOWNTIME_LOG_CHANNEL);
     // @ts-ignore
-    channel.send({
+    await channel.send({
       content: `<@${userID}>\nCharacter: "`+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: \nEffect: " + rows[0].outcome,
+    }).then((/** @type {Message} */ message) => {
+      interaction.reply(responseMessage(
+        (interaction.channelId != DOWNTIME_LOG_CHANNEL ? `Result was sent to <#${DOWNTIME_LOG_CHANNEL}>\n` : "") +
+        `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` + 
+        `\`\`\`**Downtime summary**\nLink: ${message.url}\nEffect: ${rows[0].outcome}\`\`\``,
+        true));
     });
-
-    interaction.reply(responseMessage(`Sent result to <#${DOWNTIME_LOG_CHANNEL}>`, true));
   })
 }
 
@@ -361,29 +371,42 @@ function characterNamesAutoComplete(currentInput, user) {
       value: `${charName}`}
   });
 
-  const result = matchingOptionsIndex.slice(0, 25);
+  //Users can only store 10 characters, so this is never needed
+  //const result = matchingOptionsIndex.slice(0, 25);
 
-  return result;
+  return matchingOptionsIndex;
 }
+
+/** @type {Map<string, autocompleteObject[]>} */
+const cachedResults = new Map();
 
 /**
  * @param {string} currentInput 
  * @return {autocompleteObject[]} JS autocomplete Object for interaction.respond()
  */
 function itemNamesAutoComplete(currentInput) {
-  const matchingOptions = allItemNames.filter((itemName) =>
-    itemName.toLowerCase().startsWith(currentInput.toLowerCase())
-  );
+  currentInput = currentInput.toLowerCase();
+
+  const cached = cachedResults.get(currentInput);
+  if(cached !== undefined) return cached;
   
-  const matchingOptionsIndex = matchingOptions.map((itemName) => {
-    return {
-      name: `${itemName}`,
-      value: `${allItemNames.indexOf(itemName)}`}
-  });
+  const matchingOptions = [];
+  for (var index = 0; index < allItemNames.length; index++){
+    if(allItemNamesLower[index].startsWith(currentInput)) {
+      if(25 <= matchingOptions.push({
+        name: allItemNames[index],
+        value: index.toString()
+      })) {
+        break;
+      }
+    }
+  }
+  
+  if(currentInput.length < 2){
+    cachedResults.set(currentInput, matchingOptions);
+  }
 
-  const result = matchingOptionsIndex.slice(0, 25);
-
-  return result;
+  return matchingOptions;
 }
 
 /**
@@ -394,6 +417,10 @@ function itemNamesAutoComplete(currentInput) {
 function westmarchLog(options, dm) {
   const tier = options[0].value;
   const xpReceived = options[1].value;
+  let rewardType = 0;
+  if(options.length > 2) {
+    rewardType = options[2].value;
+  }
   
   if(xpReceived < 0)
     return errorResponse("Please only use positive values.");
@@ -408,7 +435,7 @@ function westmarchLog(options, dm) {
             {
               type: MessageComponentTypes.USER_SELECT.valueOf(),
               // @ts-ignore
-              custom_id: `westmarchrewardlog_` + dm.id + "_" + xpReceived + "_" + tier,
+              custom_id: `westmarchrewardlog_` + dm.id + "_" + xpReceived + "_" + tier + "_" + rewardType,
               min_values: 1,
               max_values: 20,
             },

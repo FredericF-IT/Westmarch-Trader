@@ -3,7 +3,7 @@ const characterDowntimeProgress = "data/downtimeProgress.json";
 const namesCharactersFile = "data/PlayerNames.json";
 
 /**
- * @typedef {import("../types.js").user} user
+ * @typedef {import("discord.js").User} User
  */
 
 export function readDataFile(fileName) {
@@ -124,7 +124,7 @@ export function setCharacters(userID, newCharacters) {
 
 /**
  * Returns copy of users characters
- * @param {user} user
+ * @param {User} user
  * @return {string[]}
  */
 export function getCharacters(user) {

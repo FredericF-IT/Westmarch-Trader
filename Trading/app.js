@@ -12,7 +12,7 @@ import { getDX, filterItems, requestCharacterRegistration, isAdmin } from './ext
 import { characterExists, setValueDowntime, getCharacters, setCharacters } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
-import { Client, IntentsBitField, ThreadChannel } from "discord.js";
+import { Client, IntentsBitField, ThreadChannel, User } from "discord.js";
 import { ALL_COMMANDS } from './commands.js';
 import { explanationMessage } from './explanation.js';
 
@@ -21,7 +21,6 @@ import { explanationMessage } from './explanation.js';
  * @typedef {import("./types.js").command} command
  * @typedef {import("./types.js").options} options
  * @typedef {import("./types.js").option} option
- * @typedef {import("./types.js").user} user
  * @typedef {import("./types.js").responseObject} responseObject
  * @typedef {import("./types.js").autocompleteObject} autocompleteObject
  * @typedef {import("./types.js").item} item
@@ -295,7 +294,7 @@ function doTrade(userID, options, isBuying) {
  * 
  * @param {boolean} isRegister 
  * @param {string} characterName
- * @param {user} user 
+ * @param {User} user 
  * @return {responseObject} JS Object for interaction.reply()
  */
 function registration(isRegister, characterName, user) {
@@ -334,7 +333,7 @@ function registration(isRegister, characterName, user) {
 }
 
 /**
- * @param {user} user 
+ * @param {User} user 
  * @return {responseObject} JS Object for interaction.reply()
  */
 function showCharacters(user) {
@@ -351,7 +350,7 @@ function showCharacters(user) {
 
 /**
  * @param {string} currentInput 
- * @param {user} user 
+ * @param {User} user 
  * @return {autocompleteObject[]} JS autocomplete Object for interaction.respond()
  */
 function characterNamesAutoComplete(currentInput, user) {
@@ -411,7 +410,7 @@ function itemNamesAutoComplete(currentInput) {
 
 /**
  * @param {option[]} options 
- * @param {user} dm 
+ * @param {User} dm 
  * @return {responseObject} JS Object for interaction.reply()
  */
 function westmarchLog(options, dm) {
@@ -453,11 +452,12 @@ function westmarchLog(options, dm) {
  * Start of next message is marked by \newline (use it to stay below discord max message length)
  * @param {Client} client 
  * @param {string} channelID 
+ * @param {User?} user 
  */
-function explainMe(client, channelID) {
+function explainMe(client, channelID, user) {
   const messages = explanationMessage;
 
-  const channel = getChannel(client, channelID);
+  const channel = user == null ? getChannel(client, channelID) : user;
 
   for(let i = 0; i < messages.length; i++) {
     setTimeout(() => {
@@ -499,7 +499,7 @@ function parseFullCommand(interaction) {
 /**
  * Send response with matching items
  * @param {interaction} interaction 
- * @param {user} user 
+ * @param {User} user 
  * @return {void}
  */
 function handleAutocomplete(interaction, user) {
@@ -547,7 +547,7 @@ function handleAutocomplete(interaction, user) {
  * 
  * @param {interaction} interaction 
  * @param {string} componentId 
- * @param {user} user 
+ * @param {User} user 
  * @return {responseObject | null} JS Object for interaction.reply()
  */
 function handleComponentPreEvent(interaction, componentId, user) {
@@ -654,8 +654,25 @@ client.on('interactionCreate',
       let isTrue = false; 
       switch(commandName) {
         case "explanationtrader": 
-          if(!isAdmin(interaction.member)) return;
-          return interaction.reply(explainMe(client, channelID));
+          if(!isAdmin(interaction.member)) {
+            const response = errorResponse("You do not have permission to post this on a server.\nI can send it to you as a dm.");
+            response.components = [
+              {
+                type: MessageComponentTypes.ACTION_ROW.valueOf(),
+                components: [
+                  {
+                    type: MessageComponentTypes.BUTTON.valueOf(),
+                    // @ts-ignore
+                    custom_id: `dmExplanation`,
+                    label: "Send in DM",
+                    style: ButtonStyleTypes.PRIMARY.valueOf(),
+                  },
+                ],
+              },
+            ];
+            return interaction.reply(response);
+          }
+          return interaction.reply(explainMe(client, channelID, null));
         case "getitemsinrange": 
           return interaction.reply(getItemsInRange(options, id));
         case "westmarch item-downtime craft": 
@@ -733,6 +750,10 @@ client.on('interactionCreate',
           // @ts-ignore
           channel.send(acceptTransaction(componentId, userID));
           return interaction.reply(responseMessage(`Transaction approved!\nMessage can be found in <#${TRANSACTION_LOG_CHANNEL}>`, true));
+
+        case "dmExplanation":
+          explainMe(client, "", interaction.member.user);
+          return interaction.reply(responseMessage("Message was sent (if dms from server members are enabled)", true));
       }
     }
   } catch (err) {

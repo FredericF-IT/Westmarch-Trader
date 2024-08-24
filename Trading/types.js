@@ -4,6 +4,7 @@
 /** @typedef {import("discord.js").Message} Message*/
 /** @typedef {import("discord.js").Channel} Channel*/
 /** @typedef {import("discord.js").PermissionsBitField} PermissionsBitField*/
+/** @typedef {import("discord.js").User} User*/
 
 /**
  * @typedef {Object} choice
@@ -49,7 +50,7 @@
 
 /** 
  * @typedef {Object} guildMember
- * @property {user} user
+ * @property {User} user
  * @property {Readonly<PermissionsBitField>} permissions
  * @property {string[]} _roles
 */
@@ -68,7 +69,7 @@
  * @property {(message: Message) => void} deleteReply
  * @property {(object: responseObject) => Promise} reply
  * @property {(objects: autocompleteObject[]) => Promise} respond
- * @property {Map<string, user>} users
+ * @property {Map<string, User>} users
  * @property {Map<string, guildMember>} members
 */
 

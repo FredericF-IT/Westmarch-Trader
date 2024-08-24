@@ -12,7 +12,7 @@ import {
  * @typedef {import("discord.js").Message} Message
  * @typedef {import('./types.js').responseObject} responseObject
  * @typedef {import("./types.js").interaction} interaction
- * @typedef {import("./types.js").user} user
+ * @typedef {import("discord.js").User} User
  * @typedef {import("./types.js").guildMember} guildMember
  */
 

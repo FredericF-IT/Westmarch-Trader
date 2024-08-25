@@ -7,7 +7,7 @@ import {
   ButtonStyleTypes,
 } from 'discord-interactions';
 import { capitalize, CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
-import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeNames, getProficiencies } from './itemsList.js';
+import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeNames, getProficiencies, getDowntimes, getDowntimeTables } from './itemsList.js';
 import { getDX, filterItems, requestCharacterRegistration, isAdmin } from './extraUtils.js';
 import { characterExists, setValueDowntime, getCharacters, setCharacters } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
@@ -122,6 +122,33 @@ function getItemsInRange(options, id) {
         ],
       },
     ],
+  };
+}
+
+const downtimeTables = getDowntimeTables();
+
+/**
+* @param {[{value: string},{value: string},{value: number}] | option[]} options 
+* @param {string} userID 
+* @return {responseObject}
+*/
+function getDowntime(options, userID) {
+  const downtimeType = options[0].value;
+  const characterName = options[1].value;
+  const characterLevel = options[2].value;
+
+  if(!characterExists(userID, characterName)){
+    return requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]);
+  }
+
+  const roll = getDX(100);
+
+  const rollGroup = Math.floor((roll - 1) / 10);
+
+  const result = "\nEvent: " + downtimeTables[downtimeType][1].table[0][rollGroup] + "\nEffect: " + downtimeTables[downtimeType][1].table[characterLevel - 1][rollGroup];
+
+  return {
+    content: 'Character: "'+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + result,
   };
 }
 
@@ -705,7 +732,8 @@ client.on('interactionCreate',
         case "westmarch character show": 
           return interaction.reply(showCharacters(user));
         case "westmarch downtime":
-          getDowntimeSQLite3(interaction, options, userID); 
+          //getDowntimeSQLite3(interaction, options, userID); 
+          interaction.reply(getDowntime(options, userID));
       }
     }
 

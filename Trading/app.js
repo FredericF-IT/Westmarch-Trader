@@ -12,7 +12,7 @@ import { getDX, filterItems, requestCharacterRegistration, isAdmin } from './ext
 import { characterExists, setValueDowntime, getCharacters, setCharacters } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
-import { Client, IntentsBitField, ThreadChannel, User } from "discord.js";
+import { Client, IntentsBitField, User } from "discord.js";
 import { ALL_COMMANDS } from './commands.js';
 import { explanationMessage } from './explanation.js';
 
@@ -641,8 +641,10 @@ client.on('interactionCreate',
   (interaction) => {
   try{
     const { type, id } = interaction;
-    const userID = interaction.member.user.id;
+    const user = interaction.user == null ? interaction.member.user : interaction.user;
+    const userID = user.id;
     const channelID = interaction.channelId;
+    const isDirectMessage = interaction.guildId == null;
 
     /**
      * Handle slash command requests
@@ -654,6 +656,10 @@ client.on('interactionCreate',
       let isTrue = false; 
       switch(commandName) {
         case "explanationtrader": 
+          // if user
+          if(isDirectMessage) {
+            return interaction.reply(explainMe(client, "", user));
+          } 
           if(!isAdmin(interaction.member)) {
             const response = errorResponse("You do not have permission to post this on a server.\nI can send it to you as a dm.");
             response.components = [
@@ -676,14 +682,16 @@ client.on('interactionCreate',
         case "getitemsinrange": 
           return interaction.reply(getItemsInRange(options, id));
         case "westmarch item-downtime craft": 
-          if(interaction.channel instanceof ThreadChannel) 
-            return interaction.reply(errorResponse("Needed thread can't be created in thread or forum"));
+          // command is now sent to specific channel
+          //if(interaction.channel instanceof ThreadChannel) 
+          //  return interaction.reply(errorResponse("Needed thread can't be created in thread or forum"));
           return downtimeCraftItem(interaction, options[0].value, options[1].value, userID);
         case "westmarch item-downtime change": 
           return interaction.reply(downtimeChangeItem());
         
         case "westmarch reward": 
-          return interaction.reply(westmarchLog(options, interaction.member.user));
+          if(isDirectMessage) return interaction.reply(errorResponse("Please use this only in the server.\nYou will need to select your players."));
+          return interaction.reply(westmarchLog(options, user));
         
         case "westmarch buy": 
           isTrue = true;
@@ -693,16 +701,16 @@ client.on('interactionCreate',
         case "westmarch character register": 
           isTrue = true;
         case "westmarch character unregister": 
-          return interaction.reply(registration(isTrue, options[0].value, interaction.member.user));
+          return interaction.reply(registration(isTrue, options[0].value, user));
         case "westmarch character show": 
-          return interaction.reply(showCharacters(interaction.member.user));
+          return interaction.reply(showCharacters(user));
         case "westmarch downtime":
           getDowntimeSQLite3(interaction, options, userID); 
       }
     }
 
     else if (type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) { // is Autocomplete
-      return handleAutocomplete(interaction, interaction.member.user);
+      return handleAutocomplete(interaction, user);
     }
 
     else if (type === InteractionType.MESSAGE_COMPONENT) {
@@ -712,7 +720,7 @@ client.on('interactionCreate',
       const message = interaction.message;
 
       if(componentId.startsWith(rareSeperator)) {
-        const response = handleComponentPreEvent(interaction, componentId, interaction.member.user);
+        const response = handleComponentPreEvent(interaction, componentId, user);
         return response !== null ? interaction.reply(response) : null;
       }
       
@@ -724,7 +732,7 @@ client.on('interactionCreate',
         case "downtimeItemProfSelect":
           isTrue = true;
         case "downtimeItemProfMod":
-          if(interaction.member.user.id != creatorID) 
+          if(userID != creatorID) 
             return;
           const messageID = parts[2];
           const characterName = parts[3];
@@ -740,9 +748,9 @@ client.on('interactionCreate',
           return interaction.reply(responseMessage("Proficiency level is set to " + proficiency, true));
           
         case "characterThread":
-          return interaction.reply(startCharacterDowntimeThread(message, parts, interaction.member.user.id, interaction.message.id));
+          return interaction.reply(startCharacterDowntimeThread(message, parts, userID, interaction.message.id));
         case "characterThreadFinished":
-          return interaction.reply(rollCharacterDowntimeThread(parts, interaction.member.user.id, interaction));
+          return interaction.reply(rollCharacterDowntimeThread(parts, userID, interaction));
         case "westmarchrewardlog":
           return interaction.reply(westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction));
         case "acceptTransactionButton":
@@ -752,7 +760,7 @@ client.on('interactionCreate',
           return interaction.reply(responseMessage(`Transaction approved!\nMessage can be found in <#${TRANSACTION_LOG_CHANNEL}>`, true));
 
         case "dmExplanation":
-          explainMe(client, "", interaction.member.user);
+          explainMe(client, "", user);
           return interaction.reply(responseMessage("Message was sent (if dms from server members are enabled)", true));
       }
     }

@@ -61,9 +61,11 @@
  * @property {string} channelId
  * @property {string} commandName
  * @property {string} customId
+ * @property {string?} guildId
  * @property {number} type
  * @property {options} options
  * @property {guildMember} member
+ * @property {User?} user
  * @property {Message} message
  * @property {Channel} channel
  * @property {(message: Message) => void} deleteReply

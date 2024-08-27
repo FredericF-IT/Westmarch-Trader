@@ -1,6 +1,7 @@
 // @ts-check
 import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL } from './utils.js';
-import { getSanesItemPrices, getSanesItemNameIndex, createProficiencyChoices, getProficiencies } from './itemsList.js';
+import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
+import { createProficiencyChoices, getProficiencies } from "./downtimes.js";
 import { getDX, filterItems } from './extraUtils.js';
 import { getValueDowntime, finishDowntimeActivity, getUserDowntimes, setUserDowntimes } from './data/dataIO.js';
 import {

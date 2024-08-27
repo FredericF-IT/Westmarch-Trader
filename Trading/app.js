@@ -7,7 +7,8 @@ import {
   ButtonStyleTypes,
 } from 'discord-interactions';
 import { capitalize, CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
-import { getSanesItemPrices, getSanesItemNameIndex, getDowntimeNames, getProficiencies, getDowntimes, getDowntimeTables } from './itemsList.js';
+import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
+import { getDowntimeNames, getProficiencies, getDowntimes, getDowntimeTables } from "./downtimes.js";
 import { getDX, filterItems, requestCharacterRegistration, isAdmin } from './extraUtils.js';
 import { characterExists, setValueDowntime, getCharacters, setCharacters } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
@@ -125,31 +126,66 @@ function getItemsInRange(options, id) {
   };
 }
 
+/**
+ * 
+ * @param {interaction} interaction 
+ * @param {*} userID 
+ * @param {*} characterName 
+ * @param {*} characterLevel 
+ * @param {*} downtimeType 
+ * @param {*} roll 
+ * @param {string} event 
+ * @param {string} effect 
+ */
+async function sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, event, effect) {
+  const channel = getChannel(client, DOWNTIME_LOG_CHANNEL);
+  // @ts-ignore
+  await channel.send({
+    content: `<@${userID}>\nCharacter: "`+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: " + event + "\nEffect: " + effect,
+  }).then((/** @type {Message} */ message) => {
+    interaction.reply(responseMessage(
+      (interaction.channelId != DOWNTIME_LOG_CHANNEL ? `Result was sent to <#${DOWNTIME_LOG_CHANNEL}>\n` : "") +
+      `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` + 
+      `\`\`\`**Downtime summary**\nLink: ${message.url}\nEffect: ${effect}\`\`\``,
+      true));
+  });
+}
+
 const downtimeTables = getDowntimeTables();
 
 /**
+* @param {interaction} interaction 
 * @param {[{value: string},{value: string},{value: number}] | option[]} options 
 * @param {string} userID 
-* @return {responseObject}
+ * @return {Promise | void}
 */
-function getDowntime(options, userID) {
+function getDowntime(interaction, options, userID) {
   const downtimeType = options[0].value;
   const characterName = options[1].value;
   const characterLevel = options[2].value;
 
   if(!characterExists(userID, characterName)){
-    return requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]);
+    return interaction.reply(requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]));
   }
 
   const roll = getDX(100);
 
   const rollGroup = Math.floor((roll - 1) / 10);
 
-  const result = "\nEvent: " + downtimeTables[downtimeType][1].table[0][rollGroup] + "\nEffect: " + downtimeTables[downtimeType][1].table[characterLevel - 1][rollGroup];
+  const event = downtimeTables[downtimeType][1].table[0][rollGroup];
+  const effect = downtimeTables[downtimeType][1].table[characterLevel - 1][rollGroup];
 
-  return {
-    content: 'Character: "'+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + result,
-  };
+  sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, event, effect);
+}
+
+/**
+ * 
+ * @param {string} query 
+ * @param {(err: Error | null, rows: Object[]) => void} callback 
+ */
+function sqlite3Query(query, callback){
+  const sql = query;
+  db.all(sql, [], callback);
 }
 
 /**
@@ -164,28 +200,6 @@ const downtimeQuery = new Map();
 downtimeQuery.set(0, (level, roll) => "SELECT outcome FROM job_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");");
 downtimeQuery.set(1, (level, roll) => "SELECT outcome FROM crime_downtime WHERE (level = " + level +" AND roll_result = "+ roll +");");
 downtimeQuery.set(2, (level, roll) => "SELECT outcome FROM xp_rewards WHERE (level = " + level +" AND roll_result = "+ roll +");");
-
-/**
- * @param {number} downtimeType 
- * @param {number} level 
- * @param {number} roll 
- * @return {string}
- */
-function getDowntimeQuery(downtimeType, level, roll){
-  const queryMethod = downtimeQuery.get(downtimeType);
-  // @ts-ignore
-  return queryMethod(level, roll);
-}
-
-/**
- * 
- * @param {string} query 
- * @param {(err: Error | null, rows: Object[]) => void} callback 
- */
-function sqlite3Query(query, callback){
-  const sql = query;
-  db.all(sql, [], callback);
-}
 
 /**
  * @param {interaction} interaction 
@@ -203,7 +217,8 @@ function getDowntimeSQLite3(interaction, options, userID) {
   }
 
   const roll = getDX(100);
-  const query = getDowntimeQuery(downtimeType, characterLevel, roll);
+  // @ts-ignore
+  const query = downtimeQuery.get(downtimeType)(characterLevel, roll);
   
   sqlite3Query(query, async (err, rows) => {
     if (err) {
@@ -211,17 +226,7 @@ function getDowntimeSQLite3(interaction, options, userID) {
       return err.message;
     }
 
-    const channel = getChannel(client, DOWNTIME_LOG_CHANNEL);
-    // @ts-ignore
-    await channel.send({
-      content: `<@${userID}>\nCharacter: "`+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: \nEffect: " + rows[0].outcome,
-    }).then((/** @type {Message} */ message) => {
-      interaction.reply(responseMessage(
-        (interaction.channelId != DOWNTIME_LOG_CHANNEL ? `Result was sent to <#${DOWNTIME_LOG_CHANNEL}>\n` : "") +
-        `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` + 
-        `\`\`\`**Downtime summary**\nLink: ${message.url}\nEffect: ${rows[0].outcome}\`\`\``,
-        true));
-    });
+    sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, "DB Field missing"/*rows[0].event*/, rows[0].outcome);
   })
 }
 
@@ -600,7 +605,8 @@ function handleComponentPreEvent(interaction, componentId, user) {
       const downtimeType = partsPre[2];
       const characterLevel = parseInt(partsPre[3]);
 
-      getDowntimeSQLite3(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
+      getDowntime(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
+      //getDowntimeSQLite3(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
       break;
     default:
       result = errorResponse("Unknown command");
@@ -733,7 +739,7 @@ client.on('interactionCreate',
           return interaction.reply(showCharacters(user));
         case "westmarch downtime":
           //getDowntimeSQLite3(interaction, options, userID); 
-          interaction.reply(getDowntime(options, userID));
+          getDowntime(interaction, options, userID);
       }
     }
 

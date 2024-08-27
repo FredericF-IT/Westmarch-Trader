@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { capitalize, InstallGlobalCommands } from './utils.js';
-import { getDowntimes, getProficiencies } from './itemsList.js';
+import { getDowntimes, getProficiencies } from "./downtimes.js";
 
 /*const BUY_ITEM_COMMAND = {
   name: 'buy',

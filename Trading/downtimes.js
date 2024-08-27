@@ -20,13 +20,13 @@ const events = {
 
         CRIME_BAD: "You got caught and have to pay up for your misdeads. Your sentence is a ",
         CRIME_OK: "You managed to escape the guards, but couldn't take the loot with you.",
-        CRIME_GOOD: "You managed to get some away with some valuable stuff.",
+        CRIME_GOOD: "You managed to get away with some valuable stuff.",
         CRIME_GREAT: "You pulled off a remarkable heist!",
 
         TRAINING_BAD_BOTH: "Due to a serious misfortune, you damage your weapon *and* hurt yourself.",
-        TRAINING_BAD1: "You damaged your weapon and will need repairs.",
+        TRAINING_BAD1: "You damaged your weapon, and it will need repairs.",
         TRAINING_BAD2: "You had an accident and wounded yourself.",
-        TRAINING_GOOD: "You have a good training session, feeling exhausted but well prepared for future battles.",
+        TRAINING_GOOD: "You've had a good training session, feeling exhausted but well prepared for future battles.",
         TRAINING_GREAT: "People watching you train will think of you as a master in your art. You'll need a long rest after this one...",
 };
 

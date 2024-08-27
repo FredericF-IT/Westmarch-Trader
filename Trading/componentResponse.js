@@ -1,9 +1,9 @@
 // @ts-check
-import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL } from './utils.js';
+import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL, DOWNTIME_RESET_TIME } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
 import { createProficiencyChoices, getProficiencies } from "./downtimes.js";
 import { getDX, filterItems } from './extraUtils.js';
-import { getValueDowntime, finishDowntimeActivity, getUserDowntimes, setUserDowntimes } from './data/dataIO.js';
+import { getValueDowntime, finishDowntimeActivity, getUserDowntimes, setUserDowntimes, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
 import {
   MessageComponentTypes,
   ButtonStyleTypes,
@@ -229,26 +229,32 @@ export function rollCharacterDowntimeThread(parts, userID, interaction) {
   const characterName = parts[3];
 
   /** @type {number} */
-  const profMod = getValueDowntime(userID, characterName, "crafting", originalMessageID, "profMod");
+  const profMod = getValueDowntime(userID, characterName, CRAFTING_CATEGORY, originalMessageID, "profMod");
   if(profMod < 2 || profMod > 6)
     return errorResponse("Modifier is not correct.");
 
   /** @type {string} */
-  const profType = getValueDowntime(userID, characterName, "crafting", originalMessageID, "proficiency");
+  const profType = getValueDowntime(userID, characterName, CRAFTING_CATEGORY, originalMessageID, "proficiency");
   if(profType == null)
     return errorResponse("Proficiency is not set.");
 
+  if(hasUsedWeeklyDowntime(userID, characterName)){
+    return errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")");
+  }
+
   /** @type {number} */
-  const itemID = getValueDowntime(userID, characterName, "crafting", originalMessageID, "item");
+  const itemID = getValueDowntime(userID, characterName, CRAFTING_CATEGORY, originalMessageID, "item");
 
   const DC = 15;
   const roll = getDX(20); 
   const success = (roll + profMod >= DC);
   const result = `DC: ${DC}\nResult: ${(roll + profMod)} (${roll}+${profMod}) using ${proficiencyNames[profType].toLowerCase()}.\n${(success ? `Successfully crafted ${allItemNames[itemID]}.\nWait until a dm approves this activity.` : `Try again with your next downtime action!`)}`;
 
+  useWeeklyAction(userID, characterName);
+
   if(success) {
     setTimeout(() => {
-      finishDowntimeActivity(userID, characterName, "crafting", originalMessageID);
+      finishDowntimeActivity(userID, characterName, CRAFTING_CATEGORY, originalMessageID);
       interaction.deleteReply(interaction.message);
     }, 300);
   }

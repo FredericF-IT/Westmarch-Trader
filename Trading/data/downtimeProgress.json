@@ -1,13 +1,15 @@
 {
 	"367891183344812034": {
 		"Thomson": {
-			"crafting": {}
+			"crafting": {},
+			"weeklyUsed": false
 		},
 		"Kronk": {
 			"crafting": {}
 		},
 		"Kelten": {
-			"crafting": {}
+			"crafting": {},
+			"weeklyUsed": true
 		}
 	},
 	"329710676169981963": {
@@ -16,6 +18,14 @@
 		},
 		"Prudence": {
 			"crafting": {}
+		}
+	},
+	"618479756404326450": {
+		"Vix": {
+			"weeklyUsed": true
+		},
+		"Vex Thicketstalker": {
+			"weeklyUsed": true
 		}
 	}
 }

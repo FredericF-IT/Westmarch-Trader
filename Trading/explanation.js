@@ -1,8 +1,9 @@
-import { GAME_LOG_CHANNEL } from "./utils.js";
+import { DOWNTIME_RESET_TIME, GAME_LOG_CHANNEL } from "./utils.js";
 
 export const explanationMessage = [
 `# The Trader Bot
 I, <@1263837871966785567>, will help you with many westmarch activities on the server.
+> # Register characters
 > I will need to know your characters name, so you should add them:
 > - You can register them via
 > \`\`\`/westmarch character register name:\`\`\`
@@ -13,7 +14,7 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 > You can have a maximum of **ten** characters registered with the bot.
 > If a character is not registered, but is used in a command, it will automatically ask if you want to register the character.
 
-> You can buy and sell items using
+> # Buying / Selling items
 > \`\`\`/westmarch buy item: character: amount:\`\`\` 
 > or 
 > \`\`\`/westmarch sell item: character: amount:\`\`\`
@@ -22,7 +23,7 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 > Before the transaction happens, the price of the item is displayed in a message. 
 > You can ignore the message, or confirm the transaction by clicking the button at the bottom.
 
-> You can do downtimes using
+> # Downtimes
 > \`\`\`/westmarch downtime activity: character: level:\`\`\`
 > There are currently three options. More may be added later.
 > - Doing a job:
@@ -33,12 +34,13 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 > - Training to gain xp:
 >   You hone your skills, be those martial or magical.
 >   Rolling low may mean you hurt yourself or damage your weapon.
+> **You get a new downtime action every ${DOWNTIME_RESET_TIME.DAY} at ${DOWNTIME_RESET_TIME.HOUR} after you play in your first game.**
 
-> Crafting items:
+> # Crafting items
 > \`\`\`/westmarch item-downtime craft item: character:\`\`\`
 > Not final.
 
-> Changing item properties:
+> # Changing item properties
 > \`\`\`/westmarch item-downtime change\`\`\`
 > May not be implemented.`
 ,

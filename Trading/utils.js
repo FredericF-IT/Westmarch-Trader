@@ -1,5 +1,6 @@
 import "dotenv/config";
 import fetch from "node-fetch";
+import { resetAllWeeklyAction } from "./data/dataIO.js";
 
 /**
  * @typedef {import("./types.js").responseObject} responseObject
@@ -28,6 +29,44 @@ export { DOWNTIME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL, GAME_LOG_CHANNEL, CHARAC
   GAME_LOG_CHANNEL_TEST as GAME_LOG_CHANNEL, 
   CHARACTER_TRACKING_CHANNEL_TEST as CHARACTER_TRACKING_CHANNEL 
 };*/
+
+export const DOWNTIME_RESET_TIME = {
+  HOUR: "not loaded",
+  RELATIVE: "not loaded",
+  DAY: "not loaded"
+};
+
+const RESET_DAY = 0; // 0 = Sunday, 1 = Monday, ...
+const RESET_HOUR = 10; // 24 hour clock, time at which to reset
+
+export function updateDate(isOnStartup) {
+  if(!isOnStartup) {
+    resetAllWeeklyAction();
+  }
+
+  const now = new Date();
+  
+  if(now.getDay() == RESET_DAY && now.getHours() >= RESET_HOUR && now.getMinutes() >= 0) { // its reset day, after reset time (timestamp should be next week)
+    now.setDate(now.getDate() + 7);
+  }
+
+  now.setHours(RESET_HOUR);
+  now.setMinutes(0);
+  now.setSeconds(0);
+  now.setDate(now.getDate() + (((7 + RESET_DAY - (now.getDay())) % 7))); // sets to next sunday, stays same if already sunday
+
+  const timeStamp = Math.floor(now / 1000);
+
+  DOWNTIME_RESET_TIME.HOUR = `<t:${timeStamp}:t>`;
+  DOWNTIME_RESET_TIME.RELATIVE = `<t:${timeStamp}:R>`;
+  DOWNTIME_RESET_TIME.DAY = now.toLocaleDateString("en-us", {weekday: 'long'});
+  
+  console.log(`Next Downtime:${now}`);
+
+  setTimeout(() => updateDate(false), now - Date.now());
+}
+
+updateDate(true);
 
 /**
  * Turn string message to replyable object

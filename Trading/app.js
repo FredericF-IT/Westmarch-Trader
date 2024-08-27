@@ -6,11 +6,11 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { capitalize, CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
+import { capitalize, CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
-import { getDowntimeNames, getProficiencies, getDowntimes, getDowntimeTables } from "./downtimes.js";
+import { getDowntimeNames, getProficiencies, getDowntimeTables } from "./downtimes.js";
 import { getDX, filterItems, requestCharacterRegistration, isAdmin } from './extraUtils.js';
-import { characterExists, setValueDowntime, getCharacters, setCharacters } from './data/dataIO.js';
+import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
 import { Client, IntentsBitField, User } from "discord.js";
@@ -132,9 +132,9 @@ function getItemsInRange(options, id) {
  * @param {*} userID 
  * @param {*} characterName 
  * @param {*} characterLevel 
- * @param {*} downtimeType 
+ * @param {*} downtimeType
  * @param {*} roll 
- * @param {string} event 
+ * @param {string} event
  * @param {string} effect 
  */
 async function sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, event, effect) {
@@ -148,6 +148,7 @@ async function sendDowntimeCopyable(interaction, userID, characterName, characte
       `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` + 
       `\`\`\`**Downtime summary**\nLink: ${message.url}\nEffect: ${effect}\`\`\``,
       true));
+    useWeeklyAction(userID, characterName);
   });
 }
 
@@ -166,6 +167,10 @@ function getDowntime(interaction, options, userID) {
 
   if(!characterExists(userID, characterName)){
     return interaction.reply(requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]));
+  }
+
+  if(hasUsedWeeklyDowntime(userID, characterName)){
+    return interaction.reply(errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")"));
   }
 
   const roll = getDX(100);
@@ -214,6 +219,10 @@ function getDowntimeSQLite3(interaction, options, userID) {
 
   if(!characterExists(userID, characterName)){
     return interaction.reply(requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]));
+  }
+
+  if(hasUsedWeeklyDowntime(userID, characterName)){
+    return interaction.reply(errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")"));
   }
 
   const roll = getDX(100);
@@ -774,11 +783,11 @@ client.on('interactionCreate',
           let proficiency = interaction.values[0];
           
           if (isTrue) { 
-            setValueDowntime(userID, characterName, "crafting", messageID, "proficiency", proficiency)
+            setValueDowntime(userID, characterName, CRAFTING_CATEGORY, messageID, "proficiency", proficiency)
             return interaction.reply(responseMessage("Proficiency is set to " + proficiencyNames[proficiency].toLowerCase(), true));
           }
           proficiency = parseInt(proficiency);
-          setValueDowntime(userID, characterName, "crafting", messageID, "profMod", proficiency)
+          setValueDowntime(userID, characterName, CRAFTING_CATEGORY, messageID, "profMod", proficiency)
           return interaction.reply(responseMessage("Proficiency level is set to " + proficiency, true));
           
         case "characterThread":

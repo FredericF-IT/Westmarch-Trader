@@ -60,6 +60,43 @@ export function setUserDowntimes(userID, data){
   updateDowntimeDB();
 }
 
+export const WEEKLY_CATEGORY = "weeklyUsed";
+export const CRAFTING_CATEGORY = "crafting";
+
+export function useWeeklyAction(userID, characterName){
+  let characters = activeDowntimes[userID];
+  
+  if(characters === undefined) {
+    characters = {};
+    activeDowntimes[userID] = characters;
+  } 
+  
+  if (characters[characterName] === undefined) {
+    activeDowntimes[userID][characterName] = {};
+  } 
+
+  activeDowntimes[userID][characterName][WEEKLY_CATEGORY] = true;  
+  updateDowntimeDB();
+}
+
+export function hasUsedWeeklyDowntime(userID, characterName){
+  const characters = activeDowntimes[userID];
+  if(characters == undefined) return false;
+  const character = characters[characterName];
+  if(character == undefined || character[WEEKLY_CATEGORY] == undefined) return false;
+  return character[WEEKLY_CATEGORY];
+}
+
+export function resetAllWeeklyAction(){
+  for(var userID in activeDowntimes) {
+    const characters = activeDowntimes[userID];
+    for(var characterName in characters){
+      activeDowntimes[userID][characterName][WEEKLY_CATEGORY] = false;
+    }
+  }
+  updateDowntimeDB();
+}
+
 /**
  * @param {string} userID
  * @param {string} characterName

@@ -1,4 +1,4 @@
-import { DOWNTIME_RESET_TIME, GAME_LOG_CHANNEL } from "./utils.js";
+import { DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, GAME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL } from "./utils.js";
 
 export const explanationMessage = [
 `# The Trader Bot
@@ -12,18 +12,22 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 > - You can see your registered characters via
 > \`\`\`/westmarch character show\`\`\`
 > You can have a maximum of **ten** characters registered with the bot.
-> If a character is not registered, but is used in a command, it will automatically ask if you want to register the character.
+> If a character is not registered, but is used in a command, I will automatically ask if you want to register the character.
 
 > # Buying / Selling items
+> **All transaction logs are sent to <#${TRANSACTION_LOG_CHANNEL}>, no matter where you used the command.**
+> To create a trade prompt, use
 > \`\`\`/westmarch buy item: character: amount:\`\`\` 
 > or 
 > \`\`\`/westmarch sell item: character: amount:\`\`\`
 > I require the options \`item\` and \`character\` to know who's buying what.
 > Optionally, you can buy multiple of the same item at once with the option \`amount\`
-> Before the transaction happens, the price of the item is displayed in a message. 
-> You can ignore the message, or confirm the transaction by clicking the button at the bottom.
-
-> # Downtimes
+> 
+> Before the transaction happens, the price of the item is displayed in a message (prompt). 
+> You can ignore the message, or accept the transaction by clicking the confirmation button.`
+,
+`> # Downtimes
+> **All downtime activities are sent to <#${DOWNTIME_LOG_CHANNEL}>, no matter where you used the command.**
 > \`\`\`/westmarch downtime activity: character: level:\`\`\`
 > There are currently three options. More may be added later.
 > - Doing a job:
@@ -49,9 +53,10 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 > \`\`\`/westmarch reward tier: xp: reward:\`\`\`
 > \`tier\` will be the one that was advertised in your games' post, \`xp\` is the total the party earned.
 > You can also optionally select to pay out gold instead of an item with \`reward\`
-> This will create a discord user menu, select your players.
+> 
+> This command will create a discord user menu, select your players.
 > After choosing, it will output the xp per player, and an item + gold per player.
-> This can be used as the template for your session log, just copy paste it to <#${GAME_LOG_CHANNEL}> and change any details necessary. 
+> This can be used as the template for your session log, just copy paste it to <#${GAME_LOG_CHANNEL}> and change any details necessary.
 > <@number> will turn into a user mention when the message is copied, this is intended.
 
 > - Get a list of items with cost between two values
@@ -59,3 +64,10 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 > This returns all items in that price range. There may be more items than fit in a discord message, so there is a button to send the next message until all items are displayed.`
 ,
 `**Should you encounter any problems with the bot, please notify <@367891183344812034>!**`]
+
+explanationMessage.forEach(message => {
+    //console.log(message.length);
+    if(message.length >= 2000) {
+        throw new Error(`Message ${message.substring(0,15)} exceeds discord message length limit.`);
+    }
+});

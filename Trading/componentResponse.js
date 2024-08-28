@@ -1,5 +1,5 @@
 // @ts-check
-import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL, DOWNTIME_RESET_TIME } from './utils.js';
+import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL, DOWNTIME_RESET_TIME, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
 import { createProficiencyChoices, getProficiencies } from "./downtimes.js";
 import { getDX, filterItems } from './extraUtils.js';
@@ -11,9 +11,10 @@ import {
 
 /**
  * @typedef {import("discord.js").Message} Message
+ * @typedef {import("discord.js").User} User
+ * @typedef {import("discord.js").Channel} Channel
  * @typedef {import('./types.js').responseObject} responseObject
  * @typedef {import("./types.js").interaction} interaction
- * @typedef {import("discord.js").User} User
  * @typedef {import("./types.js").guildMember} guildMember
  */
 
@@ -264,9 +265,10 @@ export function rollCharacterDowntimeThread(parts, userID, interaction) {
 /**
  * @param {string} componentId 
  * @param {string} userID 
- * @return {responseObject} JS Object for interaction.reply()
+ * @param {Channel} channel 
+ * @param {interaction} interaction 
  */
-export function acceptTransaction(componentId, userID) {
+export function acceptTransaction(componentId, userID, channel, interaction) {
   const parts = componentId.split("_");
   const price = parseFloat(parts[1]);
   const itemName = parts[2];
@@ -274,7 +276,14 @@ export function acceptTransaction(componentId, userID) {
   const buyOrSell = parts[4];
   const characterName = parts[5];
 
-  return {
+  // @ts-ignore
+  channel.send({
     content: `Approved transaction: ${characterName} (<@${userID}>) ${buyOrSell.toLowerCase()}s ${(itemCount > 1 ? `${itemCount}x ` : '')}"${itemName}" for ${itemCount * price}gp`,
-  };
+  }).then((/** @type {Message} */ message) => {
+    interaction.reply(responseMessage(
+      `Transaction approved!\n${interaction.channelId != TRANSACTION_LOG_CHANNEL ? `Log was sent to <#${TRANSACTION_LOG_CHANNEL}>\n` : ""}`+
+      `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` +
+      `\`\`\`**Transaction summary**\n- ${buyOrSell}: ${(itemCount > 1 ? `${itemCount}x ` : '')}"${itemName}" ${buyOrSell === "Sell" ? "+" : "-"}${itemCount * price}gp (${message.url})\`\`\``,
+      true));
+  });
 }

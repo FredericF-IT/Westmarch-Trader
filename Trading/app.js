@@ -487,13 +487,10 @@ function westmarchLog(options, dm) {
 
 /**
  * Sends the command explanation as mutliple messages.
- * 
- * Messages are read from ./data/explanation.txt
- * 
- * Start of next message is marked by \newline (use it to stay below discord max message length)
  * @param {Client} client 
  * @param {string} channelID 
  * @param {User?} user 
+ * @return {responseObject}
  */
 function explainMe(client, channelID, user) {
   const messages = explanationMessage;
@@ -798,10 +795,8 @@ client.on('interactionCreate',
           return interaction.reply(westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction));
         case "acceptTransactionButton":
           const channel = getChannel(client, TRANSACTION_LOG_CHANNEL);
-          // @ts-ignore
-          channel.send(acceptTransaction(componentId, userID));
-          return interaction.reply(responseMessage(`Transaction approved!\nMessage can be found in <#${TRANSACTION_LOG_CHANNEL}>`, true));
-
+          
+          return acceptTransaction(componentId, userID, channel, interaction);
         case "dmExplanation":
           explainMe(client, "", user);
           return interaction.reply(responseMessage("Message was sent (if dms from server members are enabled)", true));

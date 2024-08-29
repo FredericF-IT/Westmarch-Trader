@@ -4,6 +4,7 @@ const namesCharactersFile = "data/PlayerNames.json";
 
 /**
  * @typedef {import("discord.js").User} User
+ * @typedef {import("./types.js").item} item
  */
 
 export function readDataFile(fileName) {

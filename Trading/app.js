@@ -9,7 +9,7 @@ import {
 import { capitalize, CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
 import { getDowntimeNames, getProficiencies, getDowntimeTables } from "./downtimes.js";
-import { getDX, filterItems, requestCharacterRegistration, isAdmin } from './extraUtils.js';
+import { getDX, filterItems, requestCharacterRegistration, isAdmin, filterItemsbyTier } from './extraUtils.js';
 import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
@@ -63,23 +63,31 @@ const lastItemResult = new Map();
 /**
  * @param {option[]} options 
  * @param {string} id 
+ * @param {boolean} useTier 
  * @return {responseObject} JS Object for interaction.reply()
  */
-function getItemsInRange(options, id) {
-  /** @type {number} */
-  let minPrice = options[0].value;
-  /** @type {number} */
-  let maxPrice = options[1].value;
-
-  // swap the min and max if they're the wrong way around
-  if(minPrice > maxPrice) {
-    minPrice = minPrice ^ maxPrice;
-    maxPrice = minPrice ^ maxPrice;
-    minPrice = minPrice ^ maxPrice;
+function getItemsInRange(options, id, useTier) {
+  /** @type {[string, ...item[]][]} */
+  let itemsInRange = [];
+  if(useTier) {
+    itemsInRange = filterItemsbyTier(options[0].value);
+  } else {
+    /** @type {number} */
+    let minPrice = options[0].value;
+    /** @type {number} */
+    let maxPrice = options[1].value;
+  
+    // swap the min and max if they're the wrong way around
+    if(minPrice > maxPrice) {
+      minPrice = minPrice ^ maxPrice;
+      maxPrice = minPrice ^ maxPrice;
+      minPrice = minPrice ^ maxPrice;
+    }
+  
+    itemsInRange = filterItems(minPrice, maxPrice);
   }
 
-  const itemsInRange = filterItems(minPrice, maxPrice).sort((a, b) => a[1].price - b[1].price);
-
+  itemsInRange = itemsInRange.sort((a, b) => a[1].price - b[1].price);
   let result = [""];
   let j = 0;
   for (let i = 0; i < itemsInRange.length; i++) {
@@ -719,7 +727,9 @@ client.on('interactionCreate',
           }
           return interaction.reply(explainMe(client, channelID, null));
         case "getitemsinrange": 
-          return interaction.reply(getItemsInRange(options, id));
+          return interaction.reply(getItemsInRange(options, id, false));
+        case "getitemsbytier": 
+          return interaction.reply(getItemsInRange(options, id, true));
         case "westmarch item-downtime craft": 
           // command is now sent to specific channel
           //if(interaction.channel instanceof ThreadChannel) 

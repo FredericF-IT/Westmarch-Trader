@@ -94,6 +94,7 @@
  * @typedef {Object} item
  * @property {number} price
  * @property {string} rarity
+ * @property {number} priceTier
  */
 
 export {};

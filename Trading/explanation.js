@@ -61,7 +61,11 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 
 > - Get a list of items with cost between two values
 > \`\`\`/getitemsinrange minimum: maximum:\`\`\`
-> This returns all items in that price range. There may be more items than fit in a discord message, so there is a button to send the next message until all items are displayed.`
+> This returns all items in that price range. There may be more items than fit in a discord message, so there is a button to send the next message until all items are displayed.
+
+> - Get the items that can be found by players at a specific tier 
+> \`\`\`/getitemsbytier tier:\`\`\`
+> This returns all items of appropriate price. There may be more items than fit in a discord message, so there is a button to send the next message until all items are displayed.`
 ,
 `**Should you encounter any problems with the bot, please notify <@367891183344812034>!**`]
 

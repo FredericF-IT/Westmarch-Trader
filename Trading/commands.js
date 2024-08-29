@@ -1,69 +1,17 @@
 import 'dotenv/config';
-import { capitalize, InstallGlobalCommands } from './utils.js';
-import { getDowntimes, getProficiencies } from "./downtimes.js";
+import { capitalize } from './utils.js';
+import { getDowntimes } from "./downtimes.js";
 
-/*const BUY_ITEM_COMMAND = {
-  name: 'buy',
-  description: 'Find out the buy cost of an item',
-  options: [
-    {
-      type: 3,
-      name: 'item',
-      description: 'Name of the item to buy',
-      required: true,
-      autocomplete: true,
-    },
-    {
-      type: 3,
-      name: 'character',
-      description: 'Name of your character',
-      required: true,
-    },
-  ],
-  type: 1,
-};
-
-const SELL_ITEM_COMMAND = {
-  name: 'sell',
-  description: 'Find out the sale price of an item',
-  options: [
-    {
-      type: 3,
-      name: 'item',
-      description: 'Name of the item to sell',
-      required: true,
-      autocomplete: true,
-    },
-    {
-      type: 3,
-      name: 'character',
-      description: 'Name of your character',
-      required: true,
-    },
-  ],
-  type: 1,
-};
-*/
 // Get the items from itemList.js
 function createCommandChoices() {
   const choices = getDowntimes();
   const commandChoices = [];
   for (let i = 0; i < choices.length; i++) {
-    //console.debug(choices[i][0]);
-    //console.debug(choices[i][1].price);
     commandChoices.push({
       name: capitalize(choices[i][0]),
       value: choices[i][1].id.toString(),
     });
   } 
-/*  for (let choice of choices) {
-    console.debug(choice);
-    commandChoices.push({
-      name: capitalize(choice.description),
-      value: choice.price,
-    });
-  }*/
-
   return commandChoices;
 }
 
@@ -78,56 +26,6 @@ function createLevelChoices() {
   } 
   return commandChoices;
 }
-
-/*
-const DOWNTIME_COMMAND = {
-  name: 'downtime',
-  description: 'Take a downtime action',
-  options: [
-    {
-      type: 3,
-      name: 'activity',
-      description: 'What activity do you do?',
-      required: true,
-      choices: createCommandChoices(),
-    },
-    {
-      type: 3,
-      name: 'character',
-      description: 'Name of your character',
-      required: true,
-    },
-    {
-      type: 10,
-      name: 'level',
-      description: "Your character's level",
-      required: true,
-      choices: createLevelChoices(),
-    },
-  ],
-  type: 1,
-};
-
-
-const REWARD_COMMAND = {
-  name: 'westmarchreward',
-  description: 'Calculate what gp and items players get after session',
-  options: [
-    {
-      type: 10,
-      name: 'xp',
-      description: 'How much xp does the party receive?',
-      required: true,
-    },
-    {
-      type: 10,
-      name: 'players',
-      description: 'Number of players to recieve items',
-      required: true,
-    },
-  ],
-  type: 1,
-};*/
 
 const ITEM_RANGE_COMMAND = {
   name: 'getitemsinrange',
@@ -149,26 +47,40 @@ const ITEM_RANGE_COMMAND = {
   type: 1,
 };
 
+const tierCoices = [{
+  name: "Tier 1 (2-4)",
+  value: "1",
+},{
+  name: "Tier 2 (5-10)",
+  value: "2",
+},{
+  name: "Tier 3 (11-16)",
+  value: "3",
+},{
+  name: "Tier 4 (17-20)",
+  value: "4",
+}];
+
+const ITEM_TIER_COMMAND = {
+  name: 'getitemsbytier',
+  description: "Print a list of items that appear as random loot at a tier.",
+  options: [
+    {
+      type: 4,
+      name: 'tier',
+      description: 'What tier?',
+      choices: tierCoices,
+      required: true,
+    },
+  ],
+  type: 1,
+};
+
 const EXPLAIN_ME_COMMAND = {
   name: 'explanationtrader',
   description: "Get the explanation of the bot",
   type: 1,
 };
-
-const TEST_COMMAND = {
-  name: 'woopwoop',
-  description: "testing",
-  options: [
-    {
-      type: 6,
-      name: 'players',
-      description: 'players',
-      required: true,
-    },
-  ],
-  type: 1,
-  
-}
 
 const WESTMARCH_COMMANDS = {
   type: 1,
@@ -238,19 +150,7 @@ const WESTMARCH_COMMANDS = {
           type: 4,
           name: 'tier',
           description: 'What was the recommended tier?',
-          choices: [{
-            name: "Tier 1 (2-4)",
-            value: "1",
-          },{
-            name: "Tier 2 (5-10)",
-            value: "2",
-          },{
-            name: "Tier 3 (11-16)",
-            value: "3",
-          },{
-            name: "Tier 4 (17-20)",
-            value: "4",
-          }],
+          choices: tierCoices,
           required: true,
         },
         {
@@ -298,12 +198,6 @@ const WESTMARCH_COMMANDS = {
               required: true,
               autocomplete: true,
             },
-            /*{
-              type: 3,
-              name: 'proficiency',
-              description: 'Pick tool proficiency if any',
-              choices: createProficiencyChoices(),
-            },*/
           ],
         },
         {
@@ -392,5 +286,5 @@ const WESTMARCH_COMMANDS = {
   ],
 };
 
-export const ALL_COMMANDS = [ITEM_RANGE_COMMAND, WESTMARCH_COMMANDS, EXPLAIN_ME_COMMAND];//, TEST_COMMAND];
+export const ALL_COMMANDS = [ITEM_RANGE_COMMAND, ITEM_TIER_COMMAND, WESTMARCH_COMMANDS, EXPLAIN_ME_COMMAND];//, TEST_COMMAND];
 //InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

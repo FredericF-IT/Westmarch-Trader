@@ -158,3 +158,10 @@ export async function InstallGlobalCommands(appId, commands) {
 export function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+/** @type {Map<number, {min: number, max: number}>} */
+export const tierToCostLimits = new Map();
+tierToCostLimits.set(1, { min: 500, max: 1000 });
+tierToCostLimits.set(2, { min: 1000, max: 3000 });
+tierToCostLimits.set(3, { min: 3000, max: 5000 });
+tierToCostLimits.set(4, { min: 5000, max: 10000 });

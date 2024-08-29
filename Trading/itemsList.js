@@ -3,192 +3,194 @@
  * @typedef {import("./types.js").item} item
  */
 
-const sanesItemPrices = {
-        '+1 Shield': {
+import { writeDataFileRequest } from "./data/dataIO.js";
+
+let sanesItemPrices = {
+        "+1 Shield": {
                 price: 1500,
                 rarity: "uncommon"
         },
-        '+2 Shield': {
+        "+2 Shield": {
                 price: 6000,
                 rarity: "rare"
         },
-        '+3 Shield': {
+        "+3 Shield": {
                 price: 24000,
                 rarity: "very rare"
         },
-        'Alchemy Jug': {
+        "Alchemy Jug": {
                 price: 6000,
                 rarity: "uncommon"
         },
-        'Ammunition +1 (each)': {
+        "Ammunition +1 (each)": {
                 price: 25,
                 rarity: "uncommon"
         },
-        'Ammunition +2 (each)': {
+        "Ammunition +2 (each)": {
                 price: 100,
                 rarity: "rare"
         },
-        'Ammunition +3 (each)': {
+        "Ammunition +3 (each)": {
                 price: 400,
                 rarity: "very rare"
         },
-        'Amulet of Health': {
+        "Amulet of Health": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Amulet of Proof Against Detection and Location': {
+        "Amulet of Proof Against Detection and Location": {
                 price: 20000,
                 rarity: "uncommon"
         },
-        'Amulet of the Planes': {
+        "Amulet of the Planes": {
                 price: 160000,
                 rarity: "very rare"
         },
-        'Animated Shield': {
+        "Animated Shield": {
                 price: 6000,
                 rarity: "very rare"
         },
-        'Apparatus of Kwalish': {
+        "Apparatus of Kwalish": {
                 price: 10000,
                 rarity: "legendary"
         },
-        'Arrow of Slaying (each)': {
+        "Arrow of Slaying (each)": {
                 price: 600,
                 rarity: "very rare"
         },
-        'Arrow-Catching Shield': {
+        "Arrow-Catching Shield": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Bag of Holding': {
+        "Bag of Holding": {
                 price: 4000,
                 rarity: "uncommon"
         },
-        'Bead of Force': {
+        "Bead of Force": {
                 price: 960,
                 rarity: "rare"
         },
-        'Belt of Dwarvenkind': {
+        "Belt of Dwarvenkind": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Boots of Elvenkind': {
+        "Boots of Elvenkind": {
                 price: 2500,
                 rarity: "uncommon"
         },
-        'Boots of Levitation': {
+        "Boots of Levitation": {
                 price: 4000,
                 rarity: "rare"
         },
-        'Boots of Speed': {
+        "Boots of Speed": {
                 price: 4000,
                 rarity: "rare"
         },
-        'Boots of Striding and Springing': {
+        "Boots of Striding and Springing": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Boots of the Winterlands': {
+        "Boots of the Winterlands": {
                 price: 10000,
                 rarity: "uncommon"
         },
-        'Bowl of Commanding Water Elementals': {
+        "Bowl of Commanding Water Elementals": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Bracers of Archery': {
+        "Bracers of Archery": {
                 price: 1500,
                 rarity: "uncommon"
         },
-        'Bracers of Defense': {
+        "Bracers of Defense": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Brass Horn of Valhalla': {
+        "Brass Horn of Valhalla": {
                 price: 8400,
                 rarity: "rare"
         },
-        'Brazier of Commanding Fire Elementals': {
+        "Brazier of Commanding Fire Elementals": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Bronze Griffon': {
+        "Bronze Griffon": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Bronze Horn of Valhalla': {
+        "Bronze Horn of Valhalla": {
                 price: 11200,
                 rarity: "very rare"
         },
-        'Brooch of Shielding': {
+        "Brooch of Shielding": {
                 price: 7500,
                 rarity: "uncommon"
         },
-        'Broom of Flying': {
+        "Broom of Flying": {
                 price: 8000,
                 rarity: "uncommon"
         },
-        'Cap of Water Breathing': {
+        "Cap of Water Breathing": {
                 price: 1000,
                 rarity: "uncommon"
         },
-        'Cape of the Mountebank': {
+        "Cape of the Mountebank": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Carpet of Flying': {
+        "Carpet of Flying": {
                 price: 12000,
                 rarity: "very rare"
         },
-        'Censer of Controlling Air Elementals': {
+        "Censer of Controlling Air Elementals": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Chime of Opening': {
+        "Chime of Opening": {
                 price: 1500,
                 rarity: "rare"
         },
-        'Circlet of Blasting': {
+        "Circlet of Blasting": {
                 price: 1500,
                 rarity: "uncommon"
         },
-        'Cloak of Arachnida': {
+        "Cloak of Arachnida": {
                 price: 5000,
                 rarity: "very rare"
         },
-        'Cloak of Displacement': {
+        "Cloak of Displacement": {
                 price: 60000,
                 rarity: "rare"
         },
-        'Cloak of Elvenkind': {
+        "Cloak of Elvenkind": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Cloak of Invisibility': {
+        "Cloak of Invisibility": {
                 price: 80000,
                 rarity: "legendary"
         },
-        'Cloak of Protection': {
+        "Cloak of Protection": {
                 price: 3500,
                 rarity: "uncommon"
         },
-        'Cloak of the Bat': {
+        "Cloak of the Bat": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Cloak of the Manta Ray': {
+        "Cloak of the Manta Ray": {
                 price: 6000,
                 rarity: "uncommon"
         },
-        'Crystal Ball': {
+        "Crystal Ball": {
                 price: 50000,
                 rarity: "very rare"
         },
-        'Cube of Force': {
+        "Cube of Force": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Cubic Gate': {
+        "Cubic Gate": {
                 price: 40000,
                 rarity: "legendary"
         },
@@ -196,147 +198,147 @@ const sanesItemPrices = {
                 price: 75000,
                 rarity: "rare"
         },
-        'Dagger of Venom': {
+        "Dagger of Venom": {
                 price: 2500,
                 rarity: "rare"
         },
-        'Decanter of Endless Water': {
+        "Decanter of Endless Water": {
                 price: 135000,
                 rarity: "uncommon"
         },
-        'Deck of Illusions': {
+        "Deck of Illusions": {
                 price: 6120,
                 rarity: "uncommon"
         },
-        'Dimensional Shackles': {
+        "Dimensional Shackles": {
                 price: 3000,
                 rarity: "rare"
         },
-        'Dragon Scale Mail': {
+        "Dragon Scale Mail": {
                 price: 4000,
                 rarity: "very rare"
         },
-        'Driftglobe': {
+        "Driftglobe": {
                 price: 750,
                 rarity: "uncommon"
         },
-        'Dust of Disappearance': {
+        "Dust of Disappearance": {
                 price: 300,
                 rarity: "uncommon"
         },
-        'Dust of Dryness (1 pellet)': {
+        "Dust of Dryness (1 pellet)": {
                 price: 120,
                 rarity: "uncommon"
         },
-        'Dust of Sneezing and Choking': {
+        "Dust of Sneezing and Choking": {
                 price: 480,
                 rarity: "uncommon"
         },
-        'Dwarven Plate': {
+        "Dwarven Plate": {
                 price: 9000,
                 rarity: "very rare"
         },
-        'Dwarven Thrower': {
+        "Dwarven Thrower": {
                 price: 18000,
                 rarity: "very rare"
         },
-        'Ebony Fly': {
+        "Ebony Fly": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Efreeti Chain': {
+        "Efreeti Chain": {
                 price: 20000,
                 rarity: "legendary"
         },
-        'Elemental Gem': {
+        "Elemental Gem": {
                 price: 960,
                 rarity: "uncommon"
         },
-        'Elixir of Health': {
+        "Elixir of Health": {
                 price: 120,
                 rarity: "rare"
         },
-        'Elven Chain': {
+        "Elven Chain": {
                 price: 4000,
                 rarity: "rare"
         },
-        'Eversmoking Bottle': {
+        "Eversmoking Bottle": {
                 price: 1000,
                 rarity: "uncommon"
         },
-        'Eyes of Charming': {
+        "Eyes of Charming": {
                 price: 3000,
                 rarity: "uncommon"
         },
-        'Eyes of Minute Seeing': {
+        "Eyes of Minute Seeing": {
                 price: 2500,
                 rarity: "uncommon"
         },
-        'Eyes of the Eagle': {
+        "Eyes of the Eagle": {
                 price: 2500,
                 rarity: "uncommon"
         },
-        'Folding Boat': {
+        "Folding Boat": {
                 price: 10000,
                 rarity: "rare"
         },
-        'Gauntlets of Ogre Power': {
+        "Gauntlets of Ogre Power": {
                 price: 8000,
                 rarity: "uncommon"
         },
-        'Gem of Brightness': {
+        "Gem of Brightness": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Gem of Seeing': {
+        "Gem of Seeing": {
                 price: 32000,
                 rarity: "rare"
         },
-        'Glamoured Studded Leather': {
+        "Glamoured Studded Leather": {
                 price: 2000,
                 rarity: "rare"
         },
-        'Gloves of Missile Snaring': {
+        "Gloves of Missile Snaring": {
                 price: 3000,
                 rarity: "uncommon"
         },
-        'Gloves of Swimming and Climbing': {
+        "Gloves of Swimming and Climbing": {
                 price: 2000,
                 rarity: "uncommon"
         },
-        'Gloves of Thievery': {
+        "Gloves of Thievery": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Goggles of Night': {
+        "Goggles of Night": {
                 price: 1500,
                 rarity: "uncommon"
         },
-        'Golden Lion (each)': {
+        "Golden Lion (each)": {
                 price: 600,
                 rarity: "rare"
         },
-        'Hammer of Thunderbolts': {
+        "Hammer of Thunderbolts": {
                 price: 16000,
                 rarity: "legendary"
         },
-        'Hat of Disguise': {
+        "Hat of Disguise": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Headband of Intellect': {
+        "Headband of Intellect": {
                 price: 8000,
                 rarity: "uncommon"
         },
-        'Helm of Comprehend Languages': {
+        "Helm of Comprehend Languages": {
                 price: 500,
                 rarity: "uncommon"
         },
-        'Helm of Telepathy': {
+        "Helm of Telepathy": {
                 price: 12000,
                 rarity: "uncommon"
         },
-        'Helm of Teleportation': {
+        "Helm of Teleportation": {
                 price: 64000,
                 rarity: "rare"
         },
@@ -344,127 +346,127 @@ const sanesItemPrices = {
                 price: 2000,
                 rarity: "rare"
         },
-        'Horn of Blasting': {
+        "Horn of Blasting": {
                 price: 450,
                 rarity: "rare"
         },
-        'Horseshoes of Speed': {
+        "Horseshoes of Speed": {
                 price: 5000,
                 rarity: "rare"
         },
-        'Horseshoes of the Zephyr': {
+        "Horseshoes of the Zephyr": {
                 price: 1500,
                 rarity: "very rare"
         },
-        'Immovable Rod': {
+        "Immovable Rod": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Instrument of the Bards - Anstruth Harp': {
+        "Instrument of the Bards - Anstruth Harp": {
                 price: 109000,
                 rarity: "very rare"
         },
-        'Instrument of the Bards - Canaith Mandolin': {
+        "Instrument of the Bards - Canaith Mandolin": {
                 price: 30000,
                 rarity: "rare"
         },
-        'Instrument of the Bards - Cli Lyre': {
+        "Instrument of the Bards - Cli Lyre": {
                 price: 35000,
                 rarity: "rare"
         },
-        'Instrument of the Bards - Doss Lute': {
+        "Instrument of the Bards - Doss Lute": {
                 price: 28500,
                 rarity: "uncommon"
         },
-        'Instrument of the Bards - Fochulan Bandlore': {
+        "Instrument of the Bards - Fochulan Bandlore": {
                 price: 26500,
                 rarity: "uncommon"
         },
-        'Instrument of the Bards - Mac-Fuirmidh Cittern': {
+        "Instrument of the Bards - Mac-Fuirmidh Cittern": {
                 price: 27000,
                 rarity: "uncommon"
         },
-        'Instrument of the Bards - Ollamh Harp': {
+        "Instrument of the Bards - Ollamh Harp": {
                 price: 125000,
                 rarity: "legendary"
         },
-        'Ioun Stone of Absorption': {
+        "Ioun Stone of Absorption": {
                 price: 2400,
                 rarity: "very rare"
         },
-        'Ioun Stone of Agility': {
+        "Ioun Stone of Agility": {
                 price: 3000,
                 rarity: "very rare"
         },
-        'Ioun Stone of Awareness': {
+        "Ioun Stone of Awareness": {
                 price: 12000,
                 rarity: "rare"
         },
-        'Ioun Stone of Fortitude': {
+        "Ioun Stone of Fortitude": {
                 price: 3000,
                 rarity: "very rare"
         },
-        'Ioun Stone Greater Absorption': {
+        "Ioun Stone Greater Absorption": {
                 price: 31000,
                 rarity: "legendary"
         },
-        'Ioun Stone of Insight': {
+        "Ioun Stone of Insight": {
                 price: 3000,
                 rarity: "very rare"
         },
-        'Ioun Stone of Intellect': {
+        "Ioun Stone of Intellect": {
                 price: 3000,
                 rarity: "very rare"
         },
-        'Ioun Stone of Leadership': {
+        "Ioun Stone of Leadership": {
                 price: 3000,
                 rarity: "very rare"
         },
-        'Ioun Stone of Mastery': {
+        "Ioun Stone of Mastery": {
                 price: 15000,
                 rarity: "legendary"
         },
-        'Ioun Stone of Protection': {
+        "Ioun Stone of Protection": {
                 price: 1200,
                 rarity: "rare"
         },
-        'Ioun Stone of Regeneration': {
+        "Ioun Stone of Regeneration": {
                 price: 4000,
                 rarity: "legendary"
         },
-        'Ioun Stone of Reserve': {
+        "Ioun Stone of Reserve": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Ioun Stone of Strength': {
+        "Ioun Stone of Strength": {
                 price: 3000,
                 rarity: "very rare"
         },
-        'Ioun Stone of Sustenance': {
+        "Ioun Stone of Sustenance": {
                 price: 1000,
                 rarity: "rare"
         },
-        'Iron Bands of Bilarro': {
+        "Iron Bands of Bilarro": {
                 price: 4000,
                 rarity: "rare"
         },
-        'Iron Horn of Valhalla': {
+        "Iron Horn of Valhalla": {
                 price: 14000,
                 rarity: "legendary"
         },
-        'Ivory Goat (Terror)': {
+        "Ivory Goat (Terror)": {
                 price: 20000,
                 rarity: "rare"
         },
-        'Ivory Goat (Travail)': {
+        "Ivory Goat (Travail)": {
                 price: 400,
                 rarity: "rare"
         },
-        'Ivory Goat (Traveling)': {
+        "Ivory Goat (Traveling)": {
                 price: 1000,
                 rarity: "rare"
         },
-        'Javelin of Lightning': {
+        "Javelin of Lightning": {
                 price: 1500,
                 rarity: "uncommon"
         },
@@ -472,67 +474,67 @@ const sanesItemPrices = {
                 price: 120,
                 rarity: "uncommon"
         },
-        'Lantern of Revealing': {
+        "Lantern of Revealing": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Luckstone': {
+        "Luckstone": {
                 price: 4200,
                 rarity: "uncommon"
         },
-        'Mace of Disruption': {
+        "Mace of Disruption": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Mace of Smiting': {
+        "Mace of Smiting": {
                 price: 7000,
                 rarity: "rare"
         },
-        'Mace of Terror': {
+        "Mace of Terror": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Mantle of Spell Resistance': {
+        "Mantle of Spell Resistance": {
                 price: 30000,
                 rarity: "rare"
         },
-        'Marble Elephant': {
+        "Marble Elephant": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Medallion of Thoughts': {
+        "Medallion of Thoughts": {
                 price: 3000,
                 rarity: "uncommon"
         },
-        'Mirror of Life Trapping': {
+        "Mirror of Life Trapping": {
                 price: 18000,
                 rarity: "very rare"
         },
-        'Necklace of Adaption': {
+        "Necklace of Adaption": {
                 price: 1500,
                 rarity: "uncommon"
         },
-        'Necklace of Fireballs (6 Beads)': {
+        "Necklace of Fireballs (6 Beads)": {
                 price: 7680,
                 rarity: "rare"
         },
-        'Necklace of Fireballs (5 Beads)': {
+        "Necklace of Fireballs (5 Beads)": {
                 price: 3840,
                 rarity: "rare"
         },
-        'Necklace of Fireballs (4 Beads)': {
+        "Necklace of Fireballs (4 Beads)": {
                 price: 1600,
                 rarity: "rare"
         },
-        'Necklace of Fireballs (3 Beads)': {
+        "Necklace of Fireballs (3 Beads)": {
                 price: 960,
                 rarity: "rare"
         },
-        'Necklace of Fireballs (2 Beads)': {
+        "Necklace of Fireballs (2 Beads)": {
                 price: 480,
                 rarity: "rare"
         },
-        'Necklace of Fireballs (1 Beads)': {
+        "Necklace of Fireballs (1 Beads)": {
                 price: 300,
                 rarity: "rare"
         },
@@ -540,175 +542,175 @@ const sanesItemPrices = {
                 price: 200,
                 rarity: "very rare"
         },
-        'Oathbow': {
+        "Oathbow": {
                 price: 3500,
                 rarity: "very rare"
         },
-        'Obsidian Steed': {
+        "Obsidian Steed": {
                 price: 128000,
                 rarity: "very rare"
         },
-        'Oil of Etherealness': {
+        "Oil of Etherealness": {
                 price: 1920,
                 rarity: "rare"
         },
-        'Oil of Sharpness': {
+        "Oil of Sharpness": {
                 price: 3200,
                 rarity: "very rare"
         },
-        'Oil of Slipperiness': {
+        "Oil of Slipperiness": {
                 price: 480,
                 rarity: "uncommon"
         },
-        'Onyx Dog': {
+        "Onyx Dog": {
                 price: 3000,
                 rarity: "rare"
         },
-        'Pearl of Power': {
+        "Pearl of Power": {
                 price: 6000,
                 rarity: "uncommon"
         },
-        'Periapt of Health': {
+        "Periapt of Health": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Periapt of Proof Against Poison': {
+        "Periapt of Proof Against Poison": {
                 price: 5000,
                 rarity: "rare"
         },
-        'Periapt of Wound Closure': {
+        "Periapt of Wound Closure": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Philter of Love': {
+        "Philter of Love": {
                 price: 90,
                 rarity: "uncommon"
         },
-        'Pipes of Haunting': {
+        "Pipes of Haunting": {
                 price: 6000,
                 rarity: "uncommon"
         },
-        'Pipes of the Sewers': {
+        "Pipes of the Sewers": {
                 price: 2000,
                 rarity: "uncommon"
         },
-        'Plate Armor of Etherealness': {
+        "Plate Armor of Etherealness": {
                 price: 48000,
                 rarity: "legendary"
         },
-        'Portable Hole': {
+        "Portable Hole": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Potion of Animal Friendship': {
+        "Potion of Animal Friendship": {
                 price: 200,
                 rarity: "uncommon"
         },
-        'Potion of Clairvoyance': {
+        "Potion of Clairvoyance": {
                 price: 960,
                 rarity: "rare"
         },
-        'Potion of Climbing': {
+        "Potion of Climbing": {
                 price: 180,
                 rarity: "common"
         },
-        'Potion of Diminution': {
+        "Potion of Diminution": {
                 price: 270,
                 rarity: "rare"
         },
-        'Potion of Fire Breath': {
+        "Potion of Fire Breath": {
                 price: 150,
                 rarity: "uncommon"
         },
-        'Potion of Flying': {
+        "Potion of Flying": {
                 price: 500,
                 rarity: "very rare"
         },
-        'Potion of Gaseous Form': {
+        "Potion of Gaseous Form": {
                 price: 300,
                 rarity: "rare"
         },
-        'Potion of Greater Healing': {
+        "Potion of Greater Healing": {
                 price: 150,
                 rarity: "uncommon"
         },
-        'Potion of Growth': {
+        "Potion of Growth": {
                 price: 270,
                 rarity: "uncommon"
         },
-        'Potion of Healing': {
+        "Potion of Healing": {
                 price: 50,
                 rarity: "common"
         },
-        'Potion of Heroism': {
+        "Potion of Heroism": {
                 price: 180,
                 rarity: "rare"
         },
-        'Potion of Invisibility': {
+        "Potion of Invisibility": {
                 price: 180,
                 rarity: "very rare"
         },
-        'Potion of Invulnerability': {
+        "Potion of Invulnerability": {
                 price: 3840,
                 rarity: "rare"
         },
-        'Potion of Longevity': {
+        "Potion of Longevity": {
                 price: 9000,
                 rarity: "very rare"
         },
-        'Potion of Mind Reading': {
+        "Potion of Mind Reading": {
                 price: 180,
                 rarity: "rare"
         },
-        'Potion of Poison': {
+        "Potion of Poison": {
                 price: 100,
                 rarity: "uncommon"
         },
-        'Potion of Resistance': {
+        "Potion of Resistance": {
                 price: 300,
                 rarity: "uncommon"
         },
-        'Potion of Speed': {
+        "Potion of Speed": {
                 price: 400,
                 rarity: "very rare"
         },
-        'Potion of Superior Healing': {
+        "Potion of Superior Healing": {
                 price: 450,
                 rarity: "rare"
         },
-        'Potion of Supreme Healing': {
+        "Potion of Supreme Healing": {
                 price: 1350,
                 rarity: "very rare"
         },
-        'Potion of Vitality': {
+        "Potion of Vitality": {
                 price: 960,
                 rarity: "very rare"
         },
-        'Potion of Water Breathing': {
+        "Potion of Water Breathing": {
                 price: 180,
                 rarity: "uncommon"
         },
-        'Prayer Bead - Bless': {
+        "Prayer Bead - Bless": {
                 price: 2000,
                 rarity: "rare"
         },
-        'Prayer Bead - Curing': {
+        "Prayer Bead - Curing": {
                 price: 4000,
                 rarity: "rare"
         },
-        'Prayer Bead - Favor': {
+        "Prayer Bead - Favor": {
                 price: 32000,
                 rarity: "rare"
         },
-        'Prayer Bead - Smiting': {
+        "Prayer Bead - Smiting": {
                 price: 1500,
                 rarity: "rare"
         },
-        'Prayer Bead - Summons': {
+        "Prayer Bead - Summons": {
                 price: 128000,
                 rarity: "rare"
         },
-        'Prayer Bead - Wind Walking': {
+        "Prayer Bead - Wind Walking": {
                 price: 96000,
                 rarity: "rare"
         },
@@ -732,196 +734,196 @@ const sanesItemPrices = {
                 price: 250,
                 rarity: "rare"
         },
-        'Quiver of Ehlonna': {
+        "Quiver of Ehlonna": {
                 price: 1000,
                 rarity: "rare"
         },
-        'Ring of Air Elemental Command': {
+        "Ring of Air Elemental Command": {
                 price: 35000,
                 rarity: "legendary"
         },
-        'Ring of Animal Influence': {
+        "Ring of Animal Influence": {
                 price: 4000,
                 rarity: "rare"
         },
-        'Ring of Earth Elemental Command': {
+        "Ring of Earth Elemental Command": {
                 price: 31000,
                 rarity: "legendary"
         },
-        'Ring of Evasion': {
+        "Ring of Evasion": {
                 price: 5000,
                 rarity: "rare"
         },
-        'Ring of Feather Falling': {
+        "Ring of Feather Falling": {
                 price: 2000,
                 rarity: "rare"
         },
-        'Ring of Fire Elemental Command': {
+        "Ring of Fire Elemental Command": {
                 price: 17000,
                 rarity: "legendary"
         },
-        'Ring of Free Action': {
+        "Ring of Free Action": {
                 price: 20000,
                 rarity: "rare"
         },
-        'Ring of Invisibility': {
+        "Ring of Invisibility": {
                 price: 10000,
                 rarity: "legendary"
         },
-        'Ring of Jumping': {
+        "Ring of Jumping": {
                 price: 2500,
                 rarity: "uncommon"
         },
-        'Ring of Mind Shielding': {
+        "Ring of Mind Shielding": {
                 price: 16000,
                 rarity: "uncommon"
         },
-        'Ring of Protection': {
+        "Ring of Protection": {
                 price: 3500,
                 rarity: "rare"
         },
-        'Ring of Regeneration': {
+        "Ring of Regeneration": {
                 price: 12000,
                 rarity: "very rare"
         },
-        'Ring of Resistance': {
+        "Ring of Resistance": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Ring of Shooting Stars': {
+        "Ring of Shooting Stars": {
                 price: 14000,
                 rarity: "very rare"
         },
-        'Ring of Spell Storing': {
+        "Ring of Spell Storing": {
                 price: 24000,
                 rarity: "rare"
         },
-        'Ring of Spell Turning': {
+        "Ring of Spell Turning": {
                 price: 30000,
                 rarity: "legendary"
         },
-        'Ring of Swimming': {
+        "Ring of Swimming": {
                 price: 3000,
                 rarity: "uncommon"
         },
-        'Ring of Telekinesis': {
+        "Ring of Telekinesis": {
                 price: 80000,
                 rarity: "very rare"
         },
-        'Ring of the Ram': {
+        "Ring of the Ram": {
                 price: 5000,
                 rarity: "rare"
         },
-        'Ring of Warmth': {
+        "Ring of Warmth": {
                 price: 1000,
                 rarity: "uncommon"
         },
-        'Ring of Water Elemental Command': {
+        "Ring of Water Elemental Command": {
                 price: 25000,
                 rarity: "legendary"
         },
-        'Ring of Water Walking': {
+        "Ring of Water Walking": {
                 price: 1500,
                 rarity: "uncommon"
         },
-        'Ring of X-Ray Vision': {
+        "Ring of X-Ray Vision": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Robe of Eyes': {
+        "Robe of Eyes": {
                 price: 30000,
                 rarity: "rare"
         },
-        'Robe of Scintillating Colors': {
+        "Robe of Scintillating Colors": {
                 price: 6000,
                 rarity: "very rare"
         },
-        'Robe of Stars': {
+        "Robe of Stars": {
                 price: 60000,
                 rarity: "very rare"
         },
-        'Robe of the Archmagi': {
+        "Robe of the Archmagi": {
                 price: 34000,
                 rarity: "very rare"
         },
         //Robe of Useful Items
-        'Rod of Absorption': {
+        "Rod of Absorption": {
                 price: 50000,
                 rarity: "very rare"
         },
-        'Rod of Alertness': {
+        "Rod of Alertness": {
                 price: 25000,
                 rarity: "very rare"
         },
-        'Rod of Lordly Might': {
+        "Rod of Lordly Might": {
                 price: 28000,
                 rarity: "legendary"
         },
-        'Rod of Rulership': {
+        "Rod of Rulership": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Rod of Security': {
+        "Rod of Security": {
                 price: 90000,
                 rarity: "very rare"
         },
-        'Rod of the Pact Keeper +1': {
+        "Rod of the Pact Keeper +1": {
                 price: 12000,
                 rarity: "uncommon"
         },
-        'Rod of the Pact Keeper +2': {
+        "Rod of the Pact Keeper +2": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Rod of the Pact Keeper +3': {
+        "Rod of the Pact Keeper +3": {
                 price: 28000,
                 rarity: "very rare"
         },
-        'Amulet of the Devout +1': {
+        "Amulet of the Devout +1": {
                 price: 12000,
                 rarity: "uncommon"
         },
-        'Amulet of the Devout +2': {
+        "Amulet of the Devout +2": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Amulet of the Devout +3': {
+        "Amulet of the Devout +3": {
                 price: 28000,
                 rarity: "very rare"
         },
-        'Bloodwell Vial +1': {
+        "Bloodwell Vial +1": {
                 price: 12000,
                 rarity: "uncommon"
         },
-        'Bloodwell Vial +2': {
+        "Bloodwell Vial +2": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Bloodwell Vial +3': {
+        "Bloodwell Vial +3": {
                 price: 28000,
                 rarity: "very rare"
         },
-        'Arcane Grimoire +1': {
+        "Arcane Grimoire +1": {
                 price: 12000,
                 rarity: "uncommon"
         },
-        'Arcane Grimoire +2': {
+        "Arcane Grimoire +2": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Arcane Grimoire +3': {
+        "Arcane Grimoire +3": {
                 price: 28000,
                 rarity: "very rare"
         },
-        'Moon Sickle +1': {
+        "Moon Sickle +1": {
                 price: 12000,
                 rarity: "uncommon"
         },
-        'Moon Sickle +2': {
+        "Moon Sickle +2": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Moon Sickle +3': {
+        "Moon Sickle +3": {
                 price: 28000,
                 rarity: "very rare"
         },
@@ -936,487 +938,487 @@ const sanesItemPrices = {
                 price: 28000,
                 rarity: "very rare"
         },
-        'All-Purpose Tool +1': {
+        "All-Purpose Tool +1": {
                 price: 12000,
                 rarity: "uncommon"
         },
-        'All-Purpose Tool +2': {
+        "All-Purpose Tool +2": {
                 price: 16000,
                 rarity: "rare"
         },
-        'All-Purpose Tool +3': {
+        "All-Purpose Tool +3": {
                 price: 28000,
                 rarity: "very rare"
         },
-        'Dragonhide Belt +1': {
+        "Dragonhide Belt +1": {
                 price: 12000,
                 rarity: "uncommon"
         },
-        'Dragonhide Belt +2': {
+        "Dragonhide Belt +2": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Dragonhide Belt +3': {
+        "Dragonhide Belt +3": {
                 price: 28000,
                 rarity: "very rare"
         },
 
-        'Rope of Climbing': {
+        "Rope of Climbing": {
                 price: 2000,
                 rarity: "uncommon"
         },
-        'Rope of Entanglement': {
+        "Rope of Entanglement": {
                 price: 4000,
                 rarity: "rare"
         },
-        'Saddle of the Cavalier': {
+        "Saddle of the Cavalier": {
                 price: 2000,
                 rarity: "uncommon"
         },
-        'Scarab of Protection': {
+        "Scarab of Protection": {
                 price: 36000,
                 rarity: "legendary"
         },
-        'Scimitar of Speed': {
+        "Scimitar of Speed": {
                 price: 6000,
                 rarity: "very rare"
         },
-        'Scroll of Protection': {
+        "Scroll of Protection": {
                 price: 180,
                 rarity: "rare"
         },
-        'Sending Stones': {
+        "Sending Stones": {
                 price: 2000,
                 rarity: "uncommon"
         },
-        'Sentinel Shield': {
+        "Sentinel Shield": {
                 price: 20000,
                 rarity: "uncommon"
         },
-        'Serpentine Owl': {
+        "Serpentine Owl": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Shield of Missile Attraction': {
+        "Shield of Missile Attraction": {
                 price: 6000,
                 rarity: "rare"
         },
-        'Silver Horn of Valhalla': {
+        "Silver Horn of Valhalla": {
                 price: 5600,
                 rarity: "rare"
         },
-        'Silver Raven': {
+        "Silver Raven": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Slippers of Spider Climbing': {
+        "Slippers of Spider Climbing": {
                 price: 5000,
                 rarity: "uncommon"
         },
-        'Sovereign Glue': {
+        "Sovereign Glue": {
                 price: 400,
                 rarity: "legendary"
         },
-        'Spellguard Shield': {
+        "Spellguard Shield": {
                 price: 50000,
                 rarity: "very rare"
         },
-        'Sphere of Annihilation': {
+        "Sphere of Annihilation": {
                 price: 15000,
                 rarity: "legendary"
         },
-        'Staff of Charming': {
+        "Staff of Charming": {
                 price: 12000,
                 rarity: "rare"
         },
-        'Staff of Fire': {
+        "Staff of Fire": {
                 price: 16000,
                 rarity: "very rare"
         },
-        'Staff of Frost': {
+        "Staff of Frost": {
                 price: 26000,
                 rarity: "very rare"
         },
-        'Staff of Healing': {
+        "Staff of Healing": {
                 price: 13000,
                 rarity: "rare"
         },
-        'Staff of Power': {
+        "Staff of Power": {
                 price: 95500,
                 rarity: "very rare"
         },
-        'Staff of Striking': {
+        "Staff of Striking": {
                 price: 21000,
                 rarity: "very rare"
         },
-        'Staff of Swarming Insects': {
+        "Staff of Swarming Insects": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Staff of the Adder': {
+        "Staff of the Adder": {
                 price: 1800,
                 rarity: "uncommon"
         },
-        'Staff of the Python': {
+        "Staff of the Python": {
                 price: 2000,
                 rarity: "uncommon"
         },
-        'Staff of the Woodlands': {
+        "Staff of the Woodlands": {
                 price: 44000,
                 rarity: "rare"
         },
-        'Staff of Thunder and Lightning': {
+        "Staff of Thunder and Lightning": {
                 price: 10000,
                 rarity: "very rare"
         },
-        'Staff of Withering': {
+        "Staff of Withering": {
                 price: 3000,
                 rarity: "rare"
         },
-        'Stone of Controlling Earth Elementals': {
+        "Stone of Controlling Earth Elementals": {
                 price: 8000,
                 rarity: "rare"
         },
-        'Sun Blade': { // only longsword, no variants
+        "Sun Blade": { // only longsword, no variants
                 price: 12000,
                 rarity: "rare"
         },  
-        'Sword of Answering': { // only longsword, no variants
+        "Sword of Answering": { // only longsword, no variants
                 price: 36000,
                 rarity: "legendary"
         },
-        'Talisman of Pure Good': {
+        "Talisman of Pure Good": {
                 price: 71680,
                 rarity: "legendary"
         },
-        'Talisman of the Sphere': {
+        "Talisman of the Sphere": {
                 price: 20000,
                 rarity: "legendary"
         },
-        'Talisman of Ultimate Evil': {
+        "Talisman of Ultimate Evil": {
                 price: 61440,
                 rarity: "legendary"
         },
-        'Tentacle Rod': {
+        "Tentacle Rod": {
                 price: 5000,
                 rarity: "rare"
         },
-        'Trident of Fish Command': {
+        "Trident of Fish Command": {
                 price: 800,
                 rarity: "uncommon"
         },
-        'Universal Solvent': {
+        "Universal Solvent": {
                 price: 300,
                 rarity: "legendary"
         },
-        'Wand of Binding': {
+        "Wand of Binding": {
                 price: 10000,
                 rarity: "rare"
         },
-        'Wand of Enemy Detection': {
+        "Wand of Enemy Detection": {
                 price: 4000,
                 rarity: "rare"
         },
-        'Wand of Fear': {
+        "Wand of Fear": {
                 price: 10000,
                 rarity: "rare"
         },
-        'Wand of Fireballs': {
+        "Wand of Fireballs": {
                 price: 32000,
                 rarity: "rare"
         },
-        'Wand of Lightning Bolts': {
+        "Wand of Lightning Bolts": {
                 price: 32000,
                 rarity: "rare"
         },
-        'Wand of Magic Detection': {
+        "Wand of Magic Detection": {
                 price: 1500,
                 rarity: "uncommon"
         },
-        'Wand of Magic Missiles': {
+        "Wand of Magic Missiles": {
                 price: 8000,
                 rarity: "uncommon"
         },
-        'Wand of Paralysis': {
+        "Wand of Paralysis": {
                 price: 16000,
                 rarity: "rare"
         },
-        'Wand of Polymorph': {
+        "Wand of Polymorph": {
                 price: 32000,
                 rarity: "very rare"
         },
-        'Wand of Secrets': {
+        "Wand of Secrets": {
                 price: 1500,
                 rarity: "uncommon"
         },
-        'Wand of the War Mage +1': {
+        "Wand of the War Mage +1": {
                 price: 1200,
                 rarity: "uncommon"
         },
-        'Wand of the War Mage +2': {
+        "Wand of the War Mage +2": {
                 price: 4800,
                 rarity: "rare"
         },
-        'Wand of the War Mage +3': {
+        "Wand of the War Mage +3": {
                 price: 19200,
                 rarity: "very rare"
         },
-        'Wand of Web': {
+        "Wand of Web": {
                 price: 8000,
                 rarity: "uncommon"
         },
-        'Wind Fan': {
+        "Wind Fan": {
                 price: 1500,
                 rarity: "uncommon"
         },
-        'Winged Boots': {
+        "Winged Boots": {
                 price: 8000,
                 rarity: "uncommon"
         },
-        'Wings of Flying': {
+        "Wings of Flying": {
                 price: 5000,
                 rarity: "rare"
         },
 
         // Things with variants (armors  / weapons)
 
-        '+1 Padded': {
+        "+1 Padded": {
                 price: 1505,
                 rarity: "uncommon"
         },
-        '+1 Leather': {
+        "+1 Leather": {
                 price: 1510,
                 rarity: "uncommon"
         },
-        '+1 Studded Leather': {
+        "+1 Studded Leather": {
                 price: 1545,
                 rarity: "uncommon"
         },
-        '+1 Hide': {
+        "+1 Hide": {
                 price: 1510,
                 rarity: "uncommon"
         },
-        '+1 Chain shirt': {
+        "+1 Chain shirt": {
                 price: 1550,
                 rarity: "uncommon"
         },
-        '+1 Scale mail': {
+        "+1 Scale mail": {
                 price: 1550,
                 rarity: "uncommon"
         },
-        '+1 Breastplate': {
+        "+1 Breastplate": {
                 price: 1900,
                 rarity: "uncommon"
         },
-        '+1 Half plate': {
+        "+1 Half plate": {
                 price: 2250,
                 rarity: "uncommon"
         },
-        '+1 Ring mail': {
+        "+1 Ring mail": {
                 price: 1530,
                 rarity: "uncommon"
         },
-        '+1 Chain mail': {
+        "+1 Chain mail": {
                 price: 1575,
                 rarity: "uncommon"
         },
-        '+1 Splint': {
+        "+1 Splint": {
                 price: 1700,
                 rarity: "uncommon"
         },
-        '+1 Plate': {
+        "+1 Plate": {
                 price: 3000,
                 rarity: "uncommon"
         },
-        '+2 Padded': {
+        "+2 Padded": {
                 price: 6005,
                 rarity: "rare"
         },
-        '+2 Leather': {
+        "+2 Leather": {
                 price: 6010,
                 rarity: "rare"
         },
-        '+2 Studded Leather': {
+        "+2 Studded Leather": {
                 price: 6045,
                 rarity: "rare"
         },
-        '+2 Hide': {
+        "+2 Hide": {
                 price: 6010,
                 rarity: "rare"
         },
-        '+2 Chain shirt': {
+        "+2 Chain shirt": {
                 price: 6050,
                 rarity: "rare"
         },
-        '+2 Scale mail': {
+        "+2 Scale mail": {
                 price: 6050,
                 rarity: "rare"
         },
-        '+2 Breastplate': {
+        "+2 Breastplate": {
                 price: 6400,
                 rarity: "rare"
         },
-        '+2 Half plate': {
+        "+2 Half plate": {
                 price: 6750,
                 rarity: "rare"
         },
-        '+2 Ring mail': {
+        "+2 Ring mail": {
                 price: 6030,
                 rarity: "rare"
         },
-        '+2 Chain mail': {
+        "+2 Chain mail": {
                 price: 6075,
                 rarity: "rare"
         },
-        '+2 Splint': {
+        "+2 Splint": {
                 price: 6200,
                 rarity: "rare"
         },
-        '+2 Plate': {
+        "+2 Plate": {
                 price: 7500,
                 rarity: "rare"
         },
-        '+3 Padded': {
+        "+3 Padded": {
                 price: 24005,
                 rarity: "very rare"
         },
-        '+3 Leather': {
+        "+3 Leather": {
                 price: 24010,
                 rarity: "very rare"
         },
-        '+3 Studded Leather': {
+        "+3 Studded Leather": {
                 price: 24045,
                 rarity: "very rare"
         },
-        '+3 Hide': {
+        "+3 Hide": {
                 price: 24010,
                 rarity: "very rare"
         },
-        '+3 Chain shirt': {
+        "+3 Chain shirt": {
                 price: 24050,
                 rarity: "very rare"
         },
-        '+3 Scale mail': {
+        "+3 Scale mail": {
                 price: 24050,
                 rarity: "very rare"
         },
-        '+3 Breastplate': {
+        "+3 Breastplate": {
                 price: 24400,
                 rarity: "very rare"
         },
-        '+3 Half plate': {
+        "+3 Half plate": {
                 price: 24750,
                 rarity: "very rare"
         },
-        '+3 Ring mail': {
+        "+3 Ring mail": {
                 price: 24030,
                 rarity: "very rare"
         },
-        '+3 Chain mail': {
+        "+3 Chain mail": {
                 price: 24075,
                 rarity: "very rare"
         },
-        '+3 Splint': {
+        "+3 Splint": {
                 price: 24200,
                 rarity: "very rare"
         },
-        '+3 Plate': {
+        "+3 Plate": {
                 price: 25500,
                 rarity: "very rare"
         },
-        'Adamantine Armor Chain shirt': {
+        "Adamantine Armor Chain shirt": {
                 price: 550,
                 rarity: "uncommon"
         },
-        'Adamantine Armor Scale mail': {
+        "Adamantine Armor Scale mail": {
                 price: 550,
                 rarity: "uncommon"
         },
-        'Adamantine Armor Breastplate': {
+        "Adamantine Armor Breastplate": {
                 price: 900,
                 rarity: "uncommon"
         },
-        'Adamantine Armor Half plate': {
+        "Adamantine Armor Half plate": {
                 price: 1250,
                 rarity: "uncommon"
         },
-        'Adamantine Armor Ring mail': {
+        "Adamantine Armor Ring mail": {
                 price: 530,
                 rarity: "uncommon"
         },
-        'Adamantine Armor Chain mail': {
+        "Adamantine Armor Chain mail": {
                 price: 575,
                 rarity: "uncommon"
         },
-        'Adamantine Armor Splint': {
+        "Adamantine Armor Splint": {
                 price: 700,
                 rarity: "uncommon"
         },
-        'Adamantine Armor Plate': {
+        "Adamantine Armor Plate": {
                 price: 2000,
                 rarity: "uncommon"
         },
-        'Mithral Armor Chain shirt': {
+        "Mithral Armor Chain shirt": {
                 price: 850,
                 rarity: "uncommon"
         },
-        'Mithral Armor Scale mail': {
+        "Mithral Armor Scale mail": {
                 price: 850,
                 rarity: "uncommon"
         },
-        'Mithral Armor Breastplate': {
+        "Mithral Armor Breastplate": {
                 price: 1200,
                 rarity: "uncommon"
         },
-        'Mithral Armor Half plate': {
+        "Mithral Armor Half plate": {
                 price: 1550,
                 rarity: "uncommon"
         },
-        'Mithral Armor Ring mail': {
+        "Mithral Armor Ring mail": {
                 price: 830,
                 rarity: "uncommon"
         },
-        'Mithral Armor Chain mail': {
+        "Mithral Armor Chain mail": {
                 price: 875,
                 rarity: "uncommon"
         },
-        'Mithral Armor Splint': {
+        "Mithral Armor Splint": {
                 price: 1000,
                 rarity: "uncommon"
         },
-        'Mithral Armor Plate': {
+        "Mithral Armor Plate": {
                 price: 2300,
                 rarity: "uncommon"
         },
-        'Armor of Resistance Chain shirt': {
+        "Armor of Resistance Chain shirt": {
                 price: 6050,
                 rarity: "rare"
         },
-        'Armor of Resistance Scale mail': {
+        "Armor of Resistance Scale mail": {
                 price: 6050,
                 rarity: "rare"
         },
-        'Armor of Resistance Breastplate': {
+        "Armor of Resistance Breastplate": {
                 price: 6400,
                 rarity: "rare"
         },
-        'Armor of Resistance Half plate': {
+        "Armor of Resistance Half plate": {
                 price: 6750,
                 rarity: "rare"
         },
-        'Armor of Resistance Ring mail': {
+        "Armor of Resistance Ring mail": {
                 price: 6030,
                 rarity: "rare"
         },
-        'Armor of Resistance Chain mail': {
+        "Armor of Resistance Chain mail": {
                 price: 6075,
                 rarity: "rare"
         },
-        'Armor of Resistance Splint': {
+        "Armor of Resistance Splint": {
                 price: 6200,
                 rarity: "rare"
         },
-        'Armor of Resistance Plate': {
+        "Armor of Resistance Plate": {
                 price: 7500,
                 rarity: "rare"
         },
@@ -1452,1251 +1454,1251 @@ const sanesItemPrices = {
                 price: 3000,
                 rarity: "uncommon"
         },
-        'Plate Armor of Etherealness Chain shirt': {
+        "Plate Armor of Etherealness Chain shirt": {
                 price: 48050,
                 rarity: "legendary"
         },
-        'Plate Armor of Etherealness Scale mail': {
+        "Plate Armor of Etherealness Scale mail": {
                 price: 48050,
                 rarity: "legendary"
         },
-        'Plate Armor of Etherealness Breastplate': {
+        "Plate Armor of Etherealness Breastplate": {
                 price: 48400,
                 rarity: "legendary"
         },
-        'Plate Armor of Etherealness Half plate': {
+        "Plate Armor of Etherealness Half plate": {
                 price: 48750,
                 rarity: "legendary"
         },
-        'Plate Armor of Etherealness Ring mail': {
+        "Plate Armor of Etherealness Ring mail": {
                 price: 48030,
                 rarity: "legendary"
         },
-        'Plate Armor of Etherealness Chain mail': {
+        "Plate Armor of Etherealness Chain mail": {
                 price: 48075,
                 rarity: "legendary"
         },
-        'Plate Armor of Etherealness Splint': {
+        "Plate Armor of Etherealness Splint": {
                 price: 48200,
                 rarity: "legendary"
         },
-        'Plate Armor of Etherealness Plate': {
+        "Plate Armor of Etherealness Plate": {
                 price: 49500,
                 rarity: "legendary"
         },
-        'Armor of Invulnerability Chain shirt': {
+        "Armor of Invulnerability Chain shirt": {
                 price: 18050,
                 rarity: "legendary"
         },
-        'Armor of Invulnerability Scale mail': {
+        "Armor of Invulnerability Scale mail": {
                 price: 18050,
                 rarity: "legendary"
         },
-        'Armor of Invulnerability Breastplate': {
+        "Armor of Invulnerability Breastplate": {
                 price: 18400,
                 rarity: "legendary"
         },
-        'Armor of Invulnerability Half plate': {
+        "Armor of Invulnerability Half plate": {
                 price: 18750,
                 rarity: "legendary"
         },
-        'Armor of Invulnerability Ring mail': {
+        "Armor of Invulnerability Ring mail": {
                 price: 18030,
                 rarity: "legendary"
         },
-        'Armor of Invulnerability Chain mail': {
+        "Armor of Invulnerability Chain mail": {
                 price: 18075,
                 rarity: "legendary"
         },
-        'Armor of Invulnerability Splint': {
+        "Armor of Invulnerability Splint": {
                 price: 18200,
                 rarity: "legendary"
         },
-        'Armor of Invulnerability Plate': {
+        "Armor of Invulnerability Plate": {
                 price: 19500,
                 rarity: "legendary"
         },
-        '+1 Battleaxe': {
+        "+1 Battleaxe": {
                 price: 1010,
                 rarity: "uncommon"
         },
-        '+1 Greataxe': {
+        "+1 Greataxe": {
                 price: 1030,
                 rarity: "uncommon"
         },
-        '+1 Handaxe': {
+        "+1 Handaxe": {
                 price: 1005,
                 rarity: "uncommon"
         },
-        '+1 Greatsword': {
+        "+1 Greatsword": {
                 price: 1050,
                 rarity: "uncommon"
         },
-        '+1 Longsword': {
+        "+1 Longsword": {
                 price: 1015,
                 rarity: "uncommon"
         },
-        '+1 Scimitar': {
+        "+1 Scimitar": {
                 price: 1025,
                 rarity: "uncommon"
         },
-        '+1 Rapier': {
+        "+1 Rapier": {
                 price: 1025,
                 rarity: "uncommon"
         },
-        '+1 Shortsword': {
+        "+1 Shortsword": {
                 price: 1010,
                 rarity: "uncommon"
         },
-        '+1 Club': {
+        "+1 Club": {
                 price: 1000.1,
                 rarity: "uncommon"
         },
-        '+1 Dagger': {
+        "+1 Dagger": {
                 price: 1002,
                 rarity: "uncommon"
         },
-        '+1 Greatclub': {
+        "+1 Greatclub": {
                 price: 1000.2,
                 rarity: "uncommon"
         },
-        '+1 Javelin': {
+        "+1 Javelin": {
                 price: 1000.5,
                 rarity: "uncommon"
         },
-        '+1 Light Hammer': {
+        "+1 Light Hammer": {
                 price: 1000.2,
                 rarity: "uncommon"
         },
-        '+1 Mace': {
+        "+1 Mace": {
                 price: 1005,
         },
-        '+1 Quarterstaff': {
+        "+1 Quarterstaff": {
                 price: 1000.2,
                 rarity: "uncommon"
         },
-        '+1 Sickle': {
+        "+1 Sickle": {
                 price: 1001,
                 rarity: "uncommon"
         },
-        '+1 Spear': {
+        "+1 Spear": {
                 price: 1001,
                 rarity: "uncommon"
         },
-        '+1 Yklwa': {
+        "+1 Yklwa": {
                 price: 1001,
                 rarity: "uncommon"
         },
-        '+1 Crossbow, light': {
+        "+1 Crossbow, light": {
                 price: 1025,
                 rarity: "uncommon"
         },
-        '+1 Dart': {
+        "+1 Dart": {
                 price: 1000.05,
                 rarity: "uncommon"
         },
-        '+1 Shortbow': {
+        "+1 Shortbow": {
                 price: 1025,
                 rarity: "uncommon"
         },
-        '+1 Sling': {
+        "+1 Sling": {
                 price: 1000.1,
                 rarity: "uncommon"
         },
-        '+1 Double-bladed Scimitar': {
+        "+1 Double-bladed Scimitar": {
                 price: 1100,
                 rarity: "uncommon"
         },
-        '+1 Flail': {
+        "+1 Flail": {
                 price: 1010,
                 rarity: "uncommon"
         },
-        '+1 Glaive': {
+        "+1 Glaive": {
                 price: 1020,
                 rarity: "uncommon"
         },
-        '+1 Halberd': {
+        "+1 Halberd": {
                 price: 1020,
                 rarity: "uncommon"
         },
-        '+1 Lance': {
+        "+1 Lance": {
                 price: 1010,
                 rarity: "uncommon"
         },
-        '+1 Maul': {
+        "+1 Maul": {
                 price: 1010,
                 rarity: "uncommon"
         },
-        '+1 Morningstar': {
+        "+1 Morningstar": {
                 price: 1015,
                 rarity: "uncommon"
         },
-        '+1 Pike': {
+        "+1 Pike": {
                 price: 1005,
                 rarity: "uncommon"
         },
-        '+1 Trident': {
+        "+1 Trident": {
                 price: 1005,
                 rarity: "uncommon"
         },
-        '+1 War Pick': {
+        "+1 War Pick": {
                 price: 1005,
                 rarity: "uncommon"
         },
-        '+1 Warhammer': {
+        "+1 Warhammer": {
                 price: 1015,
                 rarity: "uncommon"
         },
-        '+1 Whip': {
+        "+1 Whip": {
                 price: 1002,
                 rarity: "uncommon"
         },
-        '+1 Blowgun': {
+        "+1 Blowgun": {
                 price: 1010,
                 rarity: "uncommon"
         },
-        '+1 Crossbow, hand': {
+        "+1 Crossbow, hand": {
                 price: 1075,
                 rarity: "uncommon"
         },
-        '+1 Crossbow, heavy': {
+        "+1 Crossbow, heavy": {
                 price: 1050,
                 rarity: "uncommon"
         },
-        '+1 Longbow': {
+        "+1 Longbow": {
                 price: 1050,
                 rarity: "uncommon"
         },
-        '+1 Net': {
+        "+1 Net": {
                 price: 1001,
                 rarity: "uncommon"
         },
-        '+2 Battleaxe': {
+        "+2 Battleaxe": {
                 price: 4010,
                 rarity: "rare"
         },
-        '+2 Greataxe': {
+        "+2 Greataxe": {
                 price: 4030,
                 rarity: "rare"
         },
-        '+2 Handaxe': {
+        "+2 Handaxe": {
                 price: 4005,
                 rarity: "rare"
         },
-        '+2 Greatsword': {
+        "+2 Greatsword": {
                 price: 4050,
                 rarity: "rare"
         },
-        '+2 Longsword': {
+        "+2 Longsword": {
                 price: 4015,
                 rarity: "rare"
         },
-        '+2 Scimitar': {
+        "+2 Scimitar": {
                 price: 4025,
                 rarity: "rare"
         },
-        '+2 Rapier': {
+        "+2 Rapier": {
                 price: 4025,
                 rarity: "rare"
         },
-        '+2 Shortsword': {
+        "+2 Shortsword": {
                 price: 4010,
                 rarity: "rare"
         },
-        '+2 Club': {
+        "+2 Club": {
                 price: 4000.1,
                 rarity: "rare"
         },
-        '+2 Dagger': {
+        "+2 Dagger": {
                 price: 4002,
                 rarity: "rare"
         },
-        '+2 Greatclub': {
+        "+2 Greatclub": {
                 price: 4000.2,
                 rarity: "rare"
         },
-        '+2 Javelin': {
+        "+2 Javelin": {
                 price: 4000.5,
                 rarity: "rare"
         },
-        '+2 Light Hammer': {
+        "+2 Light Hammer": {
                 price: 4000.2,
                 rarity: "rare"
         },
-        '+2 Mace': {
+        "+2 Mace": {
                 price: 4005,
                 rarity: "rare"
         },
-        '+2 Quarterstaff': {
+        "+2 Quarterstaff": {
                 price: 4000.2,
                 rarity: "rare"
         },
-        '+2 Sickle': {
+        "+2 Sickle": {
                 price: 4001,
                 rarity: "rare"
         },
-        '+2 Spear': {
+        "+2 Spear": {
                 price: 4001,
                 rarity: "rare"
         },
-        '+2 Yklwa': {
+        "+2 Yklwa": {
                 price: 4001,
                 rarity: "rare"
         },
-        '+2 Crossbow, light': {
+        "+2 Crossbow, light": {
                 price: 4025,
                 rarity: "rare"
         },
-        '+2 Dart': {
+        "+2 Dart": {
                 price: 4000.05,
                 rarity: "rare"
         },
-        '+2 Shortbow': {
+        "+2 Shortbow": {
                 price: 4025,
                 rarity: "rare"
         },
-        '+2 Sling': {
+        "+2 Sling": {
                 price: 4000.1,
                 rarity: "rare"
         },
-        '+2 Double-bladed Scimitar': {
+        "+2 Double-bladed Scimitar": {
                 price: 4100,
                 rarity: "rare"
         },
-        '+2 Flail': {
+        "+2 Flail": {
                 price: 4010,
                 rarity: "rare"
         },
-        '+2 Glaive': {
+        "+2 Glaive": {
                 price: 4020,
                 rarity: "rare"
         },
-        '+2 Halberd': {
+        "+2 Halberd": {
                 price: 4020,
                 rarity: "rare"
         },
-        '+2 Lance': {
+        "+2 Lance": {
                 price: 4010,
                 rarity: "rare"
         },
-        '+2 Maul': {
+        "+2 Maul": {
                 price: 4010,
                 rarity: "rare"
         },
-        '+2 Morningstar': {
+        "+2 Morningstar": {
                 price: 4015,
                 rarity: "rare"
         },
-        '+2 Pike': {
+        "+2 Pike": {
                 price: 4005,
                 rarity: "rare"
         },
-        '+2 Trident': {
+        "+2 Trident": {
                 price: 4005,
                 rarity: "rare"
         },
-        '+2 War Pick': {
+        "+2 War Pick": {
                 price: 4005,
                 rarity: "rare"
         },
-        '+2 Warhammer': {
+        "+2 Warhammer": {
                 price: 4015,
                 rarity: "rare"
         },
-        '+2 Whip': {
+        "+2 Whip": {
                 price: 4002,
                 rarity: "rare"
         },
-        '+2 Blowgun': {
+        "+2 Blowgun": {
                 price: 4010,
                 rarity: "rare"
         },
-        '+2 Crossbow, hand': {
+        "+2 Crossbow, hand": {
                 price: 4075,
                 rarity: "rare"
         },
-        '+2 Crossbow, heavy': {
+        "+2 Crossbow, heavy": {
                 price: 4050,
                 rarity: "rare"
         },
-        '+2 Longbow': {
+        "+2 Longbow": {
                 price: 4050,
                 rarity: "rare"
         },
-        '+2 Net': {
+        "+2 Net": {
                 price: 4001,
                 rarity: "rare"
         },
-        '+3 Battleaxe': {
+        "+3 Battleaxe": {
                 price: 16010,
                 rarity: "very rare"
         },
-        '+3 Greataxe': {
+        "+3 Greataxe": {
                 price: 16030,
                 rarity: "very rare"
         },
-        '+3 Handaxe': {
+        "+3 Handaxe": {
                 price: 16005,
                 rarity: "very rare"
         },
-        '+3 Greatsword': {
+        "+3 Greatsword": {
                 price: 16050,
                 rarity: "very rare"
         },
-        '+3 Longsword': {
+        "+3 Longsword": {
                 price: 16015,
                 rarity: "very rare"
         },
-        '+3 Scimitar': {
+        "+3 Scimitar": {
                 price: 16025,
                 rarity: "very rare"
         },
-        '+3 Rapier': {
+        "+3 Rapier": {
                 price: 16025,
                 rarity: "very rare"
         },
-        '+3 Shortsword': {
+        "+3 Shortsword": {
                 price: 16010,
                 rarity: "very rare"
         },
-        '+3 Club': {
+        "+3 Club": {
                 price: 16000.1,
                 rarity: "very rare"
         },
-        '+3 Dagger': {
+        "+3 Dagger": {
                 price: 16002,
                 rarity: "very rare"
         },
-        '+3 Greatclub': {
+        "+3 Greatclub": {
                 price: 16000.2,
                 rarity: "very rare"
         },
-        '+3 Javelin': {
+        "+3 Javelin": {
                 price: 16000.5,
                 rarity: "very rare"
         },
-        '+3 Light Hammer': {
+        "+3 Light Hammer": {
                 price: 16000.2,
                 rarity: "very rare"
         },
-        '+3 Mace': {
+        "+3 Mace": {
                 price: 16005,
                 rarity: "very rare"
         },
-        '+3 Quarterstaff': {
+        "+3 Quarterstaff": {
                 price: 16000.2,
                 rarity: "very rare"
         },
-        '+3 Sickle': {
+        "+3 Sickle": {
                 price: 16001,
                 rarity: "very rare"
         },
-        '+3 Spear': {
+        "+3 Spear": {
                 price: 16001,
                 rarity: "very rare"
         },
-        '+3 Yklwa': {
+        "+3 Yklwa": {
                 price: 16001,
                 rarity: "very rare"
         },
-        '+3 Crossbow, light': {
+        "+3 Crossbow, light": {
                 price: 16025,
                 rarity: "very rare"
         },
-        '+3 Dart': {
+        "+3 Dart": {
                 price: 16000.05,
                 rarity: "very rare"
         },
-        '+3 Shortbow': {
+        "+3 Shortbow": {
                 price: 16025,
                 rarity: "very rare"
         },
-        '+3 Sling': {
+        "+3 Sling": {
                 price: 16000.1,
                 rarity: "very rare"
         },
-        '+3 Double-bladed Scimitar': {
+        "+3 Double-bladed Scimitar": {
                 price: 16100,
                 rarity: "very rare"
         },
-        '+3 Flail': {
+        "+3 Flail": {
                 price: 16010,
                 rarity: "very rare"
         },
-        '+3 Glaive': {
+        "+3 Glaive": {
                 price: 16020,
                 rarity: "very rare"
         },
-        '+3 Halberd': {
+        "+3 Halberd": {
                 price: 16020,
                 rarity: "very rare"
         },
-        '+3 Lance': {
+        "+3 Lance": {
                 price: 16010,
                 rarity: "very rare"
         },
-        '+3 Maul': {
+        "+3 Maul": {
                 price: 16010,
                 rarity: "very rare"
         },
-        '+3 Morningstar': {
+        "+3 Morningstar": {
                 price: 16015,
                 rarity: "very rare"
         },
-        '+3 Pike': {
+        "+3 Pike": {
                 price: 16005,
                 rarity: "very rare"
         },
-        '+3 Trident': {
+        "+3 Trident": {
                 price: 16005,
                 rarity: "very rare"
         },
-        '+3 War Pick': {
+        "+3 War Pick": {
                 price: 16005,
                 rarity: "very rare"
         },
-        '+3 Warhammer': {
+        "+3 Warhammer": {
                 price: 16015,
                 rarity: "very rare"
         },
-        '+3 Whip': {
+        "+3 Whip": {
                 price: 16002,
                 rarity: "very rare"
         },
-        '+3 Blowgun': {
+        "+3 Blowgun": {
                 price: 16010,
                 rarity: "very rare"
         },
-        '+3 Crossbow, hand': {
+        "+3 Crossbow, hand": {
                 price: 16075,
                 rarity: "very rare"
         },
-        '+3 Crossbow, heavy': {
+        "+3 Crossbow, heavy": {
                 price: 16050,
                 rarity: "very rare"
         },
-        '+3 Longbow': {
+        "+3 Longbow": {
                 price: 16050,
                 rarity: "very rare"
         },
-        '+3 Net': {
+        "+3 Net": {
                 price: 16001,
                 rarity: "very rare"
         },
-        'Nine Lives Stealer Greatsword (Fully Charged)': {
+        "Nine Lives Stealer Greatsword (Fully Charged)": {
                 price: 8050,
                 rarity: "very rare"
         },
-        'Nine Lives Stealer Longsword (Fully Charged)': {
+        "Nine Lives Stealer Longsword (Fully Charged)": {
                 price: 8015,
                 rarity: "very rare"
         },
-        'Nine Lives Stealer Scimitar (Fully Charged)': {
+        "Nine Lives Stealer Scimitar (Fully Charged)": {
                 price: 8025,
                 rarity: "very rare"
         },
-        'Nine Lives Stealer Rapier (Fully Charged)': {
+        "Nine Lives Stealer Rapier (Fully Charged)": {
                 price: 8025,
                 rarity: "very rare"
         },
-        'Nine Lives Stealer Shortsword (Fully Charged)': {
+        "Nine Lives Stealer Shortsword (Fully Charged)": {
                 price: 8010,
                 rarity: "very rare"
         },
-        'Dancing Greatsword': {
+        "Dancing Greatsword": {
                 price: 2050,
                 rarity: "very rare"
         },
-        'Dancing Longsword': {
+        "Dancing Longsword": {
                 price: 2015,
                 rarity: "very rare"
         },
-        'Dancing Scimitar': {
+        "Dancing Scimitar": {
                 price: 2025,
                 rarity: "very rare"
         },
-        'Dancing Rapier': {
+        "Dancing Rapier": {
                 price: 2025,
                 rarity: "very rare"
         },
-        'Dancing Shortsword': {
+        "Dancing Shortsword": {
                 price: 2010,
                 rarity: "very rare"
         },
-        'Defender Greatsword': {
+        "Defender Greatsword": {
                 price: 24050,
                 rarity: "legendary"
         },
-        'Defender Longsword': {
+        "Defender Longsword": {
                 price: 24015,
                 rarity: "legendary"
         },
-        'Defender Scimitar': {
+        "Defender Scimitar": {
                 price: 24025,
                 rarity: "legendary"
         },
-        'Defender Rapier': {
+        "Defender Rapier": {
                 price: 24025,
                 rarity: "legendary"
         },
-        'Defender Shortsword': {
+        "Defender Shortsword": {
                 price: 24010,
                 rarity: "legendary"
         },
-        'Dragon Slayer Greatsword': {
+        "Dragon Slayer Greatsword": {
                 price: 8050,
                 rarity: "rare"
         },
-        'Dragon Slayer Longsword': {
+        "Dragon Slayer Longsword": {
                 price: 8015,
                 rarity: "rare"
         },
-        'Dragon Slayer Scimitar': {
+        "Dragon Slayer Scimitar": {
                 price: 8025,
                 rarity: "rare"
         },
-        'Dragon Slayer Rapier': {
+        "Dragon Slayer Rapier": {
                 price: 8025,
                 rarity: "rare"
         },
-        'Dragon Slayer Shortsword': {
+        "Dragon Slayer Shortsword": {
                 price: 8010,
                 rarity: "rare"
         },
-        'Flame Tongue Greatsword': {
+        "Flame Tongue Greatsword": {
                 price: 5050,
                 rarity: "rare"
         },
-        'Flame Tongue Longsword': {
+        "Flame Tongue Longsword": {
                 price: 5015,
                 rarity: "rare"
         },
-        'Flame Tongue Scimitar': {
+        "Flame Tongue Scimitar": {
                 price: 5025,
                 rarity: "rare"
         },
-        'Flame Tongue Rapier': {
+        "Flame Tongue Rapier": {
                 price: 5025,
                 rarity: "rare"
         },
-        'Flame Tongue Shortsword': {
+        "Flame Tongue Shortsword": {
                 price: 5010,
                 rarity: "rare"
         },
-        'Frost Brand Greatsword': {
+        "Frost Brand Greatsword": {
                 price: 2250,
                 rarity: "very rare"
         },
-        'Frost Brand Longsword': {
+        "Frost Brand Longsword": {
                 price: 2215,
                 rarity: "very rare"
         },
-        'Frost Brand Scimitar': {
+        "Frost Brand Scimitar": {
                 price: 2225,
                 rarity: "very rare"
         },
-        'Frost Brand Rapier': {
+        "Frost Brand Rapier": {
                 price: 2225,
                 rarity: "very rare"
         },
-        'Frost Brand Shortsword': {
+        "Frost Brand Shortsword": {
                 price: 2210,
                 rarity: "very rare"
         },
-        'Giant Slayer Battleaxe': {
+        "Giant Slayer Battleaxe": {
                 price: 7010,
                 rarity: "rare"
         },
-        'Giant Slayer Greataxe': {
+        "Giant Slayer Greataxe": {
                 price: 7030,
                 rarity: "rare"
         },
-        'Giant Slayer Handaxe': {
+        "Giant Slayer Handaxe": {
                 price: 7005,
                 rarity: "rare"
         },
-        'Giant Slayer Greatsword': {
+        "Giant Slayer Greatsword": {
                 price: 7050,
                 rarity: "rare"
         },
-        'Giant Slayer Longsword': {
+        "Giant Slayer Longsword": {
                 price: 7015,
                 rarity: "rare"
         },
-        'Giant Slayer Scimitar': {
+        "Giant Slayer Scimitar": {
                 price: 7025,
                 rarity: "rare"
         },
-        'Giant Slayer Rapier': {
+        "Giant Slayer Rapier": {
                 price: 7025,
                 rarity: "rare"
         },
-        'Giant Slayer Shortsword': {
+        "Giant Slayer Shortsword": {
                 price: 7010,
                 rarity: "rare"
         },
-        'Holy Avenger Greatsword': {
+        "Holy Avenger Greatsword": {
                 price: 165050,
                 rarity: "legendary"
         },
-        'Holy Avenger Longsword': {
+        "Holy Avenger Longsword": {
                 price: 165015,
                 rarity: "legendary"
         },
-        'Holy Avenger Scimitar': {
+        "Holy Avenger Scimitar": {
                 price: 165025,
                 rarity: "legendary"
         },
-        'Holy Avenger Rapier': {
+        "Holy Avenger Rapier": {
                 price: 165025,
                 rarity: "legendary"
         },
-        'Holy Avenger Shortsword': {
+        "Holy Avenger Shortsword": {
                 price: 165010,
                 rarity: "legendary"
         },
-        'Greatsword of Life-Stealing': {
+        "Greatsword of Life-Stealing": {
                 price: 1050,
                 rarity: "rare"
         },
-        'Longsword of Life-Stealing': {
+        "Longsword of Life-Stealing": {
                 price: 1015,
                 rarity: "rare"
         },
-        'Scimitar of Life-Stealing': {
+        "Scimitar of Life-Stealing": {
                 price: 1025,
                 rarity: "rare"
         },
-        'Rapier of Life-Stealing': {
+        "Rapier of Life-Stealing": {
                 price: 1025,
                 rarity: "rare"
         },
-        'Shortsword of Life-Stealing': {
+        "Shortsword of Life-Stealing": {
                 price: 1010,
                 rarity: "rare"
         },
-        'Greatsword of Sharpness': {
+        "Greatsword of Sharpness": {
                 price: 1750,
                 rarity: "very rare"
         },
-        'Longsword of Sharpness': {
+        "Longsword of Sharpness": {
                 price: 1715,
                 rarity: "very rare"
         },
-        'Scimitar of Sharpness': {
+        "Scimitar of Sharpness": {
                 price: 1725,
                 rarity: "very rare"
         },
-        'Greatsword of Wounding': {
+        "Greatsword of Wounding": {
                 price: 2050,
                 rarity: "rare"
         },
-        'Longsword of Wounding': {
+        "Longsword of Wounding": {
                 price: 2015,
                 rarity: "rare"
         },
-        'Scimitar of Wounding': {
+        "Scimitar of Wounding": {
                 price: 2025,
                 rarity: "rare"
         },
-        'Rapier of Wounding': {
+        "Rapier of Wounding": {
                 price: 2025,
                 rarity: "rare"
         },
-        'Shortsword of Wounding': {
+        "Shortsword of Wounding": {
                 price: 2010,
                 rarity: "rare"
         },
-        'Vicious Battleaxe': {
+        "Vicious Battleaxe": {
                 price: 360,
         },
-        'Vicious Greataxe': {
+        "Vicious Greataxe": {
                 price: 380,
                 rarity: "rare"
         },
-        'Vicious Handaxe': {
+        "Vicious Handaxe": {
                 price: 355,
                 rarity: "rare"
         },
-        'Vicious Greatsword': {
+        "Vicious Greatsword": {
                 price: 400,
                 rarity: "rare"
         },
-        'Vicious Longsword': {
+        "Vicious Longsword": {
                 price: 365,
                 rarity: "rare"
         },
-        'Vicious Scimitar': {
+        "Vicious Scimitar": {
                 price: 375,
                 rarity: "rare"
         },
-        'Vicious Rapier': {
+        "Vicious Rapier": {
                 price: 375,
                 rarity: "rare"
         },
-        'Vicious Shortsword': {
+        "Vicious Shortsword": {
                 price: 360,
                 rarity: "rare"
         },
-        'Vicious Club': {
+        "Vicious Club": {
                 price: 350.1,
                 rarity: "rare"
         },
-        'Vicious Dagger': {
+        "Vicious Dagger": {
                 price: 352,
                 rarity: "rare"
         },
-        'Vicious Greatclub': {
+        "Vicious Greatclub": {
                 price: 350.2,
                 rarity: "rare"
         },
-        'Vicious Javelin': {
+        "Vicious Javelin": {
                 price: 350.5,
                 rarity: "rare"
         },
-        'Vicious Light Hammer': {
+        "Vicious Light Hammer": {
                 price: 350.2,
                 rarity: "rare"
         },
-        'Vicious Mace': {
+        "Vicious Mace": {
                 price: 355,
                 rarity: "rare"
         },
-        'Vicious Quarterstaff': {
+        "Vicious Quarterstaff": {
                 price: 350.2,
                 rarity: "rare"
         },
-        'Vicious Sickle': {
+        "Vicious Sickle": {
                 price: 351,
                 rarity: "rare"
         },
-        'Vicious Spear': {
+        "Vicious Spear": {
                 price: 351,
                 rarity: "rare"
         },
-        'Vicious Yklwa': {
+        "Vicious Yklwa": {
                 price: 351,
                 rarity: "rare"
         },
-        'Vicious Crossbow, light': {
+        "Vicious Crossbow, light": {
                 price: 375,
                 rarity: "rare"
         },
-        'Vicious Dart': {
+        "Vicious Dart": {
                 price: 350.05,
                 rarity: "rare"
         },
-        'Vicious Shortbow': {
+        "Vicious Shortbow": {
                 price: 375,
                 rarity: "rare"
         },
-        'Vicious Sling': {
+        "Vicious Sling": {
                 price: 350.1,
                 rarity: "rare"
         },
-        'Vicious Double-bladed Scimitar': {
+        "Vicious Double-bladed Scimitar": {
                 price: 450,
                 rarity: "rare"
         },
-        'Vicious Flail': {
+        "Vicious Flail": {
                 price: 360,
                 rarity: "rare"
         },
-        'Vicious Glaive': {
+        "Vicious Glaive": {
                 price: 370,
                 rarity: "rare"
         },
-        'Vicious Halberd': {
+        "Vicious Halberd": {
                 price: 370,
                 rarity: "rare"
         },
-        'Vicious Lance': {
+        "Vicious Lance": {
                 price: 360,
                 rarity: "rare"
         },
-        'Vicious Maul': {
+        "Vicious Maul": {
                 price: 360,
                 rarity: "rare"
         },
-        'Vicious Morningstar': {
+        "Vicious Morningstar": {
                 price: 365,
                 rarity: "rare"
         },
-        'Vicious Pike': {
+        "Vicious Pike": {
                 price: 355,
                 rarity: "rare"
         },
-        'Vicious Trident': {
+        "Vicious Trident": {
                 price: 355,
                 rarity: "rare"
         },
-        'Vicious War Pick': {
+        "Vicious War Pick": {
                 price: 355,
                 rarity: "rare"
         },
-        'Vicious Warhammer': {
+        "Vicious Warhammer": {
                 price: 365,
                 rarity: "rare"
         },
-        'Vicious Whip': {
+        "Vicious Whip": {
                 price: 352,
                 rarity: "rare"
         },
-        'Vicious Blowgun': {
+        "Vicious Blowgun": {
                 price: 360,
                 rarity: "rare"
         },
-        'Vicious Crossbow, hand': {
+        "Vicious Crossbow, hand": {
                 price: 425,
                 rarity: "rare"
         },
-        'Vicious Crossbow, heavy': {
+        "Vicious Crossbow, heavy": {
                 price: 400,
                 rarity: "rare"
         },
-        'Vicious Longbow': {
+        "Vicious Longbow": {
                 price: 400,
                 rarity: "rare"
         },
-        'Vicious Net': {
+        "Vicious Net": {
                 price: 351,
                 rarity: "rare"
         },
-        'Vorpal Greatsword': {
+        "Vorpal Greatsword": {
                 price: 24050,
                 rarity: "legendary"
         },
-        'Vorpal Longsword': {
+        "Vorpal Longsword": {
                 price: 24015,
                 rarity: "legendary"
         },
-        'Vorpal Scimitar': {
+        "Vorpal Scimitar": {
                 price: 24025,
                 rarity: "legendary"
         },
-        'Battleaxe of Warning': {
+        "Battleaxe of Warning": {
                 price: 60010,
                 rarity: "uncommon"
         },
-        'Greataxe of Warning': {
+        "Greataxe of Warning": {
                 price: 60030,
                 rarity: "uncommon"
         },
-        'Handaxe of Warning': {
+        "Handaxe of Warning": {
                 price: 60005,
                 rarity: "uncommon"
         },
-        'Greatsword of Warning': {
+        "Greatsword of Warning": {
                 price: 60050,
                 rarity: "uncommon"
         },
-        'Longsword of Warning': {
+        "Longsword of Warning": {
                 price: 60015,
                 rarity: "uncommon"
         },
-        'Scimitar of Warning': {
+        "Scimitar of Warning": {
                 price: 60025,
                 rarity: "uncommon"
         },
-        'Rapier of Warning': {
+        "Rapier of Warning": {
                 price: 60025,
                 rarity: "uncommon"
         },
-        'Shortsword of Warning': {
+        "Shortsword of Warning": {
                 price: 60010,
                 rarity: "uncommon"
         },
-        'Club of Warning': {
+        "Club of Warning": {
                 price: 60000.1,
                 rarity: "uncommon"
         },
-        'Dagger of Warning': {
+        "Dagger of Warning": {
                 price: 60002,
                 rarity: "uncommon"
         },
-        'Greatclub of Warning': {
+        "Greatclub of Warning": {
                 price: 60000.2,
                 rarity: "uncommon"
         },
-        'Javelin of Warning': {
+        "Javelin of Warning": {
                 price: 60000.5,
                 rarity: "uncommon"
         },
-        'Light Hammer of Warning': {
+        "Light Hammer of Warning": {
                 price: 60000.2,
                 rarity: "uncommon"
         },
-        'Mace of Warning': {
+        "Mace of Warning": {
                 price: 60005,
                 rarity: "uncommon"
         },
-        'Quarterstaff of Warning': {
+        "Quarterstaff of Warning": {
                 price: 60000.2,
                 rarity: "uncommon"
         },
-        'Sickle of Warning': {
+        "Sickle of Warning": {
                 price: 60001,
                 rarity: "uncommon"
         },
-        'Spear of Warning': {
+        "Spear of Warning": {
                 price: 60001,
                 rarity: "uncommon"
         },
-        'Yklwa of Warning': {
+        "Yklwa of Warning": {
                 price: 60001,
                 rarity: "uncommon"
         },
-        'Crossbow, light of Warning': {
+        "Crossbow, light of Warning": {
                 price: 60025,
                 rarity: "uncommon"
         },
-        'Dart of Warning': {
+        "Dart of Warning": {
                 price: 60000.05,
                 rarity: "uncommon"
         },
-        'Shortbow of Warning': {
+        "Shortbow of Warning": {
                 price: 60025,
                 rarity: "uncommon"
         },
-        'Sling of Warning': {
+        "Sling of Warning": {
                 price: 60000.1,
                 rarity: "uncommon"
         },
-        'Double-bladed Scimitar of Warning': {
+        "Double-bladed Scimitar of Warning": {
                 price: 60100,
                 rarity: "uncommon"
         },
-        'Flail of Warning': {
+        "Flail of Warning": {
                 price: 60010,
                 rarity: "uncommon"
         },
-        'Glaive of Warning': {
+        "Glaive of Warning": {
                 price: 60020,
                 rarity: "uncommon"
         },
-        'Halberd of Warning': {
+        "Halberd of Warning": {
                 price: 60020,
                 rarity: "uncommon"
         },
-        'Lance of Warning': {
+        "Lance of Warning": {
                 price: 60010,
                 rarity: "uncommon"
         },
-        'Maul of Warning': {
+        "Maul of Warning": {
                 price: 60010,
                 rarity: "uncommon"
         },
-        'Morningstar of Warning': {
+        "Morningstar of Warning": {
                 price: 60015,
                 rarity: "uncommon"
         },
-        'Pike of Warning': {
+        "Pike of Warning": {
                 price: 60005,
                 rarity: "uncommon"
         },
-        'Trident of Warning': {
+        "Trident of Warning": {
                 price: 60005,
                 rarity: "uncommon"
         },
-        'War Pick of Warning': {
+        "War Pick of Warning": {
                 price: 60005,
                 rarity: "uncommon"
         },
-        'Warhammer of Warning': {
+        "Warhammer of Warning": {
                 price: 60015,
                 rarity: "uncommon"
         },
-        'Whip of Warning': {
+        "Whip of Warning": {
                 price: 60002,
                 rarity: "uncommon"
         },
-        'Blowgun of Warning': {
+        "Blowgun of Warning": {
                 price: 60010,
                 rarity: "uncommon"
         },
-        'Crossbow, hand of Warning': {
+        "Crossbow, hand of Warning": {
                 price: 60075,
                 rarity: "uncommon"
         },
-        'Crossbow, heavy of Warning': {
+        "Crossbow, heavy of Warning": {
                 price: 60050,
                 rarity: "uncommon"
         },
-        'Longbow of Warning': {
+        "Longbow of Warning": {
                 price: 60050,
                 rarity: "uncommon"
         },
-        'Net of Warning': {
+        "Net of Warning": {
                 price: 60001,
                 rarity: "uncommon"
         },
-        'Battleaxe': {
+        "Battleaxe": {
                 price: 10,
                 rarity: ""
         },
-        'Greataxe': {
+        "Greataxe": {
                 price: 30,rarity: ""
         },
-        'Handaxe': {
+        "Handaxe": {
                 price: 5,rarity: ""
         },
-        'Greatsword': {
+        "Greatsword": {
                 price: 50,rarity: ""
         },
-        'Longsword': {
+        "Longsword": {
                 price: 15,rarity: ""
         },
-        'Scimitar': {
+        "Scimitar": {
                 price: 25,rarity: ""
         },
-        'Rapier': {
+        "Rapier": {
                 price: 25,rarity: ""
         },
-        'Shortsword': {
+        "Shortsword": {
                 price: 10,rarity: ""
         },
-        'Club': {
+        "Club": {
                 price: 0.1,rarity: ""
         },
-        'Dagger': {
+        "Dagger": {
                 price: 2,rarity: ""
         },
-        'Greatclub': {
+        "Greatclub": {
                 price: 0.2,rarity: ""
         },
-        'Javelin': {
+        "Javelin": {
                 price: 0.5,rarity: ""
         },
-        'Light Hammer': {
+        "Light Hammer": {
                 price: 0.2,rarity: ""
         },
-        'Mace': {
+        "Mace": {
                 price: 5,rarity: ""
         },
-        'Quarterstaff': {
+        "Quarterstaff": {
                 price: 0.2,rarity: ""
         },
-        'Sickle': {
+        "Sickle": {
                 price: 1,rarity: ""
         },
-        'Spear': {
+        "Spear": {
                 price: 1,rarity: ""
         },
-        'Yklwa': {
+        "Yklwa": {
                 price: 1,rarity: ""
         },
-        'Crossbow, light': {
+        "Crossbow, light": {
                 price: 25,rarity: ""
         },
-        'Dart': {
+        "Dart": {
                 price: 0.05,rarity: ""
         },
-        'Shortbow': {
+        "Shortbow": {
                 price: 25,rarity: ""
         },
-        'Sling': {
+        "Sling": {
                 price: 0.1,rarity: ""
         },
-        'Double-bladed Scimitar': {
+        "Double-bladed Scimitar": {
                 price: 100,rarity: ""
         },
-        'Flail': {
+        "Flail": {
                 price: 10,rarity: ""
         },
-        'Glaive': {
+        "Glaive": {
                 price: 20,rarity: ""
         },
-        'Halberd': {
+        "Halberd": {
                 price: 20,rarity: ""
         },
-        'Lance': {
+        "Lance": {
                 price: 10,rarity: ""
         },
-        'Maul': {
+        "Maul": {
                 price: 10,rarity: ""
         },
-        'Morningstar': {
+        "Morningstar": {
                 price: 15,rarity: ""
         },
-        'Pike': {
+        "Pike": {
                 price: 5,rarity: ""
         },
-        'Trident': {
+        "Trident": {
                 price: 5,rarity: ""
         },
-        'War Pick': {
+        "War Pick": {
                 price: 5,rarity: ""
         },
-        'Warhammer': {
+        "Warhammer": {
                 price: 15,rarity: ""
         },
-        'Whip': {
+        "Whip": {
                 price: 2,rarity: ""
         },
-        'Blowgun': {
+        "Blowgun": {
                 price: 10,rarity: ""
         },
-        'Crossbow, hand': {
+        "Crossbow, hand": {
                 price: 75,rarity: ""
         },
-        'Crossbow, heavy': {
+        "Crossbow, heavy": {
                 price: 50,rarity: ""
         },
-        'Longbow': {
+        "Longbow": {
                 price: 50,rarity: ""
         },
-        'Net': {
+        "Net": {
                 price: 1,rarity: ""
         },
-        'Padded Armor': {
+        "Padded Armor": {
                 price: 5,rarity: ""
         },
-        'Leather Armor': {
+        "Leather Armor": {
                 price: 10,rarity: ""
         },
-        'Studded Leather Armor': {
+        "Studded Leather Armor": {
                 price: 45,rarity: ""
         },
-        'Hide Armor': {
+        "Hide Armor": {
                 price: 10,rarity: ""
         },
-        'Chain shirt Armor': {
+        "Chain shirt Armor": {
                 price: 50,rarity: ""
         },
-        'Scale mail Armor': {
+        "Scale mail Armor": {
                 price: 50,rarity: ""
         },
-        'Breastplate Armor': {
+        "Breastplate Armor": {
                 price: 400,rarity: ""
         },
-        'Half plate Armor': {
+        "Half plate Armor": {
                 price: 750,rarity: ""
         },
-        'Ring mail Armor': {
+        "Ring mail Armor": {
                 price: 30,rarity: ""
         },
-        'Chain mail Armor': {
+        "Chain mail Armor": {
                 price: 75,rarity: ""
         },
-        'Splint Armor': {
+        "Splint Armor": {
                 price: 200,rarity: ""
         },
-        'Plate Armor': {
+        "Plate Armor": {
                 price: 1500,rarity: ""
         },
-        'Shield': {
+        "Shield": {
                 price: 10,rarity: ""
         },
 
         // common items / adventuring gear
 
-        'Abacus': {
+        "Abacus": {
                 price: 2,rarity: ""
         },
-        'Acid (vial)': {
+        "Acid (vial)": {
                 price: 1,rarity: ""
         },
-        'Airship': {
+        "Airship": {
                 price: 20000,rarity: ""
         },
         "Alchemist's Fire (flask)": {
@@ -2705,178 +2707,178 @@ const sanesItemPrices = {
         "Alchemist's Supplies": {
                 price: 50,rarity: ""
         },
-        'Alexandrite': {
+        "Alexandrite": {
                 price: 500,rarity: ""
         },
-        'Amber': {
+        "Amber": {
                 price: 100,rarity: ""
         },
-        'Amethyst': {
+        "Amethyst": {
                 price: 100,rarity: ""
         },
-        'Amulet': {
+        "Amulet": {
                 price: 5,rarity: ""
         },
-        'Antitoxin': {
+        "Antitoxin": {
                 price: 50,rarity: ""
         },
-        'Aquamarine': {
+        "Aquamarine": {
                 price: 500,rarity: ""
         },
-        'Arrows (each)': {
+        "Arrows (each)": {
                 price: 0.05,rarity: ""
         },
         "Assassin's Blood (Ingested)": {
                 price: 150,rarity: ""
         },
-        'Azurite': {
+        "Azurite": {
                 price: 10,rarity: ""
         },
-        'Backpack': {
+        "Backpack": {
                 price: 2,rarity: ""
         },
-        'Bagpipes': {
+        "Bagpipes": {
                 price: 30,rarity: ""
         },
-        'Ball Bearings (bag of 1000)': {
+        "Ball Bearings (bag of 1000)": {
                 price: 1,rarity: ""
         },
-        'Banded Agate': {
+        "Banded Agate": {
                 price: 10,rarity: ""
         },
-        'Barrel': {
+        "Barrel": {
                 price: 2,rarity: ""
         },
-        'Basket': {
+        "Basket": {
                 price: 0.4,rarity: ""
         },
-        'Bedroll': {
+        "Bedroll": {
                 price: 1,rarity: ""
         },
-        'Bell': {
+        "Bell": {
                 price: 1,rarity: ""
         },
-        'Bit and Bridle': {
+        "Bit and Bridle": {
                 price: 2,rarity: ""
         },
-        'Black Opal': {
+        "Black Opal": {
                 price: 1000,rarity: ""
         },
-        'Black Pearl': {
+        "Black Pearl": {
                 price: 500,rarity: ""
         },
-        'Black Sapphire': {
+        "Black Sapphire": {
                 price: 5000,rarity: ""
         },
-        'Blanket': {
+        "Blanket": {
                 price: 0.5,rarity: ""
         },
-        'Block and Tackle': {
+        "Block and Tackle": {
                 price: 1,rarity: ""
         },
-        'Bloodstone': {
+        "Bloodstone": {
                 price: 50,rarity: ""
         },
-        'Blowgun Needles': {
+        "Blowgun Needles": {
                 price: 0.02,rarity: ""
         },
-        'Blue Sapphire': {
+        "Blue Sapphire": {
                 price: 1000,rarity: ""
         },
-        'Blue quartz': {
+        "Blue quartz": {
                 price: 10,rarity: ""
         },
-        'Blue spinel': {
+        "Blue spinel": {
                 price: 500,rarity: ""
         },
-        'Bomb': {
+        "Bomb": {
                 price: 150,rarity: ""
         },
-        'Book': {
+        "Book": {
                 price: 25,rarity: ""
         },
-        'Bottle, Glass': {
+        "Bottle, Glass": {
                 price: 2,rarity: ""
         },
         "Brewer's Supplies": {
                 price: 20,rarity: ""
         },
-        'Bucket': {
+        "Bucket": {
                 price: 0.05,rarity: ""
         },
         "Burglar's Pack": {
                 price: 16,rarity: ""
         },
-        'Burnt Othur Fumes (Inhaled)': {
+        "Burnt Othur Fumes (Inhaled)": {
                 price: 500,rarity: ""
         },
         "Calligrapher's Supplies": {
                 price: 10,rarity: ""
         },
-        'Caltrops (bag of 20)': {
+        "Caltrops (bag of 20)": {
                 price: 0.05,rarity: ""
         },
-        'Camel': {
+        "Camel": {
                 price: 50,rarity: ""
         },
-        'Candle': {
+        "Candle": {
                 price: 0.01,rarity: ""
         },
-        'Carnelian': {
+        "Carnelian": {
                 price: 50,rarity: ""
         },
         "Carpenter's Tools": {
                 price: 8,rarity: ""
         },
-        'Carriage': {
+        "Carriage": {
                 price: 100,rarity: ""
         },
-        'Cart': {
+        "Cart": {
                 price: 15,rarity: ""
         },
         "Cartographer's Tools": {
                 price: 15,rarity: ""
         },
-        'Case, Crossbow Bolt': {
+        "Case, Crossbow Bolt": {
                 price: 1,rarity: ""
         },
-        'Case, Map or Scroll': {
+        "Case, Map or Scroll": {
                 price: 1,rarity: ""
         },
-        'Chain (10 feet)': {
+        "Chain (10 feet)": {
                 price: 5,rarity: ""
         },
-        'Chalcedony': {
+        "Chalcedony": {
                 price: 50,rarity: ""
         },
-        'Chalk (1 piece)': {
+        "Chalk (1 piece)": {
                 price: 0.01,rarity: ""
         },
-        'Chariot': {
+        "Chariot": {
                 price: 250,rarity: ""
         },
-        'Chest': {
+        "Chest": {
                 price: 5,rarity: ""
         },
-        'Chrysoberyl': {
+        "Chrysoberyl": {
                 price: 100,rarity: ""
         },
-        'Chrysoprase': {
+        "Chrysoprase": {
                 price: 50,rarity: ""
         },
-        'Citrine': {
+        "Citrine": {
                 price: 50,rarity: ""
         },
         "Climber's Kit": {
                 price: 25,rarity: ""
         },
-        'Clothes, Common': {
+        "Clothes, Common": {
                 price: 0.5,rarity: ""
         },
-        'Clothes, Costume': {
+        "Clothes, Costume": {
                 price: 5,rarity: ""
         },
-        'Clothes, Fine': {
+        "Clothes, Fine": {
                 price: 15,rarity: ""
         },
         "Clothes, Traveler's": {
@@ -2885,391 +2887,391 @@ const sanesItemPrices = {
         "Cobbler's Tools": {
                 price: 5,rarity: ""
         },
-        'Component Pouch': {
+        "Component Pouch": {
                 price: 25,rarity: ""
         },
         "Cook's Utensils": {
                 price: 1,rarity: ""
         },
-        'Coral': {
+        "Coral": {
                 price: 100,rarity: ""
         },
-        'Crawler Mucus (Contact)': {
+        "Crawler Mucus (Contact)": {
                 price: 200,rarity: ""
         },
-        'Crossbow Bolts': {
+        "Crossbow Bolts": {
                 price: 0.05,rarity: ""
         },
-        'Crowbar': {
+        "Crowbar": {
                 price: 2,rarity: ""
         },
-        'Crystal': {
+        "Crystal": {
                 price: 10,rarity: ""
         },
-        'Diamond': {
+        "Diamond": {
                 price: 5000,rarity: ""
         },
-        'Diamond (Revivify)': {
+        "Diamond (Revivify)": {
                 price: 300,rarity: ""
         },
-        'Diamond (Raise Dead)': {
+        "Diamond (Raise Dead)": {
                 price: 500,rarity: ""
         },
-        'Diamond (Resurrection)': {
+        "Diamond (Resurrection)": {
                 price: 1000,rarity: ""
         },
-        'Diamond (True Resurrection)': {
+        "Diamond (True Resurrection)": {
                 price: 25000,rarity: ""
         },
-        'Dice Set': {
+        "Dice Set": {
                 price: 0.1,rarity: ""
         },
         "Diplomat's Pack": {
                 price: 39,rarity: ""
         },
-        'Disguise Kit': {
+        "Disguise Kit": {
                 price: 25,rarity: ""
         },
-        'Donkey (or Mule)': {
+        "Donkey (or Mule)": {
                 price: 8,rarity: ""
         },
-        'Draft Horse': {
+        "Draft Horse": {
                 price: 50,rarity: ""
         },
-        'Dragonchess Set': {
+        "Dragonchess Set": {
                 price: 1,rarity: ""
         },
-        'Drow Poison (Injury)': {
+        "Drow Poison (Injury)": {
                 price: 200,rarity: ""
         },
-        'Drum': {
+        "Drum": {
                 price: 6,rarity: ""
         },
-        'Dulcimer': {
+        "Dulcimer": {
                 price: 25,rarity: ""
         },
         "Dungeoneer's Pack": {
                 price: 12,rarity: ""
         },
-        'Elephant': {
+        "Elephant": {
                 price: 200,rarity: ""
         },
-        'Emblem': {
+        "Emblem": {
                 price: 5,rarity: ""
         },
-        'Emerald': {
+        "Emerald": {
                 price: 1000,rarity: ""
         },
         "Entertainer's Pack": {
                 price: 40,rarity: ""
         },
-        'Essence of Ether (Inhaled)': {
+        "Essence of Ether (Inhaled)": {
                 price: 300,rarity: ""
         },
         "Explorer's Pack": {
                 price: 10,rarity: ""
         },
-        'Eye agate': {
+        "Eye agate": {
                 price: 10,rarity: ""
         },
-        'Feed (per day)': {
+        "Feed (per day)": {
                 price: 0.05,rarity: ""
         },
-        'Fire Opal': {
+        "Fire Opal": {
                 price: 1000,rarity: ""
         },
-        'Fishing Tackle': {
+        "Fishing Tackle": {
                 price: 1,rarity: ""
         },
-        'Flask or Tankard': {
+        "Flask or Tankard": {
                 price: 0.02,rarity: ""
         },
-        'Flute': {
+        "Flute": {
                 price: 2,rarity: ""
         },
-        'Forgery Kit': {
+        "Forgery Kit": {
                 price: 15,rarity: ""
         },
-        'Galley': {
+        "Galley": {
                 price: 30000,rarity: ""
         },
-        'Garnet': {
+        "Garnet": {
                 price: 100,rarity: ""
         },
         "Glassblower's Tools": {
                 price: 30,rarity: ""
         },
-        'Grappling Hook': {
+        "Grappling Hook": {
                 price: 2,rarity: ""
         },
-        'Gunpowder, Keg': {
+        "Gunpowder, Keg": {
                 price: 250,rarity: ""
         },
-        'Gunpowder, Powder Horn': {
+        "Gunpowder, Powder Horn": {
                 price: 35,rarity: ""
         },
-        'Hammer': {
+        "Hammer": {
                 price: 1,rarity: ""
         },
-        'Hammer, Sledge': {
+        "Hammer, Sledge": {
                 price: 2,rarity: ""
         },
         "Healer's Kit": {
                 price: 5,rarity: ""
         },
-        'Hematite': {
+        "Hematite": {
                 price: 10,rarity: ""
         },
-        'Herbalism Kit': {
+        "Herbalism Kit": {
                 price: 5,rarity: ""
         },
-        'Holy Water (flask)': {
+        "Holy Water (flask)": {
                 price: 25,rarity: ""
         },
-        'Horn': {
+        "Horn": {
                 price: 3,rarity: ""
         },
-        'Hourglass': {
+        "Hourglass": {
                 price: 25,rarity: ""
         },
-        'Hunting Trap': {
+        "Hunting Trap": {
                 price: 5,rarity: ""
         },
-        'Ink (1 ounce bottle)': {
+        "Ink (1 ounce bottle)": {
                 price: 10,rarity: ""
         },
-        'Ink Pen': {
+        "Ink Pen": {
                 price: 0.02,rarity: ""
         },
-        'Jacinth': {
+        "Jacinth": {
                 price: 5000,rarity: ""
         },
-        'Jade': {
+        "Jade": {
                 price: 100,rarity: ""
         },
-        'Jasper': {
+        "Jasper": {
                 price: 50,rarity: ""
         },
-        'Jet': {
+        "Jet": {
                 price: 100,rarity: ""
         },
         "Jeweler's Tools": {
                 price: 25,rarity: ""
         },
-        'Jug or Pitcher': {
+        "Jug or Pitcher": {
                 price: 0.02,rarity: ""
         },
-        'Keelboat': {
+        "Keelboat": {
                 price: 3000,rarity: ""
         },
-        'Ladder (10 foot)': {
+        "Ladder (10 foot)": {
                 price: 0.1,rarity: ""
         },
-        'Lamp': {
+        "Lamp": {
                 price: 0.5,rarity: ""
         },
-        'Lantern, Bullseye': {
+        "Lantern, Bullseye": {
                 price: 10,rarity: ""
         },
-        'Lantern, Hooded': {
+        "Lantern, Hooded": {
                 price: 5,rarity: ""
         },
-        'Lapis Lazuli': {
+        "Lapis Lazuli": {
                 price: 10,rarity: ""
         },
         "Leatherworker's Tools": {
                 price: 5,rarity: ""
         },
-        'Lock': {
+        "Lock": {
                 price: 10,rarity: ""
         },
-        'Longship': {
+        "Longship": {
                 price: 10000,rarity: ""
         },
-        'Lute': {
+        "Lute": {
                 price: 35,rarity: ""
         },
-        'Lyre': {
+        "Lyre": {
                 price: 30,rarity: ""
         },
-        'Magnifying Glass': {
+        "Magnifying Glass": {
                 price: 100,rarity: ""
         },
-        'Malachite': {
+        "Malachite": {
                 price: 10,rarity: ""
         },
-        'Malice (Inhaled)': {
+        "Malice (Inhaled)": {
                 price: 250,rarity: ""
         },
-        'Manacles': {
+        "Manacles": {
                 price: 2,rarity: ""
         },
         "Mason's Tools": {
                 price: 10,rarity: ""
         },
-        'Mastiff': {
+        "Mastiff": {
                 price: 25,rarity: ""
         },
-        'Mess Kit': {
+        "Mess Kit": {
                 price: 0.2,rarity: ""
         },
-        'Midnight Tears (Ingested)': {
+        "Midnight Tears (Ingested)": {
                 price: 1500,rarity: ""
         },
-        'Mirror, Steel': {
+        "Mirror, Steel": {
                 price: 5,rarity: ""
         },
         "Monster Hunter's Pack": {
                 price: 33,rarity: ""
         },
-        'Moonstone': {
+        "Moonstone": {
                 price: 50,rarity: ""
         },
-        'Moss agate': {
+        "Moss agate": {
                 price: 10,rarity: ""
         },
         "Navigator's Tools": {
                 price: 25,rarity: ""
         },
-        'Obsidian': {
+        "Obsidian": {
                 price: 10,rarity: ""
         },
-        'Oil (flask)': {
+        "Oil (flask)": {
                 price: 0.1,rarity: ""
         },
-        'Oil of Taggit (Contact)': {
+        "Oil of Taggit (Contact)": {
                 price: 400,rarity: ""
         },
-        'Onyx': {
+        "Onyx": {
                 price: 50,rarity: ""
         },
-        'Opal': {
+        "Opal": {
                 price: 1000,rarity: ""
         },
-        'Orb': {
+        "Orb": {
                 price: 20,rarity: ""
         },
         "Painter's Supplies": {
                 price: 10,rarity: ""
         },
-        'Pale Tincture (Ingested)': {
+        "Pale Tincture (Ingested)": {
                 price: 250,rarity: ""
         },
-        'Pan Flute': {
+        "Pan Flute": {
                 price: 12,rarity: ""
         },
-        'Paper (one sheet)': {
+        "Paper (one sheet)": {
                 price: 0.2,rarity: ""
         },
-        'Parchment (one sheet)': {
+        "Parchment (one sheet)": {
                 price: 0.1,rarity: ""
         },
-        'Pearl': {
+        "Pearl": {
                 price: 100,rarity: ""
         },
-        'Perfume (vial)': {
+        "Perfume (vial)": {
                 price: 5,rarity: ""
         },
-        'Peridot': {
+        "Peridot": {
                 price: 500,rarity: ""
         },
         "Pick, Miner's": {
                 price: 2,rarity: ""
         },
-        'Piton': {
+        "Piton": {
                 price: 0.05,rarity: ""
         },
-        'Playing Card Set': {
+        "Playing Card Set": {
                 price: 0.5,rarity: ""
         },
-        'Poison, Basic (vial)': {
+        "Poison, Basic (vial)": {
                 price: 100,rarity: ""
         },
         "Poisoner's Kit": {
                 price: 50,rarity: ""
         },
-        'Pole (10-foot)': {
+        "Pole (10-foot)": {
                 price: 0.05,rarity: ""
         },
-        'Pony': {
+        "Pony": {
                 price: 30,rarity: ""
         },
-        'Pot, Iron': {
+        "Pot, Iron": {
                 price: 2,rarity: ""
         },
         "Potter's Tools": {
                 price: 10,rarity: ""
         },
-        'Pouch': {
+        "Pouch": {
                 price: 0.5,rarity: ""
         },
         "Priest's Pack": {
                 price: 19,rarity: ""
         },
-        'Purple Worm Poison (Injury)': {
+        "Purple Worm Poison (Injury)": {
                 price: 2000,rarity: ""
         },
-        'Quartz': {
+        "Quartz": {
                 price: 50,rarity: ""
         },
-        'Quiver': {
+        "Quiver": {
                 price: 1,rarity: ""
         },
-        'Ram, Portable': {
+        "Ram, Portable": {
                 price: 4,rarity: ""
         },
-        'Rations (1 day)': {
+        "Rations (1 day)": {
                 price: 0.5,rarity: ""
         },
-        'Reliquary': {
+        "Reliquary": {
                 price: 5,rarity: ""
         },
-        'Rhodochrosite': {
+        "Rhodochrosite": {
                 price: 10,rarity: ""
         },
-        'Riding Horse': {
+        "Riding Horse": {
                 price: 75,rarity: ""
         },
-        'Robes': {
+        "Robes": {
                 price: 1,rarity: ""
         },
-        'Rod': {
+        "Rod": {
                 price: 10,rarity: ""
         },
-        'Rope, Hempen (50 feet)': {
+        "Rope, Hempen (50 feet)": {
                 price: 1,rarity: ""
         },
-        'Rope, Silk (50 feet)': {
+        "Rope, Silk (50 feet)": {
                 price: 10,rarity: ""
         },
-        'Rowboat': {
+        "Rowboat": {
                 price: 50,rarity: ""
         },
-        'Ruby': {
+        "Ruby": {
                 price: 5000,rarity: ""
         },
-        'Sack': {
+        "Sack": {
                 price: 0.01,rarity: ""
         },
-        'Saddle, Exotic': {
+        "Saddle, Exotic": {
                 price: 60,rarity: ""
         },
-        'Saddle, Military': {
+        "Saddle, Military": {
                 price: 20,rarity: ""
         },
-        'Saddle, Pack': {
+        "Saddle, Pack": {
                 price: 5,rarity: ""
         },
-        'Saddle, Riding': {
+        "Saddle, Riding": {
                 price: 10,rarity: ""
         },
-        'Saddlebags': {
+        "Saddlebags": {
                 price: 4,rarity: ""
         },
-        'Sailing Ship': {
+        "Sailing Ship": {
                 price: 10000,rarity: ""
         },
-        'Sardonyx': {
+        "Sardonyx": {
                 price: 50,rarity: ""
         },
         "Scale, Merchant's": {
@@ -3278,142 +3280,142 @@ const sanesItemPrices = {
         "Scholar's Pack": {
                 price: 40,rarity: ""
         },
-        'Sealing Wax': {
+        "Sealing Wax": {
                 price: 0.5,rarity: ""
         },
-        'Serpent Venom (Injury)': {
+        "Serpent Venom (Injury)": {
                 price: 200,rarity: ""
         },
-        'Shawm': {
+        "Shawm": {
                 price: 2,rarity: ""
         },
-        'Shovel': {
+        "Shovel": {
                 price: 2,rarity: ""
         },
-        'Signal Whistle': {
+        "Signal Whistle": {
                 price: 0.05,rarity: ""
         },
-        'Signet Ring': {
+        "Signet Ring": {
                 price: 5,rarity: ""
         },
-        'Sled': {
+        "Sled": {
                 price: 20,rarity: ""
         },
         "Smith's Tools": {
                 price: 20,rarity: ""
         },
-        'Soap': {
+        "Soap": {
                 price: 0.02,rarity: ""
         },
-        'Spellbook': {
+        "Spellbook": {
                 price: 50,rarity: ""
         },
-        'Spikes, Iron (10)': {
+        "Spikes, Iron (10)": {
                 price: 0.1,rarity: ""
         },
-        'Spinel': {
+        "Spinel": {
                 price: 100,rarity: ""
         },
-        'Sprig of Mistletoe': {
+        "Sprig of Mistletoe": {
                 price: 1,rarity: ""
         },
-        'Spyglass': {
+        "Spyglass": {
                 price: 1000,rarity: ""
         },
-        'Staff': {
+        "Staff": {
                 price: 5,rarity: ""
         },
-        'Star Rose Quartz': {
+        "Star Rose Quartz": {
                 price: 50,rarity: ""
         },
-        'Star Ruby': {
+        "Star Ruby": {
                 price: 1000,rarity: ""
         },
-        'Star Sapphire': {
+        "Star Sapphire": {
                 price: 1000,rarity: ""
         },
-        'Tent, Two-Person': {
+        "Tent, Two-Person": {
                 price: 2,rarity: ""
         },
         "Thieves' Tools": {
                 price: 25,rarity: ""
         },
-        'Three-Dragon Ante Set': {
+        "Three-Dragon Ante Set": {
                 price: 1,rarity: ""
         },
-        'Tiger Eye': {
+        "Tiger Eye": {
                 price: 10,rarity: ""
         },
-        'Tinderbox': {
+        "Tinderbox": {
                 price: 0.5,rarity: ""
         },
         "Tinker's Tools": {
                 price: 50,rarity: ""
         },
-        'Topaz': {
+        "Topaz": {
                 price: 500,rarity: ""
         },
-        'Torch': {
+        "Torch": {
                 price: 0.01,rarity: ""
         },
-        'Torpor (Ingested)': {
+        "Torpor (Ingested)": {
                 price: 600,rarity: ""
         },
-        'Totem': {
+        "Totem": {
                 price: 1,rarity: ""
         },
-        'Tourmaline': {
+        "Tourmaline": {
                 price: 100,rarity: ""
         },
-        'Truth Serum (Ingested)': {
+        "Truth Serum (Ingested)": {
                 price: 150,rarity: ""
         },
-        'Turquoise': {
+        "Turquoise": {
                 price: 10,rarity: ""
         },
-        'Vial': {
+        "Vial": {
                 price: 1,rarity: ""
         },
-        'Viol': {
+        "Viol": {
                 price: 30,rarity: ""
         },
-        'Wagon': {
+        "Wagon": {
                 price: 35,rarity: ""
         },
-        'Wand': {
+        "Wand": {
                 price: 10,rarity: ""
         },
-        'Warhorse': {
+        "Warhorse": {
                 price: 400,rarity: ""
         },
-        'Warship': {
+        "Warship": {
                 price: 25000,rarity: ""
         },
-        'Waterskin': {
+        "Waterskin": {
                 price: 0.2,rarity: ""
         },
         "Weaver's Tools": {
                 price: 1,rarity: ""
         },
-        'Whetstone': {
+        "Whetstone": {
                 price: 0.01,rarity: ""
         },
         "Woodcarver's Tools": {
                 price: 1,rarity: ""
         },
-        'Wooden Staff': {
+        "Wooden Staff": {
                 price: 5,rarity: ""
         },
-        'Wyvern Poison (Injury)': {
+        "Wyvern Poison (Injury)": {
                 price: 1200,rarity: ""
         },
-        'Yellow sapphire': {
+        "Yellow sapphire": {
                 price: 1000,rarity: ""
         },
-        'Yew Wand': {
+        "Yew Wand": {
                 price: 10,rarity: ""
         },
-        'Zircon': {
+        "Zircon": {
                 price: 50,rarity: ""
         },
 };
@@ -3422,12 +3424,66 @@ const sanesItemPrices = {
  * @returns {[string, ...item][]}
  */
 export function getSanesItemPrices() {
-        return Object.entries(sanesItemPrices);
+  return Object.entries(sanesItemPrices);
 }
 
 /**
  * @return {string[]}
  */
 export function getSanesItemNameIndex() {
-        return Object.keys(sanesItemPrices);
+  return Object.keys(sanesItemPrices);
 }
+
+/** @type {Map<number, {min: number, max: number}>} */
+export const tierToCostLimits = new Map();
+tierToCostLimits.set(1, {min: 500, max: 1000});
+tierToCostLimits.set(2, {min: 1000, max: 3000});
+tierToCostLimits.set(3, {min: 3000, max: 5000});
+tierToCostLimits.set(4, {min: 5000, max: 10000});
+
+/**
+ * Adds new attributes to each item, may store in file
+ * @param {boolean} store 
+ */
+function createUpdatedData(store) {
+  /** @type {[string, ...item[]][]} */
+  const items = getSanesItemPrices();
+  /** @type {Object} */
+  const newItems = {};
+  for (let index = 0; index < items.length; index++) {
+    const itemData = items[index][1];
+    if(itemData.rarity === "") itemData.rarity = "Common";
+    // @ts-ignore
+    if(itemData.price < tierToCostLimits.get(1).min) {
+      itemData.priceTier = 0;
+    // @ts-ignore
+    } else if(itemData.price <= tierToCostLimits.get(2).min) {
+      itemData.priceTier = 1;
+    // @ts-ignore
+    } else if(itemData.price <= tierToCostLimits.get(3).min) {
+      itemData.priceTier = 2;
+    // @ts-ignore
+    } else if(itemData.price <= tierToCostLimits.get(4).min) {
+      itemData.priceTier = 3;
+    // @ts-ignore
+    } else if(itemData.price <= tierToCostLimits.get(4).max) {
+      itemData.priceTier = 4;
+    } else {
+      itemData.priceTier = 5;
+    }
+    newItems[items[index][0]] = itemData;
+  }
+  
+  sanesItemPrices = newItems;
+  if(!store) 
+    return;
+
+  try {
+    const output = JSON.stringify(newItems, null, "\t");
+    writeDataFileRequest("./data/itemsList2.json", output);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+createUpdatedData(false);

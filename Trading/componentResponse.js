@@ -1,5 +1,5 @@
 // @ts-check
-import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL, DOWNTIME_RESET_TIME, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL } from './utils.js';
+import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL, DOWNTIME_RESET_TIME, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, tierToCostLimits } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
 import { createProficiencyChoices, getProficiencies } from "./downtimes.js";
 import { getDX, filterItems } from './extraUtils.js';
@@ -142,13 +142,6 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
   return responseMessage("Thread created. Please make selections.", true);
 }
 
-  /** @type {Map<number, {min: number, max: number}>} */
-  const tierToCostLimits = new Map();
-  tierToCostLimits.set(1, {min: 500, max: 1000});
-  tierToCostLimits.set(2, {min: 1000, max: 3000});
-  tierToCostLimits.set(3, {min: 3000, max: 5000});
-  tierToCostLimits.set(4, {min: 5000, max: 10000});
-
 /**
  * @param {guildMember[]} players 
  * @param {number} xpAll 
@@ -168,7 +161,7 @@ export function getSessionRewards(players, xpAll, dmID, date, tier, rewardType) 
   const gpReceived = ((priceRange.max - priceRange.min) / 2) + priceRange.min;
   
   // @ts-ignore we know that tier can only be one from the list of options
-  const itemsUnderPrice = filterItems(priceRange.min, priceRange.max);
+  const itemsUnderPrice = filterItemsbyTier(tier);
 
   let rewards = `\`Session name\` (${date})\nDM: <@${dmID}>\n`;
 

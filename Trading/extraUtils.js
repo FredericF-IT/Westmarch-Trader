@@ -51,6 +51,7 @@ export function getDX(x) {
 }
 
 import { getSanesItemPrices } from './itemsList.js';
+/** @type {[string, ...item[]][]} */
 const allItems = getSanesItemPrices();
 
  /**
@@ -61,6 +62,16 @@ const allItems = getSanesItemPrices();
 export function filterItems(lowestPrice, highestPrice) {
   return allItems.filter(function(element) {
       return lowestPrice <= element[1].price && element[1].price <= highestPrice;
+  });
+}
+
+ /**
+ * @param {number} priceTier 
+ * @return {[string, ...item][]}
+ */
+ export function filterItemsbyTier(priceTier) {
+  return allItems.filter(function(element) {
+      return priceTier === element[1].priceTier;
   });
 }
 

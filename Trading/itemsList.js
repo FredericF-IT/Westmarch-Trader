@@ -3,8 +3,6 @@
  * @typedef {import("./types.js").item} item
  */
 
-import { readDataFile, writeDataFileRequest } from "./data/dataIO.js";
-
 let sanesItemPrices = {
 	"+1 Shield": {
 		"price": 1500,
@@ -4700,15 +4698,11 @@ export function getSanesItemNameIndex() {
   return Object.keys(sanesItemPrices);
 }
 
-/** @type {Map<number, {min: number, max: number}>} */
-export const tierToCostLimits = new Map();
-tierToCostLimits.set(1, {min: 500, max: 1000});
-tierToCostLimits.set(2, {min: 1000, max: 3000});
-tierToCostLimits.set(3, {min: 3000, max: 5000});
-tierToCostLimits.set(4, {min: 5000, max: 10000});
+import { readDataFile, writeDataFileRequest } from "./data/dataIO.js";
+//import { tierToCostLimits } from "./utils.js";
 
 /**
- * Adds new attributes to each item, may store in file
+ * Adds new attributes to each item, may store in js and sql file
  * @param {boolean} store 
  */
 function createUpdatedData(store) {
@@ -4735,7 +4729,7 @@ function createUpdatedData(store) {
     const itemData = item[1];
     const consumableType = conType.get(item[0]);
     if(consumableType === undefined) {
-      console.error(item[0] + " has no counterpart with consumable");
+//      console.error(item[0] + " has no counterpart with consumable");
       itemData.consumableType = -1; // <---- CHANGE HERE
     } else {
       itemData.consumableType = consumableType;
@@ -4760,7 +4754,7 @@ function createUpdatedData(store) {
       itemData.priceTier = 4;
     } else {
       itemData.priceTier = 5;
-    }*/
+    }//*/
     newItems[items[index][0]] = itemData;
   }
 
@@ -4791,8 +4785,8 @@ CREATE TABLE item_cost (
     for(let item of items){
       const entryString = 'INSERT INTO item_cost (item_name, price, rarity, consumable, price_tier) VALUES ("' +
       item[0] + '", ' +
-      item[1].price + ", '" +
-      item[1].rarity + "', " +
+      item[1].price + ', "' +
+      item[1].rarity + '", ' +
       item[1].consumableType + ", " +
       item[1].priceTier + ");\n";
       outputSQL += entryString;
@@ -4804,4 +4798,4 @@ CREATE TABLE item_cost (
   }
 }
 
-createUpdatedData(true);
+createUpdatedData(false);

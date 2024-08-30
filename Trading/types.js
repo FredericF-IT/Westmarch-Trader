@@ -95,6 +95,7 @@
  * @property {number} price
  * @property {string} rarity
  * @property {number} priceTier
+ * @property {number} consumableType
  */
 
 export {};

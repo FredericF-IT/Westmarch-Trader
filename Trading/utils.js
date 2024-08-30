@@ -10,19 +10,24 @@ import { resetAllWeeklyAction } from "./data/dataIO.js";
  * @typedef {import("discord.js").Client} Client
  */
 
-const sendToTest = false;
 // Actual server
 const DOWNTIME_LOG_CHANNEL = "1267551725242290196";
 const TRANSACTION_LOG_CHANNEL = "1271800109620924436";
 const GAME_LOG_CHANNEL = "1267604931465052336";
 const CHARACTER_TRACKING_CHANNEL = "1267280479703531531";
+const BOT_INFO_CHANNEL = "1275207645380350033"; // used to update explanation
+
+const RESET_DAY = 0; // 0 = Sunday, 1 = Monday, ...
+const RESET_HOUR = 10; // 24 hour clock, time at which to reset
+
+export const currency = "gp";
 // Bot test server
 const DOWNTIME_LOG_CHANNEL_TEST = "1275214859717578822";
 const TRANSACTION_LOG_CHANNEL_TEST = "1275214894429376522";
 const GAME_LOG_CHANNEL_TEST = "1275214859717578822";
 const CHARACTER_TRACKING_CHANNEL_TEST = "1275214859717578822";
 
-export { DOWNTIME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL, GAME_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL };
+export { DOWNTIME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL, GAME_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, BOT_INFO_CHANNEL };
 /*export { 
   DOWNTIME_LOG_CHANNEL_TEST as DOWNTIME_LOG_CHANNEL, 
   TRANSACTION_LOG_CHANNEL_TEST as TRANSACTION_LOG_CHANNEL, 
@@ -35,9 +40,6 @@ export const DOWNTIME_RESET_TIME = {
   RELATIVE: "not loaded",
   DAY: "not loaded"
 };
-
-const RESET_DAY = 0; // 0 = Sunday, 1 = Monday, ...
-const RESET_HOUR = 10; // 24 hour clock, time at which to reset
 
 export function updateDate(isOnStartup) {
   if(!isOnStartup) {

@@ -1,8 +1,8 @@
 // @ts-check
-import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL, DOWNTIME_RESET_TIME, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, tierToCostLimits } from './utils.js';
+import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL, DOWNTIME_RESET_TIME, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, tierToCostLimits, currency } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
 import { createProficiencyChoices, getProficiencies } from "./downtimes.js";
-import { getDX, filterItems } from './extraUtils.js';
+import { getDX } from './extraUtils.js';
 import { getValueDowntime, finishDowntimeActivity, getUserDowntimes, setUserDowntimes, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
 import {
   MessageComponentTypes,
@@ -158,7 +158,7 @@ export function getSessionRewards(players, xpAll, dmID, date, tier, rewardType) 
   const xpReceived = Math.ceil(xpAll / playerNumber);
 
   // @ts-ignore we know that tier can only be one from the list of options
-  const gpReceived = ((priceRange.max - priceRange.min) / 2) + priceRange.min;
+  const currencyReceived = ((priceRange.max - priceRange.min) / 2) + priceRange.min;
   
   // @ts-ignore we know that tier can only be one from the list of options
   const itemsUnderPrice = filterItemsbyTier(tier);
@@ -166,7 +166,7 @@ export function getSessionRewards(players, xpAll, dmID, date, tier, rewardType) 
   let rewards = `\`Session name\` (${date})\nDM: <@${dmID}>\n`;
 
   if(rewardType == 1){
-    rewards += `Gold: ${gpReceived}gp each\nExperience: ${xpReceived}xp each\n\nPlayers:\n`
+    rewards += `Gold: ${currencyReceived}${currency} each\nExperience: ${xpReceived}xp each\n\nPlayers:\n`
     
     for (let i = 0; i < playerNumber; i++) {
       rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`character name\`\n`;
@@ -271,12 +271,12 @@ export function acceptTransaction(componentId, userID, channel, interaction) {
 
   // @ts-ignore
   channel.send({
-    content: `Approved transaction: ${characterName} (<@${userID}>) ${buyOrSell.toLowerCase()}s ${(itemCount > 1 ? `${itemCount}x ` : '')}"${itemName}" for ${itemCount * price}gp`,
+    content: `Approved transaction: ${characterName} (<@${userID}>) ${buyOrSell.toLowerCase()}s ${(itemCount > 1 ? `${itemCount}x ` : '')}"${itemName}" for ${itemCount * price}${currency}`,
   }).then((/** @type {Message} */ message) => {
     interaction.reply(responseMessage(
       `Transaction approved!\n${interaction.channelId != TRANSACTION_LOG_CHANNEL ? `Log was sent to <#${TRANSACTION_LOG_CHANNEL}>\n` : ""}`+
       `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` +
-      `\`\`\`**Transaction summary**\n- ${buyOrSell}: ${(itemCount > 1 ? `${itemCount}x ` : '')}"${itemName}" ${buyOrSell === "Sell" ? "+" : "-"}${itemCount * price}gp (${message.url})\`\`\``,
+      `\`\`\`**Transaction summary**\n- ${buyOrSell}: ${(itemCount > 1 ? `${itemCount}x ` : '')}"${itemName}" ${buyOrSell === "Sell" ? "+" : "-"}${itemCount * price}${currency} (${message.url})\`\`\``,
       true));
   });
 }

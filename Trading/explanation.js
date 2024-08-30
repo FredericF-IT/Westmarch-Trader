@@ -1,8 +1,10 @@
 import { DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, GAME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL } from "./utils.js";
+import 'dotenv/config';
+
 
 export const explanationMessage = [
 `# The Trader Bot
-I, <@1263837871966785567>, will help you with many westmarch activities on the server.
+I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the server.
 > # Register characters
 > I will need to know your characters name, so you should add them:
 > - You can register them via
@@ -12,9 +14,9 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 > - You can see your registered characters via
 > \`\`\`/westmarch character show\`\`\`
 > You can have a maximum of **ten** characters registered with the bot.
-> If a character is not registered, but is used in a command, I will automatically ask if you want to register the character.
-
-> # Buying / Selling items
+> If a character is not registered, but is used in a command, I will automatically ask if you want to register the character.`
+,
+`> # Buying / Selling items
 > **All transaction logs are sent to <#${TRANSACTION_LOG_CHANNEL}>, no matter where you used the command.**
 > To create a trade prompt, use
 > \`\`\`/westmarch buy item: character: amount:\`\`\` 
@@ -48,7 +50,7 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 > \`\`\`/westmarch item-downtime change\`\`\`
 > May not be implemented.`
 ,
-`\n# For DMs:
+`# For DMs:
 > - Get reward items and gold at end of a game:
 > \`\`\`/westmarch reward tier: xp: reward:\`\`\`
 > \`tier\` will be the one that was advertised in your games' post, \`xp\` is the total the party earned.
@@ -67,7 +69,8 @@ I, <@1263837871966785567>, will help you with many westmarch activities on the s
 > \`\`\`/getitemsbytier tier:\`\`\`
 > This returns all items of appropriate price. There may be more items than fit in a discord message, so there is a button to send the next message until all items are displayed.`
 ,
-`**Should you encounter any problems with the bot, please notify <@367891183344812034>!**`]
+`**Should you encounter any problems with the bot, please notify <@367891183344812034>!**`
+]
 
 explanationMessage.forEach(message => {
     //console.log(message.length);

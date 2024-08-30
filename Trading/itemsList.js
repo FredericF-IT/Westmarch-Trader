@@ -1179,6 +1179,46 @@ let sanesItemPrices = {
                 price: 5000,
                 rarity: "rare"
         },
+        "Spell Scroll Level 0": {
+                price: 10,
+                rarity: ""
+        },
+        "Spell Scroll Level 1": {
+                price: 60,
+                rarity: ""
+        },
+        "Spell Scroll Level 2": {
+                price: 120,
+                rarity: "uncommon"
+        },
+        "Spell Scroll Level 3": {
+                price: 200,
+                rarity: "uncommon"
+        },
+        "Spell Scroll Level 4": {
+                price: 320,
+                rarity: "rare"
+        },
+        "Spell Scroll Level 5": {
+                price: 640,
+                rarity: "rare"
+        },
+        "Spell Scroll Level 6": {
+                price: 1280,
+                rarity: "very rare"
+        },
+        "Spell Scroll Level 7": {
+                price: 2560,
+                rarity: "very rare"
+        },
+        "Spell Scroll Level 8": {
+                price: 5120,
+                rarity: "very rare"
+        },
+        "Spell Scroll Level 9": {
+                price: 10240,
+                rarity: "legendary"
+        },
 
         // Things with variants (armors  / weapons)
 

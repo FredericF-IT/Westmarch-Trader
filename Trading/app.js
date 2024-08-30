@@ -6,14 +6,14 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { capitalize, CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
+import { BOT_INFO_CHANNEL, capitalize, CHARACTER_TRACKING_CHANNEL, currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
 import { getDowntimeNames, getProficiencies, getDowntimeTables } from "./downtimes.js";
 import { getDX, filterItems, requestCharacterRegistration, isAdmin, filterItemsbyTier } from './extraUtils.js';
 import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
-import { Client, IntentsBitField, User } from "discord.js";
+import { Client, IntentsBitField, TextChannel, User } from "discord.js";
 import { ALL_COMMANDS } from './commands.js';
 import { explanationMessage } from './explanation.js';
 
@@ -91,7 +91,7 @@ function getItemsInRange(options, id, useTier) {
   let result = [""];
   let j = 0;
   for (let i = 0; i < itemsInRange.length; i++) {
-    const nextSection = "- " + itemsInRange[i][0] + " " + itemsInRange[i][1].price + "gp\n";
+    const nextSection = "- " + itemsInRange[i][0] + " " + itemsInRange[i][1].price + currency + "\n";
     if (nextSection.length + result[j].length > 2000) {
       j++;
       result[j] = ""
@@ -320,7 +320,7 @@ function doTrade(userID, options, isBuying) {
 
   const typeName = isBuying ? 'Buy' : "Sell";
   return {
-    content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? "gp (" + realPrice + "gp each)" : "gp"),
+    content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? currency + " (" + realPrice + currency + " each)" : currency),
     ephemeral: true,
     components: [
       {
@@ -511,6 +511,64 @@ function explainMe(client, channelID, user) {
       channel.send({ content: messages[i] })
     }, 500 * i);
   }
+
+  return responseMessage("Explanation sent", true);
+}
+
+/**
+ * Updates bots messages to the current command explanation.
+ * @param {Client} client 
+ * @param {string} channelID 
+ * @return {responseObject}
+ */
+function updateExplainMe(client, channelID) {
+
+  /** @type {TextChannel} */ 
+  // @ts-ignore  
+  const channel = getChannel(client, channelID);
+  // @ts-ignore
+  const e = channel.messages.fetch({limit: 100}).then(
+    (/**  @type {Map<string, Message>}*/ messages) => {
+      const neededMessages = explanationMessage.length;
+      let j = 0;
+      for(let message of messages.entries()){
+        if(message[1].author.id !== process.env.APP_ID) {
+          messages.delete(message[0]);
+        } else if(j >= neededMessages){
+          messages.delete(message[0]);
+          message[1].delete();
+        } else {
+          j++;
+        }
+      }
+
+      const existingMessages = messages.size;
+      const missingMessages = neededMessages - existingMessages;
+      
+      // sends as many new messages as needed
+      // j is the first index of text that doesnt have a message
+      for(let j = existingMessages; j < neededMessages; j++) {
+        setTimeout(() => {
+          channel.send({ content: explanationMessage[j] })
+        }, 500 * j);
+      }
+      
+      // discord returns messages in reversed order.
+      // we start at the last message that was already sent and 
+      // update it with the corresponding text section
+      let i = existingMessages - 1;
+      messages.forEach(message => {
+        if(i < 0) return;
+        setTimeout((number) => {
+          if(message.content !== explanationMessage[number]) {
+            message.edit(explanationMessage[number]);
+            console.log("Updated an explanation message.");
+          }
+        }, 500 * i, i);
+        i--;
+      });
+    }
+  );
 
   return responseMessage("Explanation sent", true);
 }
@@ -724,6 +782,9 @@ client.on('interactionCreate',
               },
             ];
             return interaction.reply(response);
+          }
+          if(options[0].value === "update") {
+            return interaction.reply(updateExplainMe(client, BOT_INFO_CHANNEL));
           }
           return interaction.reply(explainMe(client, channelID, null));
         case "getitemsinrange": 

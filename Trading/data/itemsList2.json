@@ -1463,6 +1463,56 @@
 		"rarity": "rare",
 		"priceTier": 3
 	},
+	"Spell Scroll Level 0": {
+		"price": 10,
+		"rarity": "Common",
+		"priceTier": 0
+	},
+	"Spell Scroll Level 1": {
+		"price": 60,
+		"rarity": "Common",
+		"priceTier": 0
+	},
+	"Spell Scroll Level 2": {
+		"price": 120,
+		"rarity": "uncommon",
+		"priceTier": 0
+	},
+	"Spell Scroll Level 3": {
+		"price": 200,
+		"rarity": "uncommon",
+		"priceTier": 0
+	},
+	"Spell Scroll Level 4": {
+		"price": 320,
+		"rarity": "rare",
+		"priceTier": 0
+	},
+	"Spell Scroll Level 5": {
+		"price": 640,
+		"rarity": "rare",
+		"priceTier": 1
+	},
+	"Spell Scroll Level 6": {
+		"price": 1280,
+		"rarity": "very rare",
+		"priceTier": 2
+	},
+	"Spell Scroll Level 7": {
+		"price": 2560,
+		"rarity": "very rare",
+		"priceTier": 2
+	},
+	"Spell Scroll Level 8": {
+		"price": 5120,
+		"rarity": "very rare",
+		"priceTier": 4
+	},
+	"Spell Scroll Level 9": {
+		"price": 10240,
+		"rarity": "legendary",
+		"priceTier": 5
+	},
 	"+1 Padded": {
 		"price": 1505,
 		"rarity": "uncommon",

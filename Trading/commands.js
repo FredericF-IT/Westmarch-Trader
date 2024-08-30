@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { capitalize } from './utils.js';
+import { capitalize, currency } from './utils.js';
 import { getDowntimes } from "./downtimes.js";
 
 // Get the items from itemList.js
@@ -29,7 +29,7 @@ function createLevelChoices() {
 
 const ITEM_RANGE_COMMAND = {
   name: 'getitemsinrange',
-  description: "Print a list of items within two gp values, according to sane's.",
+  description: "Print a list of items within two " + currency + " values, according to sane's.",
   options: [
     {
       type: 10,
@@ -80,6 +80,21 @@ const EXPLAIN_ME_COMMAND = {
   name: 'explanationtrader',
   description: "Get the explanation of the bot",
   type: 1,
+  options: [
+    {
+      type: 3,
+      name: 'type',
+      description: 'Send new or update existing?',
+      required: true,
+      choices: [{
+        name: "new",
+        value: "new",
+      },{
+        name: "update",
+        value: "update",
+      }],
+    },
+  ]
 };
 
 const WESTMARCH_COMMANDS = {
@@ -144,7 +159,7 @@ const WESTMARCH_COMMANDS = {
     {
       type: 1,
       name: 'reward',
-      description: 'Logbook template. Calculate what gp and items players get after session',
+      description: 'Logbook template. Calculate what ' +  currency + ' and items players get after session',
       options: [
         {
           type: 4,

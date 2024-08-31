@@ -50,31 +50,6 @@ export function getDX(x) {
   return Math.floor(Math.random() * x) + 1;
 }
 
-import { getSanesItemPrices } from './itemsList.js';
-/** @type {[string, ...item[]][]} */
-const allItems = getSanesItemPrices();
-
- /**
- * @param {number} lowestPrice 
- * @param {number} highestPrice 
- * @return {[string, ...item][]}
- */
-export function filterItems(lowestPrice, highestPrice) {
-  return allItems.filter(function(element) {
-      return lowestPrice <= element[1].price && element[1].price <= highestPrice;
-  });
-}
-
- /**
- * @param {number} priceTier 
- * @return {[string, ...item][]}
- */
- export function filterItemsbyTier(priceTier) {
-  return allItems.filter(function(element) {
-      return priceTier === element[1].priceTier;
-  });
-}
-
 /**
  * 
  * @param {guildMember} member 

@@ -11,6 +11,10 @@
 		"Kelten": {
 			"crafting": {},
 			"weeklyUsed": true
+		},
+		"Sauron": {
+			"crafting": {},
+			"weeklyUsed": true
 		}
 	},
 	"329710676169981963": {
@@ -36,6 +40,19 @@
 	},
 	"450476712594112524": {
 		"Jorgin": {
+			"weeklyUsed": true
+		}
+	},
+	"126157062886391808": {
+		"Bo": {
+			"weeklyUsed": true
+		},
+		"Grover Underwood": {
+			"weeklyUsed": true
+		}
+	},
+	"191739615831392258": {
+		"Alex Lumina": {
 			"weeklyUsed": true
 		}
 	}

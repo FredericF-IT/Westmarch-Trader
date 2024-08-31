@@ -1,15 +1,7 @@
 DROP TABLE item_cost;
-
--- Create the table
-CREATE TABLE item_cost (
-    item_name TEXT PRIMARY KEY,
-    price INTEGER,
-    rarity TEXT, 
-    consumable INTEGER, 
-    price_tier INTEGER
-);
-
--- Insert the data
+-- Create the table;
+CREATE TABLE item_cost (item_name TEXT, id INTEGER PRIMARY KEY AUTOINCREMENT, price INTEGER, rarity TEXT, consumable INTEGER, price_tier INTEGER);
+-- Insert the data;
 INSERT INTO item_cost (item_name, price, rarity, consumable, price_tier) VALUES ("+1 Shield", 1500, "uncommon", 0, 2);
 INSERT INTO item_cost (item_name, price, rarity, consumable, price_tier) VALUES ("+2 Shield", 6000, "rare", 0, 4);
 INSERT INTO item_cost (item_name, price, rarity, consumable, price_tier) VALUES ("+3 Shield", 24000, "very rare", 0, 5);

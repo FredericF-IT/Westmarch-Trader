@@ -134,18 +134,18 @@ function createDowntimeSQLs() {
     const baseString = "-- SQLite;\n" +
     `DROP TABLE IF EXISTS ${sqlTableName};\n` +
     `CREATE TABLE ${sqlTableName} (` +
-    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-    "level INTEGER NOT NULL," +
-    "roll_group INTEGER NOT NULL," +
-    "outcome TEXT NOT NULL" +
+      "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+      "level INTEGER NOT NULL," +
+      "roll_group INTEGER NOT NULL," +
+      "outcome TEXT NOT NULL" +
     ");\n\n" +
     "-- Insert the data;\n";
 
     const baseStringEvents = "-- SQLite;\n" +
     `DROP TABLE IF EXISTS ${sqlTableName}_events;\n` + 
     `CREATE TABLE ${sqlTableName}_events (` +
-    "eventID int NOT NULL, " +
-    "description TEXT NOT NULL" +
+      "eventID int NOT NULL, " +
+      "description TEXT NOT NULL" +
     ");\n\n" +
     "-- Insert the data;\n";
 

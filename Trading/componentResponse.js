@@ -1,6 +1,5 @@
 // @ts-check
 import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL, DOWNTIME_RESET_TIME, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, tierToCostLimits, currency } from './utils.js';
-import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
 import { createProficiencyChoices, getProficiencies } from "./downtimes.js";
 import { getDX } from './extraUtils.js';
 import { getValueDowntime, finishDowntimeActivity, getUserDowntimes, setUserDowntimes, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
@@ -8,6 +7,7 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
+import { getItem, sqlite3Query } from './data/createDB.js';
 
 /**
  * @typedef {import("discord.js").Message} Message
@@ -19,9 +19,6 @@ import {
  */
 
 const proficiencyNames = getProficiencies();
-
-const allItemNames = getSanesItemNameIndex();
-const allItems = getSanesItemPrices();
 
 /**
  * 
@@ -36,84 +33,84 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
   if(userID != creatorID) 
     return errorResponse("Not your character.");;
 
-  const itemIndex = parseInt(parts[2]);
+  const itemID = parseInt(parts[2]);
   const characterName = parts[3];
 
-  createThread(message, `${characterName} crafts ${allItemNames[itemIndex]}`).then(channel => {
-    return channel.send({
-      content: "Make choices:", 
-      components: [
-        {
-          type: MessageComponentTypes.ACTION_ROW.valueOf(),
-          components: [
-            {
-              type: MessageComponentTypes.STRING_SELECT.valueOf(),
-              custom_id: `downtimeItemProfSelect_${userID}_${messageID}_${characterName}`,
-              placeholder: "Select your tool proficiency",
-              options: createProficiencyChoices(),
-              min_values: 1,
-              max_values: 1,
-            },
-          ],
-        },
-        {
-          type: MessageComponentTypes.ACTION_ROW.valueOf(),
-          components: [
-            {
-              type: MessageComponentTypes.STRING_SELECT.valueOf(),
-              custom_id: `downtimeItemProfMod_${userID}_${messageID}_${characterName}`,
-              placeholder: "What is your proficiency bonus?",
-              options: [
-                {
-                  label: "2",
-                  value: "2"
-                },
-                {
-                  label: "3",
-                  value: "3"
-                },
-                {
-                  label: "4",
-                  value: "4"
-                },
-                {
-                  label: "5",
-                  value: "5"
-                },
-                {
-                  label: "6",
-                  value: "6"
-                },
-              ],
-              min_values: 1,
-              max_values: 1,
-            },
-          ],
-        },       
-        {
-          type: MessageComponentTypes.ACTION_ROW.valueOf(),
-          components: [
-            {
-              type: MessageComponentTypes.BUTTON.valueOf(),
-              custom_id: `characterThreadFinished_${userID}_${messageID}_${characterName}`,
-              label: "Roll tool check",
-              style: ButtonStyleTypes.PRIMARY.valueOf(),
-            },
-          ],
-        },
-      ],
+  sqlite3Query(getItem(itemID), (err, rows) => {
+    createThread(message, `${characterName} crafts ${rows[0].item_name}`).then(channel => {
+      return channel.send({
+        content: "Make choices:", 
+        components: [
+          {
+            type: MessageComponentTypes.ACTION_ROW.valueOf(),
+            components: [
+              {
+                type: MessageComponentTypes.STRING_SELECT.valueOf(),
+                custom_id: `downtimeItemProfSelect_${userID}_${messageID}_${characterName}`,
+                placeholder: "Select your tool proficiency",
+                options: createProficiencyChoices(),
+                min_values: 1,
+                max_values: 1,
+              },
+            ],
+          },
+          {
+            type: MessageComponentTypes.ACTION_ROW.valueOf(),
+            components: [
+              {
+                type: MessageComponentTypes.STRING_SELECT.valueOf(),
+                custom_id: `downtimeItemProfMod_${userID}_${messageID}_${characterName}`,
+                placeholder: "What is your proficiency bonus?",
+                options: [
+                  {
+                    label: "2",
+                    value: "2"
+                  },
+                  {
+                    label: "3",
+                    value: "3"
+                  },
+                  {
+                    label: "4",
+                    value: "4"
+                  },
+                  {
+                    label: "5",
+                    value: "5"
+                  },
+                  {
+                    label: "6",
+                    value: "6"
+                  },
+                ],
+                min_values: 1,
+                max_values: 1,
+              },
+            ],
+          },       
+          {
+            type: MessageComponentTypes.ACTION_ROW.valueOf(),
+            components: [
+              {
+                type: MessageComponentTypes.BUTTON.valueOf(),
+                custom_id: `characterThreadFinished_${userID}_${messageID}_${characterName}`,
+                label: "Roll tool check",
+                style: ButtonStyleTypes.PRIMARY.valueOf(),
+              },
+            ],
+          },
+        ],
+      });
+    }).then(() => {
+      message.edit({
+        content: `${characterName} (<@${userID}>) wants to craft ${rows[0].item_name}.\n` +
+                  `Material cost: ${rows[0].price}\n` +
+                  `You will need to succeed on a craft check using a tool proficiency.\n` +
+                  `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n`,
+        components: [],
+      });
     });
-  }).then(() => {
-    const [itemName, {price}] = allItems[itemIndex];
-
-    message.edit({
-      content: `${characterName} (<@${userID}>) wants to craft ${itemName}.\n` +
-                `Material cost: ${price}\n` +
-                `You will need to succeed on a craft check using a tool proficiency.\n` +
-                `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n`,
-      components: [],
-    });
-  });
+  })
 
   let userBuilds = getUserDowntimes(userID);
 
@@ -132,7 +129,7 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
   crafting[messageID] = {
     proficiency: null,
     profMod: 0,
-    item: itemIndex,
+    item: itemID,
   };
 
   character.crafting = crafting;
@@ -212,12 +209,11 @@ export function westmarchRewardLogResult(parts, timestamp, interaction) {
  * @param {string[]} parts 
  * @param {string} userID 
  * @param {interaction} interaction 
- * @return {responseObject} JS Object for interaction.reply()
  */
 export function rollCharacterDowntimeThread(parts, userID, interaction) {
   const creatorID = parts[1];
   if(userID != creatorID) 
-    return errorResponse("Not your character.");
+    interaction.reply(errorResponse("Not your character."));
 
   const originalMessageID = parts[2];
   const characterName = parts[3];
@@ -225,34 +221,35 @@ export function rollCharacterDowntimeThread(parts, userID, interaction) {
   /** @type {number} */
   const profMod = getValueDowntime(userID, characterName, CRAFTING_CATEGORY, originalMessageID, "profMod");
   if(profMod < 2 || profMod > 6)
-    return errorResponse("Modifier is not correct.");
+    interaction.reply(errorResponse("Modifier is not correct."));
 
   /** @type {string} */
   const profType = getValueDowntime(userID, characterName, CRAFTING_CATEGORY, originalMessageID, "proficiency");
   if(profType == null)
-    return errorResponse("Proficiency is not set.");
+    interaction.reply(errorResponse("Proficiency is not set."));
 
   if(hasUsedWeeklyDowntime(userID, characterName)){
-    return errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")");
+    interaction.reply(errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")"));
   }
 
   /** @type {number} */
   const itemID = getValueDowntime(userID, characterName, CRAFTING_CATEGORY, originalMessageID, "item");
+  sqlite3Query(getItem(itemID), (err, rows) => {
+    const DC = 15;
+    const roll = getDX(20); 
+    const success = (roll + profMod >= DC);
+    const result = `DC: ${DC}\nResult: ${(roll + profMod)} (${roll}+${profMod}) using ${proficiencyNames[profType].toLowerCase()}.\n${(success ? `Successfully crafted ${rows[0].item_name}.\nWait until a dm approves this activity.` : `Try again with your next downtime action!`)}`;
 
-  const DC = 15;
-  const roll = getDX(20); 
-  const success = (roll + profMod >= DC);
-  const result = `DC: ${DC}\nResult: ${(roll + profMod)} (${roll}+${profMod}) using ${proficiencyNames[profType].toLowerCase()}.\n${(success ? `Successfully crafted ${allItemNames[itemID]}.\nWait until a dm approves this activity.` : `Try again with your next downtime action!`)}`;
+    useWeeklyAction(userID, characterName);
 
-  useWeeklyAction(userID, characterName);
-
-  if(success) {
-    setTimeout(() => {
-      finishDowntimeActivity(userID, characterName, CRAFTING_CATEGORY, originalMessageID);
-      interaction.deleteReply(interaction.message);
-    }, 300);
-  }
-  return responseMessage(result, false);
+    if(success) {
+      setTimeout(() => {
+        finishDowntimeActivity(userID, characterName, CRAFTING_CATEGORY, originalMessageID);
+        interaction.deleteReply(interaction.message);
+      }, 300);
+    }
+    interaction.reply(responseMessage(result, false));
+  });
 }
 
 /**

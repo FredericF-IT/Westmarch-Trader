@@ -4687,14 +4687,14 @@ let sanesItemPrices = {
 /**
  * @returns {[string, ...item][]}
  */
-export function getSanesItemPrices() {
+function getSanesItemPrices() {
   return Object.entries(sanesItemPrices);
 }
 
 /**
  * @return {string[]}
  */
-export function getSanesItemNameIndex() {
+function getSanesItemNameIndex() {
   return Object.keys(sanesItemPrices);
 }
 
@@ -4764,20 +4764,16 @@ function createUpdatedData(store) {
     return;
 
   const definitionText = 
-`DROP TABLE item_cost;
-
--- Create the table
-CREATE TABLE item_cost (
-    item_name TEXT PRIMARY KEY,
-    price INTEGER,
-    rarity TEXT, 
-    consumable INTEGER, 
-    price_tier INTEGER
-);
-
--- Insert the data
-`;
-
+		"DROP TABLE item_cost;\n" +
+		"-- Create the table;\n" +
+		"CREATE TABLE item_cost (" +
+			"item_name TEXT, " +
+	    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+			"price INTEGER, " +
+			"rarity TEXT, " +
+			"consumable INTEGER, " + 
+			"price_tier INTEGER);\n" +
+		"-- Insert the data;\n";
 
   try {
     writeDataFileRequest("./data/itemsList2.js", "export const updatedItems = " + JSON.stringify(newItems, null, "\t"));

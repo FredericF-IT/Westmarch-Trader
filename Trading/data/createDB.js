@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { readDataFile } from './dataIO.js';
+import { db2 } from '../app.js';
 
 /**
  * 
@@ -15,6 +16,31 @@ export function getDowntimeQuery(downtimeTableName, level, roll) {
   `WHERE roll_group=${roll} AND level=${level};`;
 }
 
+export function get25ItemNamesQuery(currentInput) {
+  return `SELECT item_name, id FROM item_cost WHERE item_name LIKE '%${currentInput}%' LIMIT 25;`;
+}
+
+export function getItem(itemID){
+  return `SELECT * FROM item_cost WHERE id=${itemID} LIMIT 1;`;
+}
+
+/**
+ * @param {number} lowestPrice 
+ * @param {number} highestPrice 
+ * @return {string}
+ */
+export function filterItems(lowestPrice, highestPrice) {
+  return `SELECT * FROM item_cost WHERE ${lowestPrice}<=price AND price<=${highestPrice} ORDER BY price ASC;`;
+}
+
+/**
+ * @param {number} priceTier 
+ * @return {string}
+ */
+export function filterItemsbyTier(priceTier) {
+  return `SELECT * FROM item_cost WHERE ${priceTier}=price_tier ORDER BY price ASC;`;
+}
+
 /**
  * 
  * @param {sqlite3.Database} db 
@@ -26,7 +52,8 @@ export function createDB(db) {
     "./data/job_rewards_events.sql",
     "./data/job_rewards.sql",
     "./data/training_rewards_events.sql",
-    "./data/training_rewards.sql"
+    "./data/training_rewards.sql",
+    "./data/insertItems2.sql"
   ];
   for(let file of files) {
     const codeLines = readDataFile(file).split(";");
@@ -37,10 +64,21 @@ export function createDB(db) {
           if(err != null){
             console.error(err);
           }
+          console.log(lineClean);
         });
       });
     }
   }
+}
+
+/**
+ *
+ * @param {string} query
+ * @param {(err: Error | null, rows: Object[]) => void} callback
+ */
+export function sqlite3Query(query, callback) {
+  const sql = query;
+  db2.all(sql, [], callback);
 }
 
 /*

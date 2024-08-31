@@ -7,16 +7,16 @@ import {
   ButtonStyleTypes,
 } from 'discord-interactions';
 import { BOT_INFO_CHANNEL, capitalize, CHARACTER_TRACKING_CHANNEL, currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
-import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
+import './itemsList.js';
 import { getDowntimeNames, getProficiencies, getDowntimeTables, jsNameToTableName } from "./downtimes.js";
-import { getDX, filterItems, requestCharacterRegistration, isAdmin, filterItemsbyTier } from './extraUtils.js';
+import { getDX, requestCharacterRegistration, isAdmin } from './extraUtils.js';
 import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
 import { Client, IntentsBitField, TextChannel, User } from "discord.js";
 import { ALL_COMMANDS } from './commands.js';
 import { explanationMessage } from './explanation.js';
-import { createDB, getDowntimeQuery } from './data/createDB.js';
+import { createDB, filterItems, filterItemsbyTier, get25ItemNamesQuery, getDowntimeQuery, getItem, sqlite3Query } from './data/createDB.js';
 
 /**
  * @typedef {import("./types.js").interaction} interaction
@@ -41,28 +41,14 @@ client.on('ready', (c) => {
   console.log("Bot is running");
 });
 
-/* * @type {sqlite3.Database} * /
-const db = new sqlite3.Database('./trader.db', (err) => {
-  if (err) {
-    console.error('Failed to connect to the database:', err.message);
-  } else {
-    console.log('Connected to the trader.db SQLite database.');
-  }
-});*/
-
 /** @type {sqlite3.Database} */
-const db2 = new sqlite3.Database('./data/trader_v2.db', (err) => {
+export const db2 = new sqlite3.Database('./data/trader_v2.db', (err) => {
   if (err) {
     console.error('Failed to connect to the database:', err.message);
   } else {
     console.log('Connected to the trader.db SQLite database.');
   }
 });
-
-/** @type {[string, ...item[]][]} */
-const allItems = getSanesItemPrices();
-const allItemNames = getSanesItemNameIndex();
-const allItemNamesLower = allItemNames.map(v => v.toLowerCase());
 
 const downtimeNames = getDowntimeNames();
 const proficiencyNames = getProficiencies();
@@ -71,16 +57,16 @@ const proficiencyNames = getProficiencies();
 const lastItemResult = new Map();
 
 /**
+ * @param {interaction} interaction 
  * @param {option[]} options 
  * @param {string} id 
  * @param {boolean} useTier 
- * @return {responseObject} JS Object for interaction.reply()
  */
-function getItemsInRange(options, id, useTier) {
-  /** @type {[string, ...item[]][]} */
-  let itemsInRange = [];
+function getItemsInRange(interaction, options, id, useTier) {
+  let itemsQuery = "";
+
   if(useTier) {
-    itemsInRange = filterItemsbyTier(options[0].value);
+    itemsQuery = filterItemsbyTier(options[0].value);
   } else {
     /** @type {number} */
     let minPrice = options[0].value;
@@ -94,54 +80,55 @@ function getItemsInRange(options, id, useTier) {
       minPrice = minPrice ^ maxPrice;
     }
   
-    itemsInRange = filterItems(minPrice, maxPrice);
+    itemsQuery = filterItems(minPrice, maxPrice);
   }
 
-  itemsInRange = itemsInRange.sort((a, b) => a[1].price - b[1].price);
-  let result = [""];
-  let j = 0;
-  for (let i = 0; i < itemsInRange.length; i++) {
-    const nextSection = "- " + itemsInRange[i][0] + " " + itemsInRange[i][1].price + currency + "\n";
-    if (nextSection.length + result[j].length > 2000) {
-      j++;
-      result[j] = ""
+  sqlite3Query(itemsQuery, (err, rows) => {
+    let result = [""];
+    let j = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const nextSection = "- " + rows[i].item_name + " " + rows[i].price + currency + "\n";
+      if (nextSection.length + result[j].length > 2000) {
+        j++;
+        result[j] = ""
+      }
+      result[j] += nextSection;
     }
-    result[j] += nextSection;
-  }
 
-  if(j == 0){
-    return {
-        content: result[0],
-        ephemeral: true,
-    };
-  }
+    if(j == 0){
+      interaction.reply({
+          content: result[0],
+          ephemeral: true,
+      });
+    }
 
-  lastItemResult.set(id, result);
-  
-  const minutesTillDeletion = 5;
-  setTimeout(
-    () => {
-      lastItemResult.delete(id);
-    }, 1000 * 60 * minutesTillDeletion);
+    lastItemResult.set(id, result);
+    
+    const minutesTillDeletion = 5;
+    setTimeout(
+      () => {
+        lastItemResult.delete(id);
+      }, 1000 * 60 * minutesTillDeletion);
 
-  return {
-    content: result[0],
-    ephemeral: true,
-    components: [
-      {
-        type: MessageComponentTypes.ACTION_ROW.valueOf(),
-        components: [
-          {
-              type: MessageComponentTypes.BUTTON.valueOf(),
-              // @ts-ignore
-              custom_id: `itemspage_1_`+id,
-              label: "Load more items",
-              style: ButtonStyleTypes.PRIMARY.valueOf(),
-          },
-        ],
-      },
-    ],
-  };
+    interaction.reply({
+      content: result[0],
+      ephemeral: true,
+      components: [
+        {
+          type: MessageComponentTypes.ACTION_ROW.valueOf(),
+          components: [
+            {
+                type: MessageComponentTypes.BUTTON.valueOf(),
+                // @ts-ignore
+                custom_id: `itemspage_1_`+id,
+                label: "Load more items",
+                style: ButtonStyleTypes.PRIMARY.valueOf(),
+            },
+          ],
+        },
+      ],
+    });
+  });
 }
 
 /**
@@ -171,45 +158,6 @@ async function sendDowntimeCopyable(interaction, userID, characterName, characte
 }
 
 const downtimeTables = getDowntimeTables();
-
-/* *
-* @param {interaction} interaction 
-* @param {[{value: string},{value: string},{value: number}] | option[]} options 
-* @param {string} userID 
- * @return {Promise | void}
-* /
-function getDowntime(interaction, options, userID) {
-  const downtimeType = options[0].value;
-  const characterName = options[1].value;
-  const characterLevel = options[2].value;
-
-  if(!characterExists(userID, characterName)){
-    return interaction.reply(requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]));
-  }
-
-  if(hasUsedWeeklyDowntime(userID, characterName)){
-    return interaction.reply(errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")"));
-  }
-
-  const roll = getDX(100);
-
-  const rollGroup = Math.floor((roll - 1) / 10);
-
-  const event = downtimeTables[downtimeType][1].table[0][rollGroup];
-  const effect = downtimeTables[downtimeType][1].table[characterLevel - 1][rollGroup];
-
-  sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, event, effect);
-}*/
-
-/**
- * 
- * @param {string} query 
- * @param {(err: Error | null, rows: Object[]) => void} callback 
- */
-function sqlite3Query(query, callback){
-  const sql = query;
-  db2.all(sql, [], callback);
-}
 
 /**
  * @callback queryMethod
@@ -257,7 +205,7 @@ function getDowntimeSQLite3(interaction, options, userID) {
       return err.message;
     }
     sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, rows[0].description, rows[0].outcome);
-  })
+  });
 }
 
 /**
@@ -268,33 +216,37 @@ function getDowntimeSQLite3(interaction, options, userID) {
  * @return {Promise} JS Object for interaction.reply()
  */
 function downtimeCraftItem(interaction, itemID, characterName, userID) {
-  const [itemName, {price}] = allItems[parseInt(itemID)];
-
   if(!characterExists(userID, characterName))
     return interaction.reply(requestCharacterRegistration("itemCraft", characterName, [itemID]));
   
-  const channel = getChannel(client, DOWNTIME_LOG_CHANNEL);
-  // @ts-ignore
-  channel.send(
-   {
-    content: `${characterName} (<@${userID}>) wants to craft ${itemName}.\n` +
-      `Material cost: ${price}\n` +
-      `You will need to succeed on a craft check using a tool proficiency.\n` +
-      `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n` +
-      "If you have another item in progress, starting a new item will overwrite that one.",
-    components: [
-      {
-        type: MessageComponentTypes.ACTION_ROW,
-        components: [
-          {
-              type: MessageComponentTypes.BUTTON,
-              custom_id: `characterThread_${userID}_` + itemID + "_" + characterName,
-              label: "Start crafting",
-              style: ButtonStyleTypes.PRIMARY,
-          },
-        ],
-      },
-    ],
+  //const [itemName, {price}] = allItems[parseInt(itemID)];
+  const itemQuery = getItem(itemID);
+  sqlite3Query(itemQuery, (err, rows) => {
+    const item = rows[0];
+    
+    const channel = getChannel(client, DOWNTIME_LOG_CHANNEL);
+    // @ts-ignore
+    channel.send(
+    {
+      content: `${characterName} (<@${userID}>) wants to craft ${item.item_name}.\n` +
+        `Material cost: ${item.price}\n` +
+        `You will need to succeed on a craft check using a tool proficiency.\n` +
+        `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n` +
+        "If you have another item in progress, starting a new item will overwrite that one.",
+      components: [
+        {
+          type: MessageComponentTypes.ACTION_ROW,
+          components: [
+            {
+                type: MessageComponentTypes.BUTTON,
+                custom_id: `characterThread_${userID}_` + itemID + "_" + characterName,
+                label: "Start crafting",
+                style: ButtonStyleTypes.PRIMARY,
+            },
+          ],
+        },
+      ],
+    });
   });
 
   return interaction.reply(responseMessage(`Inital message created in <#${DOWNTIME_LOG_CHANNEL}>`, true));
@@ -305,51 +257,54 @@ function downtimeChangeItem() {
 }
 
 /**
- * 
+ * @param {interaction} interaction 
  * @param {string} userID 
  * @param {[{value: string},{value: string},{value: number}] | option[]} options 
- * @param {boolean} isBuying 
- * @return {responseObject} JS Object for interaction.reply()
+ * @param {boolean} isBuying
  */
-function doTrade(userID, options, isBuying) {
-  const itemIndex = parseInt(options[0].value);
+function doTrade(interaction, userID, options, isBuying) {
+  const itemID = parseInt(options[0].value);
   const characterName = options[1].value;
   const itemCount = options.length > 2 ? options[2].value : 1;
   
   if(!characterExists(userID, characterName)){
-    return requestCharacterRegistration("doTrade", characterName, [itemIndex, itemCount, isBuying]);
+    interaction.reply(requestCharacterRegistration("doTrade", characterName, [itemID, itemCount, isBuying]));
   }
 
-  if(itemIndex == -1) {
-    return errorResponse('Item "' + allItemNames[itemIndex][0] + '" can not be found.\nIt may be misspelled.');
-  }
-  if(itemCount < 1) {
-    return errorResponse("Can not trade less items than 1");
-  }
-
-  const realPrice = allItems[itemIndex][1].price / (isBuying ? 1 : 2);
+  const itemQuery = getItem(itemID);
+  sqlite3Query(itemQuery, (err, rows) => {
+    const item = rows[0];
+    if(item == undefined) {
+      return errorResponse('Item can not be found.\nIt may be misspelled.');
+    }
+    if(itemCount < 1) {
+      interaction.reply(errorResponse("Can not trade less items than 1"));
+    }
   
-  const itemName = capitalize(allItems[itemIndex][0]);
-
-  const typeName = isBuying ? 'Buy' : "Sell";
-  return {
-    content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? currency + " (" + realPrice + currency + " each)" : currency),
-    ephemeral: true,
-    components: [
-      {
-        type: MessageComponentTypes.ACTION_ROW.valueOf(),
-        components: [
-          {
-              type: MessageComponentTypes.BUTTON.valueOf(),
-              // @ts-ignore
-              custom_id: `acceptTransactionButton_${realPrice}_${itemName}_${itemCount}_${typeName}_${characterName}`,
-              label: typeName,
-              style: ButtonStyleTypes.PRIMARY.valueOf(),
-          },
-        ],
-      },
-    ],
-  };
+    const realPrice = item.price / (isBuying ? 1 : 2);
+    
+    const itemName = item.item_name;
+  
+    const typeName = isBuying ? 'Buy' : "Sell";
+    interaction.reply({
+      content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? currency + " (" + realPrice + currency + " each)" : currency),
+      ephemeral: true,
+      components: [
+        {
+          type: MessageComponentTypes.ACTION_ROW.valueOf(),
+          components: [
+            {
+                type: MessageComponentTypes.BUTTON.valueOf(),
+                // @ts-ignore
+                custom_id: `acceptTransactionButton_${realPrice}_${itemName}_${itemCount}_${typeName}_${characterName}`,
+                label: typeName,
+                style: ButtonStyleTypes.PRIMARY.valueOf(),
+            },
+          ],
+        },
+      ],
+    });
+  })
 }
 
 /**
@@ -438,36 +393,36 @@ function characterNamesAutoComplete(currentInput, user) {
   return matchingOptionsIndex;
 }
 
-/** @type {Map<string, autocompleteObject[]>} */
-const cachedResults = new Map();
+/** @type {autocompleteObject[]?} */
+let cachedResults = null;
 
 /**
- * @param {string} currentInput 
- * @return {autocompleteObject[]} JS autocomplete Object for interaction.respond()
+ * @param {interaction} interaction 
+ * @param {string} currentInput
  */
-function itemNamesAutoComplete(currentInput) {
-  currentInput = currentInput.toLowerCase();
-
-  const cached = cachedResults.get(currentInput);
-  if(cached !== undefined) return cached;
-  
-  const matchingOptions = [];
-  for (var index = 0; index < allItemNames.length; index++){
-    if(allItemNamesLower[index].startsWith(currentInput)) {
-      if(25 <= matchingOptions.push({
-        name: allItemNames[index],
-        value: index.toString()
-      })) {
-        break;
-      }
+function itemNamesAutoComplete(interaction, currentInput) {
+  if(currentInput.length == 0){
+    if(cachedResults !== null){
+      return interaction.respond(cachedResults);
     }
   }
-  
-  if(currentInput.length < 2){
-    cachedResults.set(currentInput, matchingOptions);
-  }
-
-  return matchingOptions;
+  const limitedItemQuery = get25ItemNamesQuery(currentInput);
+  sqlite3Query(limitedItemQuery, async (err, rows) => {
+    if (err) {
+      console.error(`SQL error:\n  Query: ${limitedItemQuery}`, err);
+      return err.message;
+    }
+    const items = rows.map((item) => {
+      return {
+        name: item.item_name,
+        value: item.id.toString()
+      };
+    });
+    interaction.respond(items);
+    if(currentInput.length == 0){
+      cachedResults = items;
+    }
+  });
 }
 
 /**
@@ -653,7 +608,7 @@ function handleAutocomplete(interaction, user) {
   }
   // at this point, current input are the letters given to find the characters name.
   if(searchType == "item") {
-    interaction.respond(itemNamesAutoComplete(currentInput));
+    itemNamesAutoComplete(interaction, currentInput);
   }
   else if(searchType == "character") {
     interaction.respond(characterNamesAutoComplete(currentInput, user));
@@ -684,7 +639,7 @@ function handleComponentPreEvent(interaction, componentId, user) {
       const itemCount = parseInt(partsPre[3]);
       const isBuying = partsPre[4] === "true";
 
-      result = doTrade(user.id, [{value: itemIndex}, {value: partsPre[1]}, {value: itemCount}], isBuying);
+      doTrade(interaction, user.id, [{value: itemIndex}, {value: partsPre[1]}, {value: itemCount}], isBuying);
       break;
     case "doDowntime":
       const downtimeType = partsPre[2];
@@ -751,13 +706,6 @@ process.on('SIGINT', () => {
     console.log('Closed the database connection.');
     process.exit(0);
   });
-/*  db.close((err) => {
-    if (err) {
-      console.error(err.message);
-    }
-    console.log('Closed the database connection.');
-    process.exit(0);
-  });*/
 });
 
 // @ts-ignore
@@ -808,9 +756,9 @@ client.on('interactionCreate',
           }
           return interaction.reply(explainMe(client, channelID, null));
         case "getitemsinrange": 
-          return interaction.reply(getItemsInRange(options, id, false));
+          return getItemsInRange(interaction, options, id, false);
         case "getitemsbytier": 
-          return interaction.reply(getItemsInRange(options, id, true));
+          return getItemsInRange(interaction, options, id, true);
         case "westmarch item-downtime craft": 
           // command is now sent to specific channel
           //if(interaction.channel instanceof ThreadChannel) 
@@ -826,7 +774,7 @@ client.on('interactionCreate',
         case "westmarch buy": 
           isTrue = true;
         case "westmarch sell": 
-          return interaction.reply(doTrade(userID, options, isTrue));
+          return doTrade(interaction, userID, options, isTrue);
         
         case "westmarch character register": 
           isTrue = true;
@@ -881,7 +829,7 @@ client.on('interactionCreate',
         case "characterThread":
           return interaction.reply(startCharacterDowntimeThread(message, parts, userID, interaction.message.id));
         case "characterThreadFinished":
-          return interaction.reply(rollCharacterDowntimeThread(parts, userID, interaction));
+          return rollCharacterDowntimeThread(parts, userID, interaction);
         case "westmarchrewardlog":
           return interaction.reply(westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction));
         case "acceptTransactionButton":

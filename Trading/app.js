@@ -6,7 +6,7 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { BOT_INFO_CHANNEL, capitalize, CHARACTER_TRACKING_CHANNEL, currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
+import { BOT_INFO_CHANNEL, CHARACTER_TRACKING_CHANNEL, currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
 import './itemsList.js';
 import { getDowntimeNames, getProficiencies, getDowntimeTables, jsNameToTableName } from "./downtimes.js";
 import { getDX, requestCharacterRegistration, isAdmin } from './extraUtils.js';
@@ -96,7 +96,7 @@ function getItemsInRange(interaction, options, id, useTier) {
     }
 
     if(j == 0){
-      interaction.reply({
+      return interaction.reply({
           content: result[0],
           ephemeral: true,
       });
@@ -268,17 +268,17 @@ function doTrade(interaction, userID, options, isBuying) {
   const itemCount = options.length > 2 ? options[2].value : 1;
   
   if(!characterExists(userID, characterName)){
-    interaction.reply(requestCharacterRegistration("doTrade", characterName, [itemID, itemCount, isBuying]));
+    return interaction.reply(requestCharacterRegistration("doTrade", characterName, [itemID, itemCount, isBuying]));
   }
 
   const itemQuery = getItem(itemID);
   sqlite3Query(itemQuery, (err, rows) => {
     const item = rows[0];
     if(item == undefined) {
-      return errorResponse('Item can not be found.\nIt may be misspelled.');
+      return interaction.reply(errorResponse('Item can not be found.\nIt may be misspelled.'));
     }
     if(itemCount < 1) {
-      interaction.reply(errorResponse("Can not trade less items than 1"));
+      return interaction.reply(errorResponse("Can not trade less items than 1"));
     }
   
     const realPrice = item.price / (isBuying ? 1 : 2);
@@ -831,7 +831,7 @@ client.on('interactionCreate',
         case "characterThreadFinished":
           return rollCharacterDowntimeThread(parts, userID, interaction);
         case "westmarchrewardlog":
-          return interaction.reply(westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction));
+          return westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction);
         case "acceptTransactionButton":
           const channel = getChannel(client, TRANSACTION_LOG_CHANNEL);
           

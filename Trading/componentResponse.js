@@ -7,7 +7,7 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { getItem, sqlite3Query } from './data/createDB.js';
+import { filterItemsbyTier, getItem, sqlite3Query } from './data/createDB.js';
 
 /**
  * @typedef {import("discord.js").Message} Message
@@ -140,15 +140,15 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
 }
 
 /**
+ * @param {interaction} interaction 
  * @param {guildMember[]} players 
  * @param {number} xpAll 
  * @param {string} dmID 
  * @param {string} date 
  * @param {number} tier 
  * @param {number} rewardType
- * @return {responseObject} JS Object for interaction.reply()
  */
-export function getSessionRewards(players, xpAll, dmID, date, tier, rewardType) {
+export function getSessionRewards(interaction, players, xpAll, dmID, date, tier, rewardType) {
   const priceRange = tierToCostLimits.get(tier);
 
   const playerNumber = players.length;
@@ -157,30 +157,29 @@ export function getSessionRewards(players, xpAll, dmID, date, tier, rewardType) 
   // @ts-ignore we know that tier can only be one from the list of options
   const currencyReceived = ((priceRange.max - priceRange.min) / 2) + priceRange.min;
   
-  // @ts-ignore we know that tier can only be one from the list of options
-  const itemsUnderPrice = filterItemsbyTier(tier);
+  sqlite3Query(filterItemsbyTier(tier), (err, rows) => {
+    let rewards = `\`Session name\` (${date})\nDM: <@${dmID}>\nTier: ${tier}\n`;
 
-  let rewards = `\`Session name\` (${date})\nDM: <@${dmID}>\n`;
-
-  if(rewardType == 1){
-    rewards += `Gold: ${currencyReceived}${currency} each\nExperience: ${xpReceived}xp each\n\nPlayers:\n`
-    
-    for (let i = 0; i < playerNumber; i++) {
-      rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`character name\`\n`;
+    if(rewardType == 1){
+      rewards += `Gold: ${currencyReceived}${currency} each\nExperience: ${xpReceived}xp each\n\nPlayers:\n`
+      
+      for (let i = 0; i < playerNumber; i++) {
+        rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`character name\`\n`;
+      }
+    } else {
+      rewards += `${xpAll}xp earned by party\n\n`;
+      for (let i = 0; i < playerNumber; i++) {
+        const item = rows[Math.floor(Math.random() * rows.length)];
+        rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`character name\`\n  Item: ${item.item_name} (price: ${item.price})\n  ${xpReceived}xp\n\n`;
+      }
+      rewards = rewards.trim();
     }
-  } else {
-    rewards += `${xpAll}xp earned by party\n\n`;
-    for (let i = 0; i < playerNumber; i++) {
-      const item = itemsUnderPrice[Math.floor(Math.random() * itemsUnderPrice.length)];
-      rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`character name\`\n  Item: ${item[0]} (price: ${item[1].price})\n  ${xpReceived}xp\n\n`;
-    }
-    rewards = rewards.trim();
-  }
-
-  return {
-      content: "```"+rewards+`\`\`\`\nCopy this to <#${GAME_LOG_CHANNEL}> with any needed changes.`, 
-      ephemeral: true,
-  };
+  
+    interaction.reply({
+        content: "```"+rewards+`\`\`\`\nCopy this to <#${GAME_LOG_CHANNEL}> with any needed changes.`, 
+        ephemeral: true,
+    });
+  });
 }
 
 /**
@@ -188,7 +187,6 @@ export function getSessionRewards(players, xpAll, dmID, date, tier, rewardType) 
  * @param {string[]} parts 
  * @param {number} timestamp 
  * @param {interaction} interaction 
- * @return {responseObject} JS Object for interaction.reply()
  */
 export function westmarchRewardLogResult(parts, timestamp, interaction) {
   const date = new Date(timestamp);
@@ -201,7 +199,7 @@ export function westmarchRewardLogResult(parts, timestamp, interaction) {
 
   interaction.deleteReply(interaction.message);
 
-  return getSessionRewards(players, xpReceived, dmID, `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`, tier, rewardType);
+  return getSessionRewards(interaction, players, xpReceived, dmID, `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`, tier, rewardType);
 }
 
 /**
@@ -213,7 +211,7 @@ export function westmarchRewardLogResult(parts, timestamp, interaction) {
 export function rollCharacterDowntimeThread(parts, userID, interaction) {
   const creatorID = parts[1];
   if(userID != creatorID) 
-    interaction.reply(errorResponse("Not your character."));
+    return interaction.reply(errorResponse("Not your character."));
 
   const originalMessageID = parts[2];
   const characterName = parts[3];
@@ -221,15 +219,15 @@ export function rollCharacterDowntimeThread(parts, userID, interaction) {
   /** @type {number} */
   const profMod = getValueDowntime(userID, characterName, CRAFTING_CATEGORY, originalMessageID, "profMod");
   if(profMod < 2 || profMod > 6)
-    interaction.reply(errorResponse("Modifier is not correct."));
+    return interaction.reply(errorResponse("Modifier is not correct."));
 
   /** @type {string} */
   const profType = getValueDowntime(userID, characterName, CRAFTING_CATEGORY, originalMessageID, "proficiency");
   if(profType == null)
-    interaction.reply(errorResponse("Proficiency is not set."));
+    return interaction.reply(errorResponse("Proficiency is not set."));
 
   if(hasUsedWeeklyDowntime(userID, characterName)){
-    interaction.reply(errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")"));
+    return interaction.reply(errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")"));
   }
 
   /** @type {number} */

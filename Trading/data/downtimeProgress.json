@@ -2,10 +2,11 @@
 	"367891183344812034": {
 		"Thomson": {
 			"crafting": {},
-			"weeklyUsed": false
+			"weeklyUsed": true
 		},
 		"Kronk": {
-			"crafting": {}
+			"crafting": {},
+			"weeklyUsed": true
 		},
 		"Kelten": {
 			"crafting": {},

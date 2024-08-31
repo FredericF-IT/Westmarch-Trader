@@ -8,7 +8,7 @@ import {
 } from 'discord-interactions';
 import { BOT_INFO_CHANNEL, capitalize, CHARACTER_TRACKING_CHANNEL, currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
 import { getSanesItemPrices, getSanesItemNameIndex } from './itemsList.js';
-import { getDowntimeNames, getProficiencies, getDowntimeTables } from "./downtimes.js";
+import { getDowntimeNames, getProficiencies, getDowntimeTables, jsNameToTableName } from "./downtimes.js";
 import { getDX, filterItems, requestCharacterRegistration, isAdmin, filterItemsbyTier } from './extraUtils.js';
 import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
@@ -16,6 +16,7 @@ import sqlite3 from 'sqlite3';
 import { Client, IntentsBitField, TextChannel, User } from "discord.js";
 import { ALL_COMMANDS } from './commands.js';
 import { explanationMessage } from './explanation.js';
+import { createDB, getDowntimeQuery } from './data/createDB.js';
 
 /**
  * @typedef {import("./types.js").interaction} interaction
@@ -40,8 +41,17 @@ client.on('ready', (c) => {
   console.log("Bot is running");
 });
 
-/** @type {sqlite3.Database} */
+/* * @type {sqlite3.Database} * /
 const db = new sqlite3.Database('./trader.db', (err) => {
+  if (err) {
+    console.error('Failed to connect to the database:', err.message);
+  } else {
+    console.log('Connected to the trader.db SQLite database.');
+  }
+});*/
+
+/** @type {sqlite3.Database} */
+const db2 = new sqlite3.Database('./data/trader_v2.db', (err) => {
   if (err) {
     console.error('Failed to connect to the database:', err.message);
   } else {
@@ -137,11 +147,11 @@ function getItemsInRange(options, id, useTier) {
 /**
  * 
  * @param {interaction} interaction 
- * @param {*} userID 
- * @param {*} characterName 
- * @param {*} characterLevel 
- * @param {*} downtimeType
- * @param {*} roll 
+ * @param {string} userID 
+ * @param {string} characterName 
+ * @param {number} characterLevel 
+ * @param {number} downtimeType
+ * @param {number} roll 
  * @param {string} event
  * @param {string} effect 
  */
@@ -162,12 +172,12 @@ async function sendDowntimeCopyable(interaction, userID, characterName, characte
 
 const downtimeTables = getDowntimeTables();
 
-/**
+/* *
 * @param {interaction} interaction 
 * @param {[{value: string},{value: string},{value: number}] | option[]} options 
 * @param {string} userID 
  * @return {Promise | void}
-*/
+* /
 function getDowntime(interaction, options, userID) {
   const downtimeType = options[0].value;
   const characterName = options[1].value;
@@ -189,7 +199,7 @@ function getDowntime(interaction, options, userID) {
   const effect = downtimeTables[downtimeType][1].table[characterLevel - 1][rollGroup];
 
   sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, event, effect);
-}
+}*/
 
 /**
  * 
@@ -198,7 +208,7 @@ function getDowntime(interaction, options, userID) {
  */
 function sqlite3Query(query, callback){
   const sql = query;
-  db.all(sql, [], callback);
+  db2.all(sql, [], callback);
 }
 
 /**
@@ -235,15 +245,18 @@ function getDowntimeSQLite3(interaction, options, userID) {
 
   const roll = getDX(100);
   // @ts-ignore
-  const query = downtimeQuery.get(downtimeType)(characterLevel, roll);
+  const tableName = jsNameToTableName.get(downtimeNames[downtimeType]);
+
+  const rollGroup = Math.floor((roll - 1) / 10);
   
+  const query = getDowntimeQuery(tableName == undefined ? "" : tableName, characterLevel, rollGroup); 
+
   sqlite3Query(query, async (err, rows) => {
     if (err) {
       console.error(`SQL error:\n  Query: ${query}`, err);
       return err.message;
     }
-
-    sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, "DB Field missing"/*rows[0].event*/, rows[0].outcome);
+    sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, rows[0].description, rows[0].outcome);
   })
 }
 
@@ -677,8 +690,8 @@ function handleComponentPreEvent(interaction, componentId, user) {
       const downtimeType = partsPre[2];
       const characterLevel = parseInt(partsPre[3]);
 
-      getDowntime(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
-      //getDowntimeSQLite3(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
+      //getDowntime(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
+      getDowntimeSQLite3(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
       break;
     default:
       result = errorResponse("Unknown command");
@@ -731,13 +744,20 @@ function displayItemsInRange(parts) {
 const rareSeperator = "$.$=$";
 
 process.on('SIGINT', () => {
-  db.close((err) => {
+  db2.close((err) => {
     if (err) {
       console.error(err.message);
     }
     console.log('Closed the database connection.');
     process.exit(0);
   });
+/*  db.close((err) => {
+    if (err) {
+      console.error(err.message);
+    }
+    console.log('Closed the database connection.');
+    process.exit(0);
+  });*/
 });
 
 // @ts-ignore
@@ -815,8 +835,8 @@ client.on('interactionCreate',
         case "westmarch character show": 
           return interaction.reply(showCharacters(user));
         case "westmarch downtime":
-          //getDowntimeSQLite3(interaction, options, userID); 
-          getDowntime(interaction, options, userID);
+          getDowntimeSQLite3(interaction, options, userID); 
+          //getDowntime(interaction, options, userID);
       }
     }
 
@@ -887,4 +907,9 @@ client.login(process.env.DISCORD_TOKEN);
 const shouldUpdate = false;
 if(shouldUpdate) {
   InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);
+}
+
+const shouldCreateDB = false;
+if(shouldCreateDB) {
+  createDB(db2);
 }

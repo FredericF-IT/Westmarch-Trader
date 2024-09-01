@@ -71,6 +71,7 @@
  * @property {(message: Message) => void} deleteReply
  * @property {(object: responseObject) => Promise} reply
  * @property {(objects: autocompleteObject[]) => Promise} respond
+ * @property {(objects: responseObject) => Promise} update
  * @property {Map<string, User>} users
  * @property {Map<string, guildMember>} members
 */

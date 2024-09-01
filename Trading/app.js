@@ -6,14 +6,14 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { BOT_INFO_CHANNEL, CHARACTER_TRACKING_CHANNEL, currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
+import { BOT_INFO_CHANNEL, CHARACTER_TRACKING_CHANNEL, currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, GAME_LOG_CHANNEL, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
 import './itemsList.js';
 import { getDowntimeNames, getProficiencies, getDowntimeTables, jsNameToTableName } from "./downtimes.js";
 import { getDX, requestCharacterRegistration, isAdmin } from './extraUtils.js';
-import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
-import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction } from "./componentResponse.js";
+import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction, getCharactersNameless } from './data/dataIO.js';
+import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction, rewardCharacters as rewardPlayers, makeCharacterSessionSelection } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
-import { Client, IntentsBitField, TextChannel, User } from "discord.js";
+import { channelLink, Client, ComponentType, IntentsBitField, TextChannel, User } from "discord.js";
 import { ALL_COMMANDS } from './commands.js';
 import { explanationMessage } from './explanation.js';
 import { createDB, filterItems, filterItemsbyTier, get25ItemNamesQuery, getDowntimeQuery, getItem, sqlite3Query } from './data/createDB.js';
@@ -66,7 +66,7 @@ function getItemsInRange(interaction, options, id, useTier) {
   let itemsQuery = "";
 
   if(useTier) {
-    itemsQuery = filterItemsbyTier(options[0].value);
+    itemsQuery = filterItemsbyTier(options[0].value, true);
   } else {
     /** @type {number} */
     let minPrice = options[0].value;
@@ -87,7 +87,7 @@ function getItemsInRange(interaction, options, id, useTier) {
     let result = [""];
     let j = 0;
     for (let i = 0; i < rows.length; i++) {
-      const nextSection = "- " + rows[i].item_name + " " + rows[i].price + currency + "\n";
+      const nextSection = "- " + rows[i].item_name + " " + rows[i].price + currency + " (" + rows[i].rarity + ")\n";
       if (nextSection.length + result[j].length > 2000) {
         j++;
         result[j] = ""
@@ -431,15 +431,17 @@ function itemNamesAutoComplete(interaction, currentInput) {
  * @return {responseObject} JS Object for interaction.reply()
  */
 function westmarchLog(options, dm) {
-  const tier = options[0].value;
-  const xpReceived = options[1].value;
-  let rewardType = 0;
-  if(options.length > 2) {
-    rewardType = options[2].value;
+  const sessionName = options[0].value;
+  const tier = options[1].value;
+  const xpReceived = options[2].value;
+  const doItems = options[3].value;
+  let gpReceived = 0;
+  if(options.length > 4) {
+    gpReceived = options[4].value;
   }
   
   if(xpReceived < 0)
-    return errorResponse("Please only use positive values.");
+    return errorResponse("Please only use positive xp values.");
 
   return {
       content: `<@${dm.id}>\nSelect participating players`,
@@ -451,7 +453,7 @@ function westmarchLog(options, dm) {
             {
               type: MessageComponentTypes.USER_SELECT.valueOf(),
               // @ts-ignore
-              custom_id: `westmarchrewardlog_` + dm.id + "_" + xpReceived + "_" + tier + "_" + rewardType,
+              custom_id: `westmarchrewardlog_` + dm.id + "_" + xpReceived + "_" + tier + "_" + gpReceived + "_" + doItems + "_" + sessionName,
               min_values: 1,
               max_values: 20,
             },
@@ -511,7 +513,6 @@ function updateExplainMe(client, channelID) {
       }
 
       const existingMessages = messages.size;
-      const missingMessages = neededMessages - existingMessages;
       
       // sends as many new messages as needed
       // j is the first index of text that doesnt have a message
@@ -808,6 +809,41 @@ client.on('interactionCreate',
       switch(parts[0]){
         case "itemspage":
           return interaction.reply(displayItemsInRange(parts));
+
+        case "wmRewardPrint":
+          /** @type {TextChannel} */ 
+          // @ts-ignore  
+          const channel2 = getChannel(client, GAME_LOG_CHANNEL);
+          rewardPlayers.delete(userID);
+          interaction.deleteReply(interaction.message);
+          
+          channel2.send({content: interaction.message.content}); 
+          return interaction.reply(responseMessage("Log sent.", true));
+        case "wmRewardEditLast":
+        case "wmRewardEditNext":
+        case "wmRewardEditSame":
+          let pageNumber = parseInt(parts[1]);
+          const players = rewardPlayers.get(userID);
+          if(players == undefined) 
+            return interaction.reply(errorResponse("Please re-do the command."));
+          interaction.update(makeCharacterSessionSelection(interaction.message.content, pageNumber, players)); //.edit(interaction.message.content, );
+          return;
+        case "wmRewardSelectChar":
+          const players2 = rewardPlayers.get(userID);
+          if(players2 == undefined) 
+            return interaction.reply(errorResponse("Please re-do the command.\nPlayer selection empty."));
+          const content = interaction.message.content.split("\`");
+          const player = players2.find((guildMember) => {return guildMember.user.id == parts[1];});
+          if(player == undefined) 
+            return interaction.reply(errorResponse("Please re-do the command.\nPlayer not found."));
+          const where = content.findIndex(value => value.endsWith(player.user.username+") as "));
+          // @ts-ignore
+          const updatedChar = interaction.values[0];
+          
+          content[where+1] = updatedChar;
+          interaction.update({content: content.join("\`")});
+          return;
+
         case "downtimeItemProfSelect":
           isTrue = true;
         case "downtimeItemProfMod":

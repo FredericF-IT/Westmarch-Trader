@@ -1,8 +1,8 @@
 // @ts-check
-import { errorResponse, responseMessage, createThread, GAME_LOG_CHANNEL, DOWNTIME_RESET_TIME, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, tierToCostLimits, currency } from './utils.js';
+import { errorResponse, responseMessage, createThread, DOWNTIME_RESET_TIME, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, tierToCostLimits, currency } from './utils.js';
 import { createProficiencyChoices, getProficiencies } from "./downtimes.js";
 import { getDX } from './extraUtils.js';
-import { getValueDowntime, finishDowntimeActivity, getUserDowntimes, setUserDowntimes, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
+import { getValueDowntime, finishDowntimeActivity, getUserDowntimes, setUserDowntimes, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction, getCharacters, getCharactersNameless } from './data/dataIO.js';
 import {
   MessageComponentTypes,
   ButtonStyleTypes,
@@ -139,6 +139,93 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
   return responseMessage("Thread created. Please make selections.", true);
 }
 
+/** @type {Map<string, guildMember[]>} */
+export const rewardCharacters = new Map();
+
+/**
+ * @param {guildMember[]} players 
+ *@param {number} currentPage 
+ * @return {Object[]}
+ */
+export function getPlayerOptions(players, currentPage) {
+  const startIndex = currentPage * 3;
+  const playerSelect = [];
+  for (let index = startIndex; index < startIndex + Math.min(players.length - startIndex, 3); index++) {
+    const playerID = players[index].user.id;
+    const characters = getCharactersNameless(playerID);
+    if(characters.length == 0) {
+      characters[0] = "No registered character";
+    }
+    playerSelect[index - startIndex] = {
+      type: MessageComponentTypes.ACTION_ROW.valueOf(),
+      components: [{
+        type: MessageComponentTypes.STRING_SELECT.valueOf(),
+        custom_id: `wmRewardSelectChar_` + playerID,
+        placeholder: `What character for ${players[index].user.displayName}?`,
+        options: characters.map((character) => {return {label: character, value: character};}),
+        min_values: 1,
+        max_values: 1,
+      }]
+    };
+  }
+  return playerSelect;
+}
+
+/**
+   * @param {string} content 
+   * @param {number} currentPage 
+   * @param {guildMember[]} players 
+   * @return {responseObject}
+   */
+export function makeCharacterSessionSelection(content, currentPage, players) {
+  const playerSelect = getPlayerOptions(players, currentPage);
+  const maxPage = Math.ceil(players.length / 3);
+
+  /** @type {responseObject} */
+  const result = {
+    content: content, 
+    ephemeral: true,
+    // @ts-ignore
+    components: playerSelect.concat([
+      {
+        type: MessageComponentTypes.ACTION_ROW.valueOf(),
+        components: [{
+            type: MessageComponentTypes.BUTTON.valueOf(),
+            // @ts-ignore
+            custom_id: `wmRewardEditLast_` + ((currentPage - 1 + maxPage) % maxPage),
+            label: "Last Page",
+            style: ButtonStyleTypes.PRIMARY.valueOf(),
+          },
+          {
+            type: MessageComponentTypes.BUTTON.valueOf(),
+            // @ts-ignore
+            custom_id: `wmRewardEditSame_` + currentPage,
+            label: "Reload characters",
+            style: ButtonStyleTypes.PRIMARY.valueOf(),
+          },
+          {
+            type: MessageComponentTypes.BUTTON.valueOf(),
+            // @ts-ignore
+            custom_id: `wmRewardEditNext_` + ((currentPage + 1) % maxPage),
+            label: "Next Page",
+            style: ButtonStyleTypes.PRIMARY.valueOf(),
+          },
+          {
+            type: MessageComponentTypes.BUTTON.valueOf(),
+            // @ts-ignore
+            custom_id: `wmRewardPrint_`,
+            label: "Publish",
+            style: ButtonStyleTypes.PRIMARY.valueOf(),
+          },
+        ],
+      },
+    ]),
+  };
+
+  
+  return result;
+}
+
 /**
  * @param {interaction} interaction 
  * @param {guildMember[]} players 
@@ -146,40 +233,49 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
  * @param {string} dmID 
  * @param {string} date 
  * @param {number} tier 
- * @param {number} rewardType
+ * @param {string} gpReceived
+ * @param {boolean} doItems 
+ * @param {string} sessionName 
  */
-export function getSessionRewards(interaction, players, xpAll, dmID, date, tier, rewardType) {
-  const priceRange = tierToCostLimits.get(tier);
+function getSessionRewards(interaction, players, xpAll, dmID, date, tier, gpReceived, doItems, sessionName) {
+  //const priceRange = tierToCostLimits.get(tier);
 
   const playerNumber = players.length;
   const xpReceived = Math.ceil(xpAll / playerNumber);
 
-  // @ts-ignore we know that tier can only be one from the list of options
-  const currencyReceived = ((priceRange.max - priceRange.min) / 2) + priceRange.min;
-  
-  sqlite3Query(filterItemsbyTier(tier), (err, rows) => {
-    let rewards = `\`Session name\` (${date})\nDM: <@${dmID}>\nTier: ${tier}\n`;
+  let rewards = `${sessionName} (${date})\nDM: <@${dmID}>\nTier: ${tier}` +
+    (gpReceived !==  "0" ? `\n${gpReceived}${currency} each` : "") + 
+    (doItems ? `\n${xpAll}xp earned by party` : `\n${xpReceived}xp each`) +
+    "\n\n";
 
-    if(rewardType == 1){
-      rewards += `Gold: ${currencyReceived}${currency} each\nExperience: ${xpReceived}xp each\n\nPlayers:\n`
-      
-      for (let i = 0; i < playerNumber; i++) {
-        rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`character name\`\n`;
-      }
-    } else {
-      rewards += `${xpAll}xp earned by party\n\n`;
-      for (let i = 0; i < playerNumber; i++) {
-        const item = rows[Math.floor(Math.random() * rows.length)];
-        rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`character name\`\n  Item: ${item.item_name} (price: ${item.price})\n  ${xpReceived}xp\n\n`;
-      }
-      rewards = rewards.trim();
+  rewardCharacters.set(dmID, players);
+  // @ts-ignore we know that tier can only be one from the list of options
+  //const currencyReceived = ((priceRange.max - priceRange.min) / 2) + priceRange.min;
+  if(!doItems) {
+    for (let i = 0; i < playerNumber; i++) {
+      const characters = getCharacters(players[i].user);
+      rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`${characters.length > 1 ? characters[1] : "character name"}\`\n`;
     }
-  
-    interaction.reply({
-        content: "```"+rewards+`\`\`\`\nCopy this to <#${GAME_LOG_CHANNEL}> with any needed changes.`, 
-        ephemeral: true,
-    });
-  });
+    interaction.reply(makeCharacterSessionSelection(rewards, 0, players));
+    return;
+  }
+
+  /**
+   * @param {Error | null} err 
+   * @param {any[]} rows 
+   */
+  function rewardCallback(err, rows) {
+    for (let i = 0; i < playerNumber; i++) {
+      const item = rows[Math.floor(Math.random() * rows.length)];
+      const characters = getCharacters(players[i].user);
+      rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`${characters.length > 1 ? characters[1] : "character name"}\`\n  Item: ${item.item_name} (price: ${item.price}, ${item.rarity})\n  ${xpReceived}xp\n\n`;
+    }
+    rewards = rewards.trim();
+
+    interaction.reply(makeCharacterSessionSelection(rewards, 0, players));
+  }
+
+  sqlite3Query(filterItemsbyTier(tier, true), (err, rows) => rewardCallback(err, rows));
 }
 
 /**
@@ -193,13 +289,14 @@ export function westmarchRewardLogResult(parts, timestamp, interaction) {
   const dmID = parts[1];
   const xpReceived = parseInt(parts[2]);
   const tier = parseInt(parts[3]);
-  const rewardType = parseInt(parts[4]); // 0: item  1: Gold 
-
+  const gpReceived = parts[4]; // 0: item  1: Gold 
+  const doItems = parts[5] === "true";
+  const sessionName = parts[6];
   const players = Array.from(interaction.members, ([id, user]) => user);
 
   interaction.deleteReply(interaction.message);
 
-  return getSessionRewards(interaction, players, xpReceived, dmID, `${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()}`, tier, rewardType);
+  return getSessionRewards(interaction, players, xpReceived, dmID, `${date.getMonth()+1}/${date.getDate()}/${date.getFullYear()}`, tier, gpReceived, doItems, sessionName);
 }
 
 /**

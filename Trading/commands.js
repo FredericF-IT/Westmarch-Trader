@@ -162,6 +162,12 @@ const WESTMARCH_COMMANDS = {
       description: 'Logbook template. Calculate what ' +  currency + ' and items players get after session',
       options: [
         {
+          type: 3,
+          name: 'session',
+          description: 'What was the sesions name?',
+          required: true,
+        },
+        {
           type: 4,
           name: 'tier',
           description: 'What was the recommended tier?',
@@ -175,17 +181,16 @@ const WESTMARCH_COMMANDS = {
           required: true,
         },
         {
+          type: 5,
+          name: 'randomitem',
+          description: 'Should an item be generated?',
+          required: true,
+        },
+        {
           type: 4,
-          name: 'reward',
-          description: 'What reward does the party receive?',
+          name: currency,
+          description: 'How much (if any) '+currency+' per player?',
           required: false,
-          choices: [{
-            name: "Items",
-            value: 0
-          },{
-            name: "Gold",
-            value: 1
-          }],
         },
       ],
     },

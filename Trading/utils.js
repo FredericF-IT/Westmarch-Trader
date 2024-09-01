@@ -47,11 +47,12 @@ export function updateDate(isOnStartup) {
   }
 
   const now = new Date();
+  const OldTime = now.getTime();
   
   if(now.getDay() == RESET_DAY && now.getHours() >= RESET_HOUR && now.getMinutes() >= 0) { // its reset day, after reset time (timestamp should be next week)
     now.setDate(now.getDate() + 7);
   }
-
+  
   now.setHours(RESET_HOUR);
   now.setMinutes(0);
   now.setSeconds(0);
@@ -65,7 +66,8 @@ export function updateDate(isOnStartup) {
   
   console.log(`Next Downtime:${now}`);
 
-  setTimeout(() => updateDate(false), now - Date.now());
+  const remainingTime = now.getTime() - OldTime;
+  setTimeout(() => updateDate(false), remainingTime);
 }
 
 updateDate(true);

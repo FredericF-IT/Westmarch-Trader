@@ -1,4 +1,4 @@
-import { DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, GAME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL } from "./utils.js";
+import { currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, GAME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL } from "./utils.js";
 import 'dotenv/config';
 
 
@@ -52,9 +52,11 @@ I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the
 ,
 `# For DMs:
 > - Get reward items and gold at end of a game:
-> \`\`\`/westmarch reward tier: xp: reward:\`\`\`
+> \`\`\`/westmarch reward session: tier: xp: randomitem: ${currency}:\`\`\`
+> \`session\` is the name of your session.
 > \`tier\` will be the one that was advertised in your games' post, \`xp\` is the total the party earned.
-> You can also optionally select to pay out gold instead of an item with \`reward\`
+> \`randomItem\` determines if the bot should generate a random item per player.
+> You can also optionally use \`${currency}\` to reward each player that much ${currency}.
 > 
 > This command will create a discord user menu, select your players.
 > After choosing, it will output the xp per player, and an item + gold per player.

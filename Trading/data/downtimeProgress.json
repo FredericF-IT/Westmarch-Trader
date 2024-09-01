@@ -2,58 +2,61 @@
 	"367891183344812034": {
 		"Thomson": {
 			"crafting": {},
-			"weeklyUsed": true
+			"weeklyUsed": false
 		},
 		"Kronk": {
 			"crafting": {},
-			"weeklyUsed": true
+			"weeklyUsed": false
 		},
 		"Kelten": {
 			"crafting": {},
-			"weeklyUsed": true
-		},
-		"Sauron": {
-			"crafting": {},
-			"weeklyUsed": true
+			"weeklyUsed": false
 		}
 	},
 	"329710676169981963": {
 		"Torn": {
-			"crafting": {}
+			"crafting": {},
+			"weeklyUsed": false
 		},
 		"Prudence": {
-			"crafting": {}
+			"crafting": {},
+			"weeklyUsed": false
 		}
 	},
 	"618479756404326450": {
 		"Vix": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		},
 		"Vex Thicketstalker": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		}
 	},
 	"666791057408786432": {
 		"Swubbles EnSwerdply": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		}
 	},
 	"450476712594112524": {
 		"Jorgin": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		}
 	},
 	"126157062886391808": {
 		"Bo": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		},
 		"Grover Underwood": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		}
 	},
 	"191739615831392258": {
 		"Alex Lumina": {
-			"weeklyUsed": true
+			"weeklyUsed": false
+		}
+	},
+	"520988773958287370": {
+		"Bremen": {
+			"weeklyUsed": false
 		}
 	}
 }

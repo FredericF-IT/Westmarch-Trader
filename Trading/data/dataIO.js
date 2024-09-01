@@ -173,6 +173,19 @@ export function getCharacters(user) {
 }
 
 /**
+ * Returns copy of users characters
+ * @param {string} userID
+ * @return {string[]}
+ */
+export function getCharactersNameless(userID) {
+  /** @type {string[]} */
+  let userCharacters = characters[userID];
+  if (userCharacters == undefined)
+    return [];
+  return userCharacters.slice(1);
+}
+
+/**
  * Is the character saved in the users entry?
  * @param {string} userID
  * @param {string} characterName

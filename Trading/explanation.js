@@ -62,6 +62,9 @@ I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the
 > After choosing, it will output the xp per player, and an item + gold per player.
 > This can be used as the template for your session log, just copy paste it to <#${GAME_LOG_CHANNEL}> and change any details necessary.
 > <@number> will turn into a user mention when the message is copied, this is intended.
+> 
+> Should you need to edit the log, you can react to the bots message with any emoji.
+> This only works for the person that published the log.
 
 > - Get a list of items with cost between two values
 > \`\`\`/getitemsinrange minimum: maximum:\`\`\`

@@ -576,6 +576,18 @@ function parseFullCommand(interaction) {
 } 
 
 /**
+ * 
+ * @param {string} dmID 
+ * @param {boolean} isDirectMessage 
+ * @param {interaction} interaction 
+ * @return {User[] | null}
+ */
+function fetchPlayers(dmID, isDirectMessage, interaction) {
+  console.log(interaction);
+  return rewardPlayers.get(dmID) || (isDirectMessage ? null : interaction.message.mentions.users.map(user => user).filter((player) => player.id != dmID))
+}
+
+/**
  * Send response with matching items
  * @param {interaction} interaction 
  * @param {User} user 
@@ -848,7 +860,7 @@ client.on(Events.InteractionCreate,
           // @ts-ignore  
           const channel2 = getChannel(client, GAME_LOG_CHANNEL);
           rewardPlayers.delete(userID);
-     //     interaction.deleteReply(interaction.message);
+          interaction.deleteReply(interaction.message);
           
           if(isEdit) {
             channel2.messages.fetch(parts[1]).then((message => {
@@ -866,14 +878,15 @@ client.on(Events.InteractionCreate,
             editMessage = parts[2];
           }
           let pageNumber = parseInt(parts[1]);
-          const players = rewardPlayers.get(userID);
-          if(players == undefined) 
+
+          const players = fetchPlayers(userID, isDirectMessage, interaction);
+          if(players == null)
             return interaction.reply(errorResponse("Please re-do the command."));
           interaction.update(makeCharacterSessionSelection(interaction.message.content, pageNumber, players, editMessage)); //.edit(interaction.message.content, );
           return;
         case "wmRewardSelectChar":
-          const players2 = rewardPlayers.get(userID);
-          if(players2 == undefined) 
+          const players2 = fetchPlayers(userID, isDirectMessage, interaction);
+          if(players2 == null) 
             return interaction.reply(errorResponse("Please re-do the command.\nPlayer selection empty."));
           const content = interaction.message.content.split("\`");
           const player = players2.find((user) => {return user.id == parts[1];});

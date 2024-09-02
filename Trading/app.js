@@ -13,7 +13,7 @@ import { getDX, requestCharacterRegistration, isAdmin } from './extraUtils.js';
 import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction, getCharactersNameless } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction, rewardCharacters as rewardPlayers, makeCharacterSessionSelection } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
-import { channelLink, Client, ComponentType, IntentsBitField, TextChannel, User } from "discord.js";
+import { channelLink, Client, ComponentType, Events, IntentsBitField, Partials, TextChannel, User } from "discord.js";
 import { ALL_COMMANDS } from './commands.js';
 import { explanationMessage } from './explanation.js';
 import { createDB, filterItems, filterItemsbyTier, get25ItemNamesQuery, getDowntimeQuery, getItem, sqlite3Query } from './data/createDB.js';
@@ -34,6 +34,12 @@ const client = new Client({
   intents: [
     IntentsBitField.Flags.Guilds,
     IntentsBitField.Flags.GuildMessages,
+    IntentsBitField.Flags.GuildMessageReactions,
+  ],
+  partials: [
+    Partials.Message, 
+    Partials.Channel, 
+    Partials.Reaction
   ],
 });
 
@@ -709,8 +715,33 @@ process.on('SIGINT', () => {
   });
 });
 
+client.on(Events.MessageReactionAdd, (reaction_orig, user) => {
+  try{
+    if(reaction_orig.message.channelId !== GAME_LOG_CHANNEL)
+      return;
+    
+    reaction_orig.fetch().then((messageReaction) => {
+      // @ts-ignore
+      if (messageReaction.message.author.id !== process.env.APP_ID)
+        return;
+      const content = messageReaction.message.content || "";
+      // @ts-ignore
+      if(!content.split("\n")[1].includes(user.id))
+        return;
+      const players = messageReaction.message.mentions.users.map((player) => player).filter((player) => {
+        return player.id !== user.id;
+      });
+
+      rewardPlayers.set(user.id, players);
+      user.send(makeCharacterSessionSelection(content, 0, players, messageReaction.message.id));
+    })
+  } catch(err) {
+    console.error(err.message);
+  }
+});
+
 // @ts-ignore
-client.on('interactionCreate', 
+client.on(Events.InteractionCreate, 
   /** @param {interaction} interaction */
   (interaction) => {
   try{
@@ -811,32 +842,44 @@ client.on('interactionCreate',
           return interaction.reply(displayItemsInRange(parts));
 
         case "wmRewardPrint":
+          const isEdit = parts.length > 1;
+
           /** @type {TextChannel} */ 
           // @ts-ignore  
           const channel2 = getChannel(client, GAME_LOG_CHANNEL);
           rewardPlayers.delete(userID);
-          interaction.deleteReply(interaction.message);
+     //     interaction.deleteReply(interaction.message);
           
-          channel2.send({content: interaction.message.content}); 
+          if(isEdit) {
+            channel2.messages.fetch(parts[1]).then((message => {
+              message.edit(interaction.message.content);
+            }));
+          } else {
+            channel2.send({content: interaction.message.content}); 
+          }
           return interaction.reply(responseMessage("Log sent.", true));
         case "wmRewardEditLast":
         case "wmRewardEditNext":
         case "wmRewardEditSame":
+          let editMessage = null;
+          if(parts.length > 2) {
+            editMessage = parts[2];
+          }
           let pageNumber = parseInt(parts[1]);
           const players = rewardPlayers.get(userID);
           if(players == undefined) 
             return interaction.reply(errorResponse("Please re-do the command."));
-          interaction.update(makeCharacterSessionSelection(interaction.message.content, pageNumber, players)); //.edit(interaction.message.content, );
+          interaction.update(makeCharacterSessionSelection(interaction.message.content, pageNumber, players, editMessage)); //.edit(interaction.message.content, );
           return;
         case "wmRewardSelectChar":
           const players2 = rewardPlayers.get(userID);
           if(players2 == undefined) 
             return interaction.reply(errorResponse("Please re-do the command.\nPlayer selection empty."));
           const content = interaction.message.content.split("\`");
-          const player = players2.find((guildMember) => {return guildMember.user.id == parts[1];});
+          const player = players2.find((user) => {return user.id == parts[1];});
           if(player == undefined) 
             return interaction.reply(errorResponse("Please re-do the command.\nPlayer not found."));
-          const where = content.findIndex(value => value.endsWith(player.user.username+") as "));
+          const where = content.findIndex(value => value.endsWith(player.username+") as "));
           // @ts-ignore
           const updatedChar = interaction.values[0];
           

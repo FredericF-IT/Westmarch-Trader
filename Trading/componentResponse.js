@@ -139,19 +139,20 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
   return responseMessage("Thread created. Please make selections.", true);
 }
 
-/** @type {Map<string, guildMember[]>} */
+/** @type {Map<string, User[]>} */
 export const rewardCharacters = new Map();
 
 /**
- * @param {guildMember[]} players 
- *@param {number} currentPage 
+ * @param {User[]} players 
+ * @param {number} currentPage 
+ * @param {string?} editMessage
  * @return {Object[]}
  */
-export function getPlayerOptions(players, currentPage) {
+export function getPlayerOptions(players, currentPage, editMessage) {
   const startIndex = currentPage * 3;
   const playerSelect = [];
   for (let index = startIndex; index < startIndex + Math.min(players.length - startIndex, 3); index++) {
-    const playerID = players[index].user.id;
+    const playerID = players[index].id;
     const characters = getCharactersNameless(playerID);
     if(characters.length == 0) {
       characters[0] = "No registered character";
@@ -160,8 +161,8 @@ export function getPlayerOptions(players, currentPage) {
       type: MessageComponentTypes.ACTION_ROW.valueOf(),
       components: [{
         type: MessageComponentTypes.STRING_SELECT.valueOf(),
-        custom_id: `wmRewardSelectChar_` + playerID,
-        placeholder: `What character for ${players[index].user.displayName}?`,
+        custom_id: `wmRewardSelectChar_` + playerID + (editMessage !== null ? "_" + editMessage : ""),
+        placeholder: `What character for ${players[index].displayName}?`,
         options: characters.map((character) => {return {label: character, value: character};}),
         min_values: 1,
         max_values: 1,
@@ -174,11 +175,12 @@ export function getPlayerOptions(players, currentPage) {
 /**
    * @param {string} content 
    * @param {number} currentPage 
-   * @param {guildMember[]} players 
+   * @param {User[]} players 
+   * @param {string?} editMessage
    * @return {responseObject}
    */
-export function makeCharacterSessionSelection(content, currentPage, players) {
-  const playerSelect = getPlayerOptions(players, currentPage);
+export function makeCharacterSessionSelection(content, currentPage, players, editMessage) {
+  const playerSelect = getPlayerOptions(players, currentPage, editMessage);
   const maxPage = Math.ceil(players.length / 3);
 
   /** @type {responseObject} */
@@ -192,29 +194,29 @@ export function makeCharacterSessionSelection(content, currentPage, players) {
         components: [{
             type: MessageComponentTypes.BUTTON.valueOf(),
             // @ts-ignore
-            custom_id: `wmRewardEditLast_` + ((currentPage - 1 + maxPage) % maxPage),
+            custom_id: `wmRewardEditLast_` + ((currentPage - 1 + maxPage) % maxPage) + (editMessage !== null ? "_" + editMessage : ""),
             label: "Last Page",
             style: ButtonStyleTypes.PRIMARY.valueOf(),
           },
           {
             type: MessageComponentTypes.BUTTON.valueOf(),
             // @ts-ignore
-            custom_id: `wmRewardEditSame_` + currentPage,
+            custom_id: `wmRewardEditSame_` + currentPage + (editMessage !== null ? "_" + editMessage : ""),
             label: "Reload characters",
             style: ButtonStyleTypes.PRIMARY.valueOf(),
           },
           {
             type: MessageComponentTypes.BUTTON.valueOf(),
             // @ts-ignore
-            custom_id: `wmRewardEditNext_` + ((currentPage + 1) % maxPage),
+            custom_id: `wmRewardEditNext_` + ((currentPage + 1) % maxPage) + (editMessage !== null ? "_" + editMessage : ""),
             label: "Next Page",
             style: ButtonStyleTypes.PRIMARY.valueOf(),
           },
           {
             type: MessageComponentTypes.BUTTON.valueOf(),
             // @ts-ignore
-            custom_id: `wmRewardPrint_`,
-            label: "Publish",
+            custom_id: `wmRewardPrint` + (editMessage !== null ? "_" + editMessage : ""),
+            label: editMessage == null ? "Publish" : "Edit",
             style: ButtonStyleTypes.PRIMARY.valueOf(),
           },
         ],
@@ -228,7 +230,7 @@ export function makeCharacterSessionSelection(content, currentPage, players) {
 
 /**
  * @param {interaction} interaction 
- * @param {guildMember[]} players 
+ * @param {User[]} players 
  * @param {number} xpAll 
  * @param {string} dmID 
  * @param {string} date 
@@ -253,10 +255,10 @@ function getSessionRewards(interaction, players, xpAll, dmID, date, tier, gpRece
   //const currencyReceived = ((priceRange.max - priceRange.min) / 2) + priceRange.min;
   if(!doItems) {
     for (let i = 0; i < playerNumber; i++) {
-      const characters = getCharacters(players[i].user);
-      rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`${characters.length > 1 ? characters[1] : "character name"}\`\n`;
+      const characters = getCharacters(players[i]);
+      rewards += `<@${players[i].id}> (${players[i].username}) as \`${characters.length > 1 ? characters[1] : "character name"}\`\n`;
     }
-    interaction.reply(makeCharacterSessionSelection(rewards, 0, players));
+    interaction.reply(makeCharacterSessionSelection(rewards, 0, players, null));
     return;
   }
 
@@ -267,12 +269,12 @@ function getSessionRewards(interaction, players, xpAll, dmID, date, tier, gpRece
   function rewardCallback(err, rows) {
     for (let i = 0; i < playerNumber; i++) {
       const item = rows[Math.floor(Math.random() * rows.length)];
-      const characters = getCharacters(players[i].user);
-      rewards += `<@${players[i].user.id}> (${players[i].user.username}) as \`${characters.length > 1 ? characters[1] : "character name"}\`\n  Item: ${item.item_name} (price: ${item.price}, ${item.rarity})\n  ${xpReceived}xp\n\n`;
+      const characters = getCharacters(players[i]);
+      rewards += `<@${players[i].id}> (${players[i].username}) as \`${characters.length > 1 ? characters[1] : "character name"}\`\n  Item: ${item.item_name} (price: ${item.price}, ${item.rarity})\n  ${xpReceived}xp\n\n`;
     }
     rewards = rewards.trim();
 
-    interaction.reply(makeCharacterSessionSelection(rewards, 0, players));
+    interaction.reply(makeCharacterSessionSelection(rewards, 0, players, null));
   }
 
   sqlite3Query(filterItemsbyTier(tier, true), (err, rows) => rewardCallback(err, rows));
@@ -292,7 +294,7 @@ export function westmarchRewardLogResult(parts, timestamp, interaction) {
   const gpReceived = parts[4]; // 0: item  1: Gold 
   const doItems = parts[5] === "true";
   const sessionName = parts[6];
-  const players = Array.from(interaction.members, ([id, user]) => user);
+  const players = Array.from(interaction.members, ([id, user]) => user.user);
 
   interaction.deleteReply(interaction.message);
 

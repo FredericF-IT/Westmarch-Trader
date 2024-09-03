@@ -51,20 +51,21 @@ I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the
 > May not be implemented.`
 ,
 `# For DMs:
-> - Get reward items and gold at end of a game:
-> \`\`\`/westmarch reward session: tier: xp: randomitem: ${currency}:\`\`\`
+> - Create a logbook entry at end of session:
+> \`\`\`/westmarch logbook session: tier: xp: randomitem: ${currency}:\`\`\`
 > \`session\` is the name of your session.
 > \`tier\` will be the one that was advertised in your games' post, \`xp\` is the total the party earned.
 > \`randomItem\` determines if the bot should generate a random item per player.
 > You can also optionally use \`${currency}\` to reward each player that much ${currency}.
 > 
 > This command will create a discord user menu, select your players.
-> After choosing, it will output the xp per player, and an item + gold per player.
-> This can be used as the template for your session log, just copy paste it to <#${GAME_LOG_CHANNEL}> and change any details necessary.
-> <@number> will turn into a user mention when the message is copied, this is intended.
+> You may need to type in their discord names before they show up, as discord only ever loads the first 25 entries.
+> Now, you can select each players character. If they haven't registered it, ask them to do so and click "reload characters".
+> You can also add notes if there is further information you'd like to record.
+> After you click Publish, it will output the finished log to <#${GAME_LOG_CHANNEL}>.
 > 
 > Should you need to edit the log, you can react to the bots message with any emoji.
-> This only works for the person that published the log.
+> This only works for the person that created the log.
 
 > - Get a list of items with cost between two values
 > \`\`\`/getitemsinrange minimum: maximum:\`\`\`

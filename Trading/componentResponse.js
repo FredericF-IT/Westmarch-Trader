@@ -142,6 +142,8 @@ export function startCharacterDowntimeThread(message, parts, userID, messageID) 
 /** @type {Map<string, User[]>} */
 export const rewardCharacters = new Map();
 
+const playersPerPage = 4;
+
 /**
  * @param {User[]} players 
  * @param {number} currentPage 
@@ -149,9 +151,9 @@ export const rewardCharacters = new Map();
  * @return {Object[]}
  */
 export function getPlayerOptions(players, currentPage, editMessage) {
-  const startIndex = currentPage * 3;
+  const startIndex = currentPage * playersPerPage;
   const playerSelect = [];
-  for (let index = startIndex; index < startIndex + Math.min(players.length - startIndex, 3); index++) {
+  for (let index = startIndex; index < startIndex + Math.min(players.length - startIndex, playersPerPage); index++) {
     const playerID = players[index].id;
     const characters = getCharactersNameless(playerID);
     if(characters.length == 0) {
@@ -181,7 +183,7 @@ export function getPlayerOptions(players, currentPage, editMessage) {
    */
 export function makeCharacterSessionSelection(content, currentPage, players, editMessage) {
   const playerSelect = getPlayerOptions(players, currentPage, editMessage);
-  const maxPage = Math.ceil(players.length / 3);
+  const maxPage = Math.ceil(players.length / playersPerPage);
 
   /** @type {responseObject} */
   const result = {
@@ -214,11 +216,17 @@ export function makeCharacterSessionSelection(content, currentPage, players, edi
           },
           {
             type: MessageComponentTypes.BUTTON.valueOf(),
-            // @ts-ignore
-            custom_id: `wmRewardPrint` + (editMessage !== null ? "_" + editMessage : ""),
-            label: editMessage == null ? "Publish" : "Edit",
+            custom_id: `wmRewardNotes_${currentPage}${editMessage !== null ? "_" + editMessage : ""}`,
+            label: "Add notes",
             style: ButtonStyleTypes.PRIMARY.valueOf(),
           },
+          {
+            type: MessageComponentTypes.BUTTON.valueOf(),
+            // @ts-ignore
+            custom_id: `wmRewardPrint` + (editMessage !== null ? "_" + editMessage : ""),
+            label: editMessage == null ? "Publish" : "Send edit",
+            style: ButtonStyleTypes.PRIMARY.valueOf(),
+          }
         ],
       },
     ]),

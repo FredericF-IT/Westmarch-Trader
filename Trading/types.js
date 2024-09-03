@@ -5,6 +5,7 @@
 /** @typedef {import("discord.js").Channel} Channel*/
 /** @typedef {import("discord.js").PermissionsBitField} PermissionsBitField*/
 /** @typedef {import("discord.js").User} User*/
+/** @typedef {import("discord.js").ModalSubmitFields} ModalSubmitFields*/
 
 /**
  * @typedef {Object} choice
@@ -74,6 +75,7 @@
  * @property {(objects: responseObject) => Promise} update
  * @property {Map<string, User>} users
  * @property {Map<string, guildMember>} members
+ * @property {ModalSubmitFields} fields
 */
 
 /**

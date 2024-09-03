@@ -10,10 +10,10 @@ import { BOT_INFO_CHANNEL, CHARACTER_TRACKING_CHANNEL, currency, DOWNTIME_LOG_CH
 import './itemsList.js';
 import { getDowntimeNames, getProficiencies, getDowntimeTables, jsNameToTableName } from "./downtimes.js";
 import { getDX, requestCharacterRegistration, isAdmin } from './extraUtils.js';
-import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction, getCharactersNameless } from './data/dataIO.js';
+import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction, rewardCharacters as rewardPlayers, makeCharacterSessionSelection } from "./componentResponse.js";
 import sqlite3 from 'sqlite3';
-import { channelLink, Client, ComponentType, Events, IntentsBitField, Partials, TextChannel, User } from "discord.js";
+import { ActionRowBuilder, Client, Events, IntentsBitField, ModalBuilder, Partials, TextChannel, TextInputBuilder, TextInputStyle, User } from "discord.js";
 import { ALL_COMMANDS } from './commands.js';
 import { explanationMessage } from './explanation.js';
 import { createDB, filterItems, filterItemsbyTier, get25ItemNamesQuery, getDowntimeQuery, getItem, sqlite3Query } from './data/createDB.js';
@@ -576,18 +576,6 @@ function parseFullCommand(interaction) {
 } 
 
 /**
- * 
- * @param {string} dmID 
- * @param {boolean} isDirectMessage 
- * @param {interaction} interaction 
- * @return {User[] | null}
- */
-function fetchPlayers(dmID, isDirectMessage, interaction) {
-  console.log(interaction);
-  return rewardPlayers.get(dmID) || (isDirectMessage ? null : interaction.message.mentions.users.map(user => user).filter((player) => player.id != dmID))
-}
-
-/**
  * Send response with matching items
  * @param {interaction} interaction 
  * @param {User} user 
@@ -752,6 +740,88 @@ client.on(Events.MessageReactionAdd, (reaction_orig, user) => {
   }
 });
 
+/**
+ * @param {string} dmID 
+ * @param {boolean} isDirectMessage 
+ * @param {interaction} interaction 
+ * @return {User[] | null}
+ */
+function fetchPlayers(dmID, isDirectMessage, interaction) {
+  return rewardPlayers.get(dmID) || (isDirectMessage ? null : interaction.message.mentions.users.map(user => user).filter((player) => player.id != dmID));
+}
+
+/**
+ * 
+ * @param {interaction} interaction 
+ * @param {Client} client 
+ * @param {string} userID 
+ * @param {string[]} parts 
+ * @returns 
+ */
+function logPrintMessage(interaction, client, userID, parts) {
+  const isEdit = parts.length > 1;
+
+  /** @type {TextChannel} */ 
+  // @ts-ignore  
+  const channel = getChannel(client, GAME_LOG_CHANNEL);
+  rewardPlayers.delete(userID);
+  interaction.deleteReply(interaction.message);
+  
+  if(isEdit) {
+    channel.messages.fetch(parts[1]).then((message => {
+      message.edit(interaction.message.content);
+    }));
+  } else {
+    channel.send({content: interaction.message.content}); 
+  }
+  return interaction.reply(responseMessage("Log sent.", true));
+}
+
+/**
+ * 
+ * @param {interaction} interaction 
+ * @param {string[]} parts 
+ * @param {string} userID 
+ * @param {boolean} isDirectMessage 
+ * @returns 
+ */
+function logLoadPlayerPage(interaction, parts, userID, isDirectMessage){
+  let editMessage = null;
+  if(parts.length > 2) {
+    editMessage = parts[2];
+  }
+  let pageNumber = parseInt(parts[1]);
+
+  const players = fetchPlayers(userID, isDirectMessage, interaction);
+  if(players == null)
+    return interaction.reply(errorResponse("Please re-do the command."));
+  return interaction.update(makeCharacterSessionSelection(interaction.message.content, pageNumber, players, editMessage)); //.edit(interaction.message.content, );
+}
+
+/**
+ * 
+ * @param {interaction} interaction 
+ * @param {boolean} isDirectMessage 
+ * @param {string} userID 
+ * @param {string} dmID 
+ * @returns {Promise}
+ */
+function logSelectCharacter(interaction, isDirectMessage, userID, dmID) {
+  const players = fetchPlayers(userID, isDirectMessage, interaction);
+  if(players == null) 
+    return interaction.reply(errorResponse("Please re-do the command.\nPlayer selection empty."));
+  const content = interaction.message.content.split("\`");
+  const player = players.find((user) => {return user.id == dmID;});
+  if(player == undefined) 
+    return interaction.reply(errorResponse("Please re-do the command.\nPlayer not found."));
+  const where = content.findIndex(value => value.endsWith(player.username+") as "));
+  // @ts-ignore
+  const updatedChar = interaction.values[0];
+  
+  content[where+1] = updatedChar;
+  return interaction.update({content: content.join("\`")});
+}
+
 // @ts-ignore
 client.on(Events.InteractionCreate, 
   /** @param {interaction} interaction */
@@ -804,14 +874,11 @@ client.on(Events.InteractionCreate,
         case "getitemsbytier": 
           return getItemsInRange(interaction, options, id, true);
         case "westmarch item-downtime craft": 
-          // command is now sent to specific channel
-          //if(interaction.channel instanceof ThreadChannel) 
-          //  return interaction.reply(errorResponse("Needed thread can't be created in thread or forum"));
           return downtimeCraftItem(interaction, options[0].value, options[1].value, userID);
         case "westmarch item-downtime change": 
           return interaction.reply(downtimeChangeItem());
         
-        case "westmarch reward": 
+        case "westmarch logbook": 
           if(isDirectMessage) return interaction.reply(errorResponse("Please use this only in the server.\nYou will need to select your players."));
           return interaction.reply(westmarchLog(options, user));
         
@@ -854,51 +921,44 @@ client.on(Events.InteractionCreate,
           return interaction.reply(displayItemsInRange(parts));
 
         case "wmRewardPrint":
-          const isEdit = parts.length > 1;
+          return logPrintMessage(interaction, client, userID, parts);
+        case "wmRewardNotes":
+          const modal = new ModalBuilder()
+            .setCustomId(interaction.customId)
+            .setTitle("Notes, further info");
 
-          /** @type {TextChannel} */ 
-          // @ts-ignore  
-          const channel2 = getChannel(client, GAME_LOG_CHANNEL);
-          rewardPlayers.delete(userID);
-          interaction.deleteReply(interaction.message);
-          
-          if(isEdit) {
-            channel2.messages.fetch(parts[1]).then((message => {
-              message.edit(interaction.message.content);
-            }));
-          } else {
-            channel2.send({content: interaction.message.content}); 
+          const data = interaction.message.content.split("\n\n**Notes**:\n\`\`\`");
+          let existingNotes = "";
+          if(data.length > 1) {
+            existingNotes = data[1].replace("\`\`\`", "");
           }
-          return interaction.reply(responseMessage("Log sent.", true));
-        case "wmRewardEditLast":
-        case "wmRewardEditNext":
-        case "wmRewardEditSame":
-          let editMessage = null;
-          if(parts.length > 2) {
-            editMessage = parts[2];
-          }
-          let pageNumber = parseInt(parts[1]);
 
+          modal.addComponents(
+            // @ts-ignore
+            new ActionRowBuilder().addComponents(
+              new TextInputBuilder()
+                .setCustomId(interaction.customId)
+                .setLabel("Your notes")
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(false)
+                .setValue(existingNotes)
+            )
+          ); 
+          // @ts-ignore
+          return interaction.showModal(modal);
+          /*
+          let content = interaction.message.content;
+          const pageNumber = parseInt(parts[1]);
           const players = fetchPlayers(userID, isDirectMessage, interaction);
           if(players == null)
             return interaction.reply(errorResponse("Please re-do the command."));
-          interaction.update(makeCharacterSessionSelection(interaction.message.content, pageNumber, players, editMessage)); //.edit(interaction.message.content, );
-          return;
+          return interaction.update(makeCharacterSessionSelection(content, pageNumber, players, null));*/
+        case "wmRewardEditLast":
+        case "wmRewardEditNext":
+        case "wmRewardEditSame":
+          return logLoadPlayerPage(interaction, parts, userID, isDirectMessage);
         case "wmRewardSelectChar":
-          const players2 = fetchPlayers(userID, isDirectMessage, interaction);
-          if(players2 == null) 
-            return interaction.reply(errorResponse("Please re-do the command.\nPlayer selection empty."));
-          const content = interaction.message.content.split("\`");
-          const player = players2.find((user) => {return user.id == parts[1];});
-          if(player == undefined) 
-            return interaction.reply(errorResponse("Please re-do the command.\nPlayer not found."));
-          const where = content.findIndex(value => value.endsWith(player.username+") as "));
-          // @ts-ignore
-          const updatedChar = interaction.values[0];
-          
-          content[where+1] = updatedChar;
-          interaction.update({content: content.join("\`")});
-          return;
+          return logSelectCharacter(interaction, isDirectMessage, userID, parts[1]);
 
         case "downtimeItemProfSelect":
           isTrue = true;
@@ -931,6 +991,32 @@ client.on(Events.InteractionCreate,
         case "dmExplanation":
           explainMe(client, "", user);
           return interaction.reply(responseMessage("Message was sent (if dms from server members are enabled)", true));
+      }
+    }
+    else if (type === InteractionType.MODAL_SUBMIT) {
+      let componentId = interaction.customId;
+      const parts = componentId.split("_");
+
+      let editMessage = null;
+      if(parts.length > 2) {
+        editMessage = parts[2];
+      }
+      
+      if(parts[0] === "wmRewardNotes") {
+        const answers = interaction.fields.fields.values();
+        let content = interaction.message.content;
+        const pageNumber = parseInt(parts[1]);
+        const players = fetchPlayers(userID, isDirectMessage, interaction);
+        if(players == null)
+          return interaction.reply(errorResponse("Please re-do the command."));
+        
+        for(let answer of answers) {
+          const sections = content.split("\n\n**Notes**:\n\`\`\`");
+          const newNotes = answer.value.trim();
+          sections[1] = newNotes === "" ? "" : "\n\n**Notes**:\n\`\`\`" + newNotes + "\`\`\`";
+          const newContent = sections[0] + sections[1];
+          return interaction.update(makeCharacterSessionSelection(newContent, pageNumber, players, editMessage));
+        }
       }
     }
   } catch (err) {

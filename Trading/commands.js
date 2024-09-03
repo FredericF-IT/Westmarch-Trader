@@ -158,8 +158,8 @@ const WESTMARCH_COMMANDS = {
     },
     {
       type: 1,
-      name: 'reward',
-      description: 'Logbook template. Calculate what ' +  currency + ' and items players get after session',
+      name: 'logbook',
+      description: 'Creates the log for a session.',
       options: [
         {
           type: 3,

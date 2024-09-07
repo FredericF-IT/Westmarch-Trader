@@ -1,6 +1,8 @@
+// @ts-check
 import "dotenv/config";
 import fetch from "node-fetch";
 import { resetAllWeeklyAction } from "./data/dataIO.js";
+import { EventEmitter, EventListener } from "./Events.js";
 
 /**
  * @typedef {import("./types.js").responseObject} responseObject
@@ -15,7 +17,6 @@ const DOWNTIME_LOG_CHANNEL = "1267551725242290196";
 const TRANSACTION_LOG_CHANNEL = "1271800109620924436";
 const GAME_LOG_CHANNEL = "1267604931465052336";
 const CHARACTER_TRACKING_CHANNEL = "1267280479703531531";
-const BOT_INFO_CHANNEL = "1275207645380350033"; // used to update explanation
 
 const RESET_DAY = 0; // 0 = Sunday, 1 = Monday, ...
 const RESET_HOUR = 10; // 24 hour clock, time at which to reset
@@ -27,7 +28,7 @@ const TRANSACTION_LOG_CHANNEL_TEST = "1275214894429376522";
 const GAME_LOG_CHANNEL_TEST = "1275214859717578822";
 const CHARACTER_TRACKING_CHANNEL_TEST = "1275214859717578822";
 
-export { DOWNTIME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL, GAME_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, BOT_INFO_CHANNEL };
+export { DOWNTIME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL, GAME_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL };
 /*export { 
   DOWNTIME_LOG_CHANNEL_TEST as DOWNTIME_LOG_CHANNEL, 
   TRANSACTION_LOG_CHANNEL_TEST as TRANSACTION_LOG_CHANNEL, 
@@ -41,33 +42,54 @@ export const DOWNTIME_RESET_TIME = {
   DAY: "not loaded"
 };
 
+class DateEmitter extends EventEmitter{
+  /** @param {Date} date */
+  notify(date){super.notify(date);}
+}
+
+export class DateListener extends EventListener{
+    /** @param {(args: Date) => void} func */
+    constructor(func) { super(func); }
+}
+
+export const dateEmitter = new DateEmitter;
+
+/**
+ * @param {boolean} isOnStartup 
+ */
 export function updateDate(isOnStartup) {
-  if(!isOnStartup) {
-    resetAllWeeklyAction();
+  try{
+
+    const now = new Date();
+    const OldTime = now.getTime();
+    
+    if(now.getDay() == RESET_DAY && now.getHours() >= RESET_HOUR && now.getMinutes() >= 0) { // its reset day, after reset time (timestamp should be next week)
+      now.setDate(now.getDate() + 7);
+    }
+    
+    now.setHours(RESET_HOUR);
+    now.setMinutes(0);
+    now.setSeconds(0);
+    now.setDate(now.getDate() + (((7 + RESET_DAY - (now.getDay())) % 7))); // sets to next sunday, stays same if already sunday
+
+    const timeStamp = Math.floor(now.getTime() / 1000);
+
+    DOWNTIME_RESET_TIME.HOUR = `<t:${timeStamp}:t>`;
+    DOWNTIME_RESET_TIME.RELATIVE = `<t:${timeStamp}:R>`;
+    DOWNTIME_RESET_TIME.DAY = now.toLocaleDateString("en-us", {weekday: 'long'});
+
+    if(!isOnStartup) {
+      resetAllWeeklyAction();
+      dateEmitter.notify(now);
+    }
+    console.log(`Next Downtime:${now}`);
+
+    const remainingTime = now.getTime() - OldTime;
+    setTimeout(() => updateDate(false), remainingTime);
   }
-
-  const now = new Date();
-  const OldTime = now.getTime();
-  
-  if(now.getDay() == RESET_DAY && now.getHours() >= RESET_HOUR && now.getMinutes() >= 0) { // its reset day, after reset time (timestamp should be next week)
-    now.setDate(now.getDate() + 7);
+  catch(err) {
+    console.error("Resetting downtime failed\n", err.message);
   }
-  
-  now.setHours(RESET_HOUR);
-  now.setMinutes(0);
-  now.setSeconds(0);
-  now.setDate(now.getDate() + (((7 + RESET_DAY - (now.getDay())) % 7))); // sets to next sunday, stays same if already sunday
-
-  const timeStamp = Math.floor(now / 1000);
-
-  DOWNTIME_RESET_TIME.HOUR = `<t:${timeStamp}:t>`;
-  DOWNTIME_RESET_TIME.RELATIVE = `<t:${timeStamp}:R>`;
-  DOWNTIME_RESET_TIME.DAY = now.toLocaleDateString("en-us", {weekday: 'long'});
-  
-  console.log(`Next Downtime:${now}`);
-
-  const remainingTime = now.getTime() - OldTime;
-  setTimeout(() => updateDate(false), remainingTime);
 }
 
 updateDate(true);
@@ -99,10 +121,10 @@ export function errorResponse(errorMessage) {
 /**
  * @param {Client} client 
  * @param {string} channelID 
- * @return {Channel}
+ * @return {Promise<Channel | null>}
  */
 export function getChannel(client, channelID){
-  return client.channels.cache.get(channelID);
+  return client.channels.fetch(channelID);
 }
 
 /**
@@ -112,6 +134,7 @@ export function getChannel(client, channelID){
  */
 export async function createThread(message, name) {
   return await message.startThread({
+    // @ts-ignore
     type: 11,
     name: name,
   });

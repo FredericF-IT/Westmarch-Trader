@@ -78,23 +78,8 @@ const ITEM_TIER_COMMAND = {
 
 const EXPLAIN_ME_COMMAND = {
   name: 'explanationtrader',
-  description: "Get the explanation of the bot",
+  description: "Get / Update the explanation of the bot. Deletes all his previous messages.",
   type: 1,
-  options: [
-    {
-      type: 3,
-      name: 'type',
-      description: 'Send new or update existing?',
-      required: true,
-      choices: [{
-        name: "new",
-        value: "new",
-      },{
-        name: "update",
-        value: "update",
-      }],
-    },
-  ]
 };
 
 const WESTMARCH_COMMANDS = {

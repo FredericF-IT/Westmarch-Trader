@@ -6,7 +6,7 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { BOT_INFO_CHANNEL, CHARACTER_TRACKING_CHANNEL, currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, GAME_LOG_CHANNEL, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
+import { CHARACTER_TRACKING_CHANNEL, currency, dateEmitter, DateListener, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, GAME_LOG_CHANNEL, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
 import './itemsList.js';
 import { getDowntimeNames, getProficiencies, getDowntimeTables, jsNameToTableName } from "./downtimes.js";
 import { getDX, requestCharacterRegistration, isAdmin } from './extraUtils.js';
@@ -27,6 +27,8 @@ import { createDB, filterItems, filterItemsbyTier, get25ItemNamesQuery, getDownt
  * @typedef {import("./types.js").autocompleteObject} autocompleteObject
  * @typedef {import("./types.js").item} item
  * @typedef {import("discord.js").Message} Message
+ * @typedef {import("discord.js").Channel} Channel
+ * @typedef {import("discord.js").DMChannel} DMChannel
  */
 
 /** @type {Client} */
@@ -45,6 +47,17 @@ const client = new Client({
 
 client.on('ready', (c) => {
   console.log("Bot is running");
+
+  dateEmitter.registerListener(new DateListener((date) => {
+    getChannel(c, DOWNTIME_LOG_CHANNEL).then((channel) => {
+      if(!(channel instanceof TextChannel)) {
+        console.error(`This channel is not a text channel.`);
+        return;
+      }
+      const timeStamp = Math.floor(date.getTime() / 1000);
+      channel.send(responseMessage(`Downtime was reset!\nNext Downtime reset: <t:${timeStamp}:R>`, false));
+    });
+  }));
 });
 
 /** @type {sqlite3.Database} */
@@ -149,17 +162,21 @@ function getItemsInRange(interaction, options, id, useTier) {
  * @param {string} effect 
  */
 async function sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, event, effect) {
-  const channel = getChannel(client, DOWNTIME_LOG_CHANNEL);
-  // @ts-ignore
-  await channel.send({
-    content: `<@${userID}>\nCharacter: "`+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: " + event + "\nEffect: " + effect,
-  }).then((/** @type {Message} */ message) => {
-    interaction.reply(responseMessage(
-      (interaction.channelId != DOWNTIME_LOG_CHANNEL ? `Result was sent to <#${DOWNTIME_LOG_CHANNEL}>\n` : "") +
-      `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` + 
-      `\`\`\`**Downtime summary**\nLink: ${message.url}\nEffect: ${effect}\`\`\``,
-      true));
-    useWeeklyAction(userID, characterName);
+  getChannel(client, DOWNTIME_LOG_CHANNEL).then(async (channel) => {
+    if(!(channel instanceof TextChannel)) {
+      interaction.reply(errorResponse(`This channel is not a text channel.`));
+      return;
+    }
+    await channel.send({
+      content: `<@${userID}>\nCharacter: "`+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: " + event + "\nEffect: " + effect,
+    }).then((/** @type {Message} */ message) => {
+      interaction.reply(responseMessage(
+        (interaction.channelId != DOWNTIME_LOG_CHANNEL ? `Result was sent to <#${DOWNTIME_LOG_CHANNEL}>\n` : "") +
+        `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` + 
+        `\`\`\`**Downtime summary**\nLink: ${message.url}\nEffect: ${effect}\`\`\``,
+        true));
+      useWeeklyAction(userID, characterName);
+    });
   });
 }
 
@@ -230,28 +247,31 @@ function downtimeCraftItem(interaction, itemID, characterName, userID) {
   sqlite3Query(itemQuery, (err, rows) => {
     const item = rows[0];
     
-    const channel = getChannel(client, DOWNTIME_LOG_CHANNEL);
-    // @ts-ignore
-    channel.send(
-    {
-      content: `${characterName} (<@${userID}>) wants to craft ${item.item_name}.\n` +
-        `Material cost: ${item.price}\n` +
-        `You will need to succeed on a craft check using a tool proficiency.\n` +
-        `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n` +
-        "If you have another item in progress, starting a new item will overwrite that one.",
-      components: [
-        {
-          type: MessageComponentTypes.ACTION_ROW,
-          components: [
-            {
-                type: MessageComponentTypes.BUTTON,
-                custom_id: `characterThread_${userID}_` + itemID + "_" + characterName,
-                label: "Start crafting",
-                style: ButtonStyleTypes.PRIMARY,
-            },
-          ],
-        },
-      ],
+    getChannel(client, DOWNTIME_LOG_CHANNEL).then((channel) => {
+      if(!(channel instanceof TextChannel)) {
+        interaction.reply(errorResponse(`Channel <#${DOWNTIME_LOG_CHANNEL}> (Downtime log: ${DOWNTIME_LOG_CHANNEL}) not found.`));
+        return;
+      }
+      channel.send({
+        content: `${characterName} (<@${userID}>) wants to craft ${item.item_name}.\n` +
+          `Material cost: ${item.price}\n` +
+          `You will need to succeed on a craft check using a tool proficiency.\n` +
+          `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n` +
+          "If you have another item in progress, starting a new item will overwrite that one.",
+        components: [
+          {
+            type: MessageComponentTypes.ACTION_ROW.valueOf(),
+            components: [
+              {
+                  type: MessageComponentTypes.BUTTON.valueOf(),
+                  custom_id: `characterThread_${userID}_` + itemID + "_" + characterName,
+                  label: "Start crafting",
+                  style: ButtonStyleTypes.PRIMARY.valueOf(),
+              },
+            ],
+          },
+        ],
+      });
     });
   });
 
@@ -471,40 +491,45 @@ function westmarchLog(options, dm) {
 
 /**
  * Sends the command explanation as mutliple messages.
+ * @param {interaction} interaction 
  * @param {Client} client 
  * @param {string} channelID 
  * @param {User?} user 
- * @return {responseObject}
  */
-function explainMe(client, channelID, user) {
+async function explainMe(interaction, client, channelID, user) {
   const messages = explanationMessage;
+  
+  /**
+   * @param {TextChannel | DMChannel | null} channel 
+   */
+  function send(channel){
+    if(!channel){
+      return interaction.reply(errorResponse("Channel not found"));
+    }
 
-  const channel = user == null ? getChannel(client, channelID) : user;
-
-  for(let i = 0; i < messages.length; i++) {
-    setTimeout(() => {
-      // @ts-ignore
-      channel.send({ content: messages[i] })
-    }, 500 * i);
+    return interaction.reply(updateExplainMe(channel));
   }
 
-  return responseMessage("Explanation sent", true);
+  if(user){
+    send(user.dmChannel);
+  } else {
+    getChannel(client, channelID).then((channel) => {
+      if(!(channel instanceof TextChannel)){
+        return errorResponse("This channel is not a text channel.");
+      }
+      send(channel);
+    });
+  }
 }
 
 /**
  * Updates bots messages to the current command explanation.
- * @param {Client} client 
- * @param {string} channelID 
+ * @param {TextChannel | DMChannel} channel 
  * @return {responseObject}
  */
-function updateExplainMe(client, channelID) {
-
-  /** @type {TextChannel} */ 
-  // @ts-ignore  
-  const channel = getChannel(client, channelID);
-  // @ts-ignore
-  const e = channel.messages.fetch({limit: 100}).then(
-    (/**  @type {Map<string, Message>}*/ messages) => {
+function updateExplainMe(channel) {
+  channel.messages.fetch({limit: 100}).then(
+    (/** @type {Map<string, Message>}*/ messages) => {
       const neededMessages = explanationMessage.length;
       let j = 0;
       for(let message of messages.entries()){
@@ -760,21 +785,22 @@ function fetchPlayers(dmID, isDirectMessage, interaction) {
  */
 function logPrintMessage(interaction, client, userID, parts) {
   const isEdit = parts.length > 1;
-
-  /** @type {TextChannel} */ 
-  // @ts-ignore  
-  const channel = getChannel(client, GAME_LOG_CHANNEL);
-  rewardPlayers.delete(userID);
-  interaction.deleteReply(interaction.message);
-  
-  if(isEdit) {
-    channel.messages.fetch(parts[1]).then((message => {
-      message.edit(interaction.message.content);
-    }));
-  } else {
-    channel.send({content: interaction.message.content}); 
-  }
-  return interaction.reply(responseMessage("Log sent.", true));
+  getChannel(client, GAME_LOG_CHANNEL).then((channel) => {
+    if(!(channel instanceof TextChannel)){
+      return interaction.reply(errorResponse("This channel is not a text channel."));
+    }
+    rewardPlayers.delete(userID);
+    interaction.deleteReply(interaction.message);
+    
+    if(isEdit) {
+      channel.messages.fetch(parts[1]).then((message => {
+        message.edit(interaction.message.content);
+      }));
+    } else {
+      channel.send({content: interaction.message.content}); 
+    }
+    return interaction.reply(responseMessage("Log sent.", true));
+  });
 }
 
 /**
@@ -825,7 +851,7 @@ function logSelectCharacter(interaction, isDirectMessage, userID, dmID) {
 // @ts-ignore
 client.on(Events.InteractionCreate, 
   /** @param {interaction} interaction */
-  (interaction) => {
+  async (interaction) => {
   try{
     const { type, id } = interaction;
     const user = interaction.user == null ? interaction.member.user : interaction.user;
@@ -845,7 +871,7 @@ client.on(Events.InteractionCreate,
         case "explanationtrader": 
           // if user
           if(isDirectMessage) {
-            return interaction.reply(explainMe(client, "", user));
+            return explainMe(interaction, client, "", user);
           } 
           if(!isAdmin(interaction.member)) {
             const response = errorResponse("You do not have permission to post this on a server.\nI can send it to you as a dm.");
@@ -865,10 +891,7 @@ client.on(Events.InteractionCreate,
             ];
             return interaction.reply(response);
           }
-          if(options[0].value === "update") {
-            return interaction.reply(updateExplainMe(client, BOT_INFO_CHANNEL));
-          }
-          return interaction.reply(explainMe(client, channelID, null));
+          return explainMe(interaction, client, channelID, null);
         case "getitemsinrange": 
           return getItemsInRange(interaction, options, id, false);
         case "getitemsbytier": 
@@ -985,12 +1008,18 @@ client.on(Events.InteractionCreate,
         case "westmarchrewardlog":
           return westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction);
         case "acceptTransactionButton":
-          const channel = getChannel(client, TRANSACTION_LOG_CHANNEL);
-          
-          return acceptTransaction(componentId, userID, channel, interaction);
+          getChannel(client, TRANSACTION_LOG_CHANNEL).then((channel) => {
+            if(!channel) {
+              interaction.reply(errorResponse(`Channel <#${TRANSACTION_LOG_CHANNEL}> (Transaction log: ${TRANSACTION_LOG_CHANNEL}) not found.`));
+              return;
+            }
+            acceptTransaction(componentId, userID, channel, interaction);
+          });
+
+          return;
         case "dmExplanation":
-          explainMe(client, "", user);
-          return interaction.reply(responseMessage("Message was sent (if dms from server members are enabled)", true));
+          return explainMe(interaction, client, "", user);
+          //return interaction.reply(responseMessage("Message was sent (if dms from server members are enabled)", true));
       }
     }
     else if (type === InteractionType.MODAL_SUBMIT) {

@@ -6,7 +6,7 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { CHARACTER_TRACKING_CHANNEL, currency, dateEmitter, DateListener, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, GAME_LOG_CHANNEL, getChannel, InstallGlobalCommands, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
+import { CHARACTER_TRACKING_CHANNEL, currency, DateListener, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, GAME_LOG_CHANNEL, getChannel, InstallGlobalCommands, registerDateListener, responseMessage, TRANSACTION_LOG_CHANNEL } from './utils.js';
 import './itemsList.js';
 import { getDowntimeNames, getProficiencies, getDowntimeTables, jsNameToTableName } from "./downtimes.js";
 import { getDX, requestCharacterRegistration, isAdmin } from './extraUtils.js';
@@ -48,7 +48,7 @@ const client = new Client({
 client.on('ready', (c) => {
   console.log("Bot is running");
 
-  dateEmitter.registerListener(new DateListener((date) => {
+  registerDateListener(new DateListener((date) => {
     getChannel(c, DOWNTIME_LOG_CHANNEL).then((channel) => {
       if(!(channel instanceof TextChannel)) {
         console.error(`This channel is not a text channel.`);
@@ -495,39 +495,48 @@ function westmarchLog(options, dm) {
  * @param {Client} client 
  * @param {string} channelID 
  * @param {User?} user 
+ * @param {boolean} isDirectMessage 
  */
-async function explainMe(interaction, client, channelID, user) {
-  const messages = explanationMessage;
-  
-  /**
-   * @param {TextChannel | DMChannel | null} channel 
-   */
-  function send(channel){
-    if(!channel){
-      return interaction.reply(errorResponse("Channel not found"));
-    }
-
-    return interaction.reply(updateExplainMe(channel));
+async function explainMe(interaction, client, channelID, user, isDirectMessage) {
+  if(!isDirectMessage && !isAdmin(interaction.member)) {
+    const response = errorResponse("You do not have permission to post this on a server.\nI can send it to you as a dm.");
+    response.components = [
+      {
+        type: MessageComponentTypes.ACTION_ROW.valueOf(),
+        components: [
+          {
+            type: MessageComponentTypes.BUTTON.valueOf(),
+            // @ts-ignore
+            custom_id: `dmExplanation`,
+            label: "Send in DM",
+            style: ButtonStyleTypes.PRIMARY.valueOf(),
+          },
+        ],
+      },
+    ];
+    return interaction.reply(response);
   }
 
-  if(user){
-    send(user.dmChannel);
+  if(isDirectMessage){
+    interaction.reply(updateExplainMe(user ? user.dmChannel : null));
   } else {
-    getChannel(client, channelID).then((channel) => {
-      if(!(channel instanceof TextChannel)){
-        return errorResponse("This channel is not a text channel.");
-      }
-      send(channel);
-    });
+    let channel = await getChannel(client, channelID).then(); 
+    if(!(channel instanceof TextChannel)){
+      return interaction.reply(errorResponse("This channel is not a text channel."));
+    }
+    interaction.reply(updateExplainMe(channel));
   }
 }
 
 /**
  * Updates bots messages to the current command explanation.
- * @param {TextChannel | DMChannel} channel 
+ * @param {TextChannel | DMChannel | null} channel 
  * @return {responseObject}
  */
 function updateExplainMe(channel) {
+  if(!channel){
+    return errorResponse("Channel not found");
+  }
   channel.messages.fetch({limit: 100}).then(
     (/** @type {Map<string, Message>}*/ messages) => {
       const neededMessages = explanationMessage.length;
@@ -869,29 +878,7 @@ client.on(Events.InteractionCreate,
       let isTrue = false; 
       switch(commandName) {
         case "explanationtrader": 
-          // if user
-          if(isDirectMessage) {
-            return explainMe(interaction, client, "", user);
-          } 
-          if(!isAdmin(interaction.member)) {
-            const response = errorResponse("You do not have permission to post this on a server.\nI can send it to you as a dm.");
-            response.components = [
-              {
-                type: MessageComponentTypes.ACTION_ROW.valueOf(),
-                components: [
-                  {
-                    type: MessageComponentTypes.BUTTON.valueOf(),
-                    // @ts-ignore
-                    custom_id: `dmExplanation`,
-                    label: "Send in DM",
-                    style: ButtonStyleTypes.PRIMARY.valueOf(),
-                  },
-                ],
-              },
-            ];
-            return interaction.reply(response);
-          }
-          return explainMe(interaction, client, channelID, null);
+          return explainMe(interaction, client, channelID, user, isDirectMessage);
         case "getitemsinrange": 
           return getItemsInRange(interaction, options, id, false);
         case "getitemsbytier": 
@@ -1018,7 +1005,7 @@ client.on(Events.InteractionCreate,
 
           return;
         case "dmExplanation":
-          return explainMe(interaction, client, "", user);
+          return explainMe(interaction, client, "", user, isDirectMessage);
           //return interaction.reply(responseMessage("Message was sent (if dms from server members are enabled)", true));
       }
     }

@@ -48,11 +48,16 @@ class DateEmitter extends EventEmitter{
 }
 
 export class DateListener extends EventListener{
-    /** @param {(args: Date) => void} func */
-    constructor(func) { super(func); }
+  /** @param {(args: Date) => void} func */
+  constructor(func) { super(func); }
 }
 
-export const dateEmitter = new DateEmitter;
+const dateEmitter = new DateEmitter;
+
+/** @param {DateListener} listener */
+export function registerDateListener(listener){
+  dateEmitter.registerListener(listener);
+}
 
 /**
  * @param {boolean} isOnStartup 

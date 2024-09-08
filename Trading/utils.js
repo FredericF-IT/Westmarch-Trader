@@ -75,7 +75,7 @@ export function updateDate(isOnStartup) {
     DOWNTIME_RESET_TIME.DAY = now.toLocaleDateString("en-us", {weekday: 'long'});
 
     if(!isOnStartup) {
-      db.updateAllCharacterWeeklyDTQuery(false, null);
+      db.setAllCharactersDowntimeActionUsed(false, null);
       dateEmitter.notify(now);
     }
     console.log(`Next Downtime:${now}`);

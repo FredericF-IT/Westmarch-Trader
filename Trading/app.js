@@ -171,7 +171,7 @@ async function sendDowntimeCopyable(interaction, userID, characterName, characte
         `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` + 
         `\`\`\`**Downtime summary**\nLink: ${message.url}\nEffect: ${effect}\`\`\``,
         true));
-      db.updateCharacterWeeklyDTQuery(userID, characterName, true);
+      db.setCharacterDowntimeActionUsed(userID, characterName, true);
     });
   });
 }
@@ -206,7 +206,7 @@ async function getDowntimeSQLite3(interaction, options, userID) {
     return interaction.reply(requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]));
   }
 
-  if(await db.getCharacterWeeklyDTQuery(userID, characterName).then()){
+  if(await db.getCharacterDowntimeActionUsed(userID, characterName).then()){
     return interaction.reply(errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")"));
   }
 
@@ -216,7 +216,7 @@ async function getDowntimeSQLite3(interaction, options, userID) {
 
   const rollGroup = Math.floor((roll - 1) / 10);
   
-  const result = await db.getDowntimeQuery(tableName == undefined ? "" : tableName, characterLevel, rollGroup).then(); 
+  const result = await db.getDowntimeResult(tableName == undefined ? "" : tableName, characterLevel, rollGroup).then(); 
   
   //if (!rows) {
   //  console.error(`SQL error:\n  Query: ${query}`, err);

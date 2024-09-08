@@ -293,7 +293,7 @@ export async function rollCharacterDowntimeThread(parts, userID, interaction) {
   const originalMessageID = parts[2];
   const characterName = parts[3];
 
-  if(await db.getCharacterWeeklyDTQuery(userID, characterName).then()){
+  if(await db.getCharacterDowntimeActionUsed(userID, characterName).then()){
     return interaction.reply(errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")"));
   }
 
@@ -312,7 +312,7 @@ export async function rollCharacterDowntimeThread(parts, userID, interaction) {
   const success = (roll + data.profMod >= DC);
   const result = `DC: ${DC}\nResult: ${(roll + data.profMod)} (${roll}+${data.profMod}) using ${proficiencyNames[data.profType].toLowerCase()}.\n${(success ? `Successfully crafted ${item.item_name}.\nWait until a dm approves this activity.` : `Try again with your next downtime action!`)}`;
 
-  db.updateCharacterWeeklyDTQuery(userID, characterName, true);
+  db.setCharacterDowntimeActionUsed(userID, characterName, true);
 
   if(success) {
     setTimeout(() => {

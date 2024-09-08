@@ -199,7 +199,7 @@ export class DBIO{
    * @param {string?} condition 
    * @return {void}
    */
-  updateAllCharacterWeeklyDTQuery(used_downtime, condition) {
+  setAllCharactersDowntimeActionUsed(used_downtime, condition) {
     this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? "TRUE" : "FALSE"}${condition ? " WHERE "+condition : ""};`);
   }
 
@@ -209,7 +209,7 @@ export class DBIO{
   * @param {boolean?} used_downtime 
   * @return {void}
   */
-  updateCharacterWeeklyDTQuery(userID, characterName, used_downtime) {
+  setCharacterDowntimeActionUsed(userID, characterName, used_downtime) {
     this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? "TRUE" : "FALSE"} WHERE discord_id="${userID}" AND character="${characterName}";`);
   }
 
@@ -218,7 +218,7 @@ export class DBIO{
   * @param {string} characterName 
   * @return {Promise<boolean>}
   */
-  async getCharacterWeeklyDTQuery(userID, characterName) {
+  async getCharacterDowntimeActionUsed(userID, characterName) {
     return 1 === (await this.#sqlite3Query(`SELECT used_downtime FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}" LIMIT 1;`).then())[0].used_downtime;
   }
 
@@ -233,7 +233,7 @@ export class DBIO{
    * @param {number} roll 
    * @return {Promise<dtResult>}
    */
-  async getDowntimeQuery(downtimeTableName, level, roll) {
+  async getDowntimeResult(downtimeTableName, level, roll) {
     return (await this.#sqlite3Query("SELECT outcome, description " +
     `FROM ${downtimeTableName} ` +
     `INNER JOIN ${downtimeTableName}_events ON roll_group=${downtimeTableName}_events.eventID ` +

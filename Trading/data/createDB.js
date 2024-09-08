@@ -1,7 +1,9 @@
 // @ts-check
 import sqlite3 from 'sqlite3';
-import { activeDowntimes, characters, readDataFile } from './dataIO.js';
+import { readDataFile } from './dataIO.js';
 import { tierToCostLimits, tierToFindableRarities } from '../utils.js';
+import { updateItems } from '../itemsList.js';
+import { createDowntimeSQLs } from '../downtimes.js';
 
 /**
  * @typedef {import("../types.js").item} item
@@ -45,9 +47,8 @@ export class DBIO{
       } else {
         console.log('Connected to the trader.db SQLite database.');
       }
+      //this.createCharTables();
     });
-
-    //this.createCharTables();
   }
 
   close() {
@@ -239,53 +240,23 @@ export class DBIO{
     `WHERE roll_group=${roll} AND level=${level};`).then())[0];
   }
 
-  
-  createDowntimeTables(){
-    const tryDropOld = "DROP TABLE IF EXISTS downtime_record;"
-    
-    const createDef = `CREATE TABLE IF NOT EXISTS downtime_record (discord_id TEXT NOT NULL, character TEXT NOT NULL, job_id TEXT NOT NULL, job_data TEXT NOT NULL, PRIMARY KEY (discord_id, character, job_id));`;
-
-    return [tryDropOld, createDef];
-  }
-
   createCharTables(){
     const tryDropOld = "DROP TABLE IF EXISTS player_characters;"
     
     const createDef = `CREATE TABLE IF NOT EXISTS player_characters (discord_id TEXT NOT NULL, character TEXT NOT NULL, used_downtime INTEGER NOT NULL, PRIMARY KEY (discord_id, character));`;
+    
+    const tryDropOldDT = "DROP TABLE IF EXISTS downtime_record;"
+    
+    const createDefDT = `CREATE TABLE IF NOT EXISTS downtime_record (discord_id TEXT NOT NULL, character TEXT NOT NULL, job_id TEXT NOT NULL, job_data TEXT NOT NULL, PRIMARY KEY (discord_id, character, job_id));`;
 
-    const lines = this.createDowntimeTables().concat([tryDropOld, createDef]);
-
-    for (const characterList of Object.entries(characters)) {
-      const userID = characterList[0];
-      const userCharacters = characterList[1].slice(1);
-
-      for (let index = 0; index < userCharacters.length; index++) {
-        const character = userCharacters[index];
-        lines.push(`INSERT INTO player_characters (discord_id, character, used_downtime) VALUES ("${userID}", "${character}", FALSE);`);
-      }
-    }
-
-    for (const downtimes of Object.entries(activeDowntimes)) {
-      const userID = downtimes[0];
-      const userCharacters = downtimes[1];
-      for (const character of Object.entries(userCharacters)) {
-        lines.push(`UPDATE player_characters SET used_downtime=${character[1].weeklyUsed ? "TRUE" : "FALSE"} WHERE discord_id="${userID}" AND character="${character[0]}";`);
-      }
-    }
-
-    this.#db.serialize(() => {
-      for(let line of lines) {
-        this.#db.run(line, err => {
-          if(err != null){
-            console.error(err);
-          }
-        });
-      }
-    });
+    return [tryDropOld, createDef, tryDropOldDT, createDefDT];
   }
 
-
-  createDB() {
+  async createDB() {
+    await updateItems().then();
+    createDowntimeSQLs();
+    // These files were created above.
+    // Now they will be ised to create Tables in our database.
     const files = [
       "./data/crime_rewards_events.sql",
       "./data/crime_rewards.sql",

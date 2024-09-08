@@ -128,7 +128,7 @@ jsNameToTableName.set("Crime", CRIME_DT_TABLE_NAME);
 jsNameToTableName.set("Doing a job", JOB_DT_TABLE_NAME);
 jsNameToTableName.set("Training to gain xp", TRAINING_DT_TABLE_NAME);
 
-function createDowntimeSQLs() {
+export function createDowntimeSQLs() {
   for(let jsTableName of Object.keys(downtimeTables)) {
     const sqlTableName = jsNameToTableName.get(jsTableName);
     const baseString = "-- SQLite;\n" +
@@ -172,8 +172,6 @@ function createDowntimeSQLs() {
     writeDataFileRequest(`./data/${sqlTableName}_events.sql`, resultEvents);
   }
 }
-
-//createDowntimeSQLs();
 
 /**
  *

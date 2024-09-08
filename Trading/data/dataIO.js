@@ -1,6 +1,4 @@
 import * as fs from 'fs';
-const characterDowntimeProgress = "data/downtimeProgress.json";
-const namesCharactersFile = "data/PlayerNames.json";
 
 export function readDataFile(fileName) {
   return fs.readFileSync("./"+fileName).toString('utf-8');
@@ -18,15 +16,3 @@ export async function writeDataFileRequest(fileName, dataString) {
     writing--;
   }
 }
-
-/**    DOWNTIME I/O     **/
-
-export const activeDowntimes = JSON.parse(readDataFile(characterDowntimeProgress));
-
-export const WEEKLY_CATEGORY = "weeklyUsed";
-export const CRAFTING_CATEGORY = "crafting";
-
-
-/**    CHARACTER IO     **/
-
-export const characters = JSON.parse(readDataFile(namesCharactersFile));

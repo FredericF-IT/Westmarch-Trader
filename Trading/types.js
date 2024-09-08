@@ -114,7 +114,6 @@
  * @property {string} item_name
  * @property {number} price
  * @property {string} rarity
- * @property {number} priceTier
  * @property {number} consumable
  */
 

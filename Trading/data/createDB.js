@@ -1,106 +1,331 @@
 // @ts-check
 import sqlite3 from 'sqlite3';
-import { readDataFile } from './dataIO.js';
-import { db2 } from '../app.js';
+import { activeDowntimes, characters, readDataFile } from './dataIO.js';
+import { tierToCostLimits, tierToFindableRarities } from '../utils.js';
 
 /**
- * 
- * @param {string} downtimeTableName 
- * @param {number} level 
- * @param {number} roll 
- * @return {string}
- */
-export function getDowntimeQuery(downtimeTableName, level, roll) {
-  return "SELECT outcome, description " +
-  `FROM ${downtimeTableName} ` +
-  `INNER JOIN ${downtimeTableName}_events ON roll_group=${downtimeTableName}_events.eventID ` +
-  `WHERE roll_group=${roll} AND level=${level};`;
-}
+ * @typedef {import("../types.js").item} item
+ * @typedef {import("../types.js").dtData} dtData
+*/
 
-export function get25ItemNamesQuery(currentInput) {
-  return `SELECT item_name, id FROM item_cost WHERE item_name LIKE '%${currentInput}%' LIMIT 25;`;
-}
+export class DBIO{
+  /** @type {sqlite3.Database} */
+  #db;
 
-export function getItem(itemID){
-  return `SELECT * FROM item_cost WHERE id=${itemID} LIMIT 1;`;
-}
+  /** @type {DBIO} */
+  static #dbInstance;
+  /** @type {boolean} */
+  static #allowInstance;
 
-/**
- * @param {number} lowestPrice 
- * @param {number} highestPrice 
- * @return {string}
- */
-export function filterItems(lowestPrice, highestPrice) {
-  return `SELECT * FROM item_cost WHERE ${lowestPrice}<=price AND price<=${highestPrice} ORDER BY price ASC;`;
-}
+  constructor(){
+    if(!DBIO.#allowInstance)
+      throw new Error("Can not create instance. Please use DBIO.getDB()");
+  }
 
-/** @type {Map<number, string>} */
-export const tierToUsableRarity = new Map();
-tierToUsableRarity.set(1, "uncommon");
-tierToUsableRarity.set(2, "rare");
-tierToUsableRarity.set(3, "very rare");
-tierToUsableRarity.set(4, "legendrary");
+  /**
+   * Always returns the same instance of the database.
+   * @return {DBIO}
+   */
+  static getDB(){
+    // always returns same instance
+    this.#allowInstance = true;
+    this.#dbInstance = this.#dbInstance || new DBIO();
+    this.#allowInstance = false;
+    return this.#dbInstance;
+  }
 
-/** @type {Map<number, string[]>} */
-export const tierToFindableRarities = new Map();
-tierToFindableRarities.set(1, ["uncommon"]);
-tierToFindableRarities.set(2, ["uncommon", "rare"]);
-tierToFindableRarities.set(3, ["uncommon", "rare", "very rare"]);
-tierToFindableRarities.set(4, ["uncommon", "rare", "very rare"]);
+  /**
+   * @param {string} path 
+   */
+  init(path) {
+    /** @type {sqlite3.Database} */
+    this.#db = new sqlite3.Database(path, (err) => {
+      if (err) {
+        console.error('Failed to connect to the database:', err.message);
+      } else {
+        console.log('Connected to the trader.db SQLite database.');
+      }
+    });
 
-/**
- * @param {number} priceTier 
- * @param {boolean} filterRarity 
- * @return {string}
- */
-export function filterItemsbyTier(priceTier, filterRarity) {
-  // @ts-ignore
-  return `SELECT * FROM item_cost WHERE ${priceTier}=price_tier ${filterRarity ? `AND rarity IN ("${tierToFindableRarities.get(priceTier).join('", "')}") ` : ""}ORDER BY price ASC;`;
-}
+    //this.createCharTables();
+  }
 
-/**
- * 
- * @param {sqlite3.Database} db 
- */
-export function createDB(db) {
-  const files = [
-    "./data/crime_rewards_events.sql",
-    "./data/crime_rewards.sql",
-    "./data/job_rewards_events.sql",
-    "./data/job_rewards.sql",
-    "./data/training_rewards_events.sql",
-    "./data/training_rewards.sql",
-    "./data/insertItems2.sql"
-  ];
-  for(let file of files) {
-    const codeLines = readDataFile(file).split(";");
-    for(let line of codeLines) {
-      const lineClean = line.replace("\n", "");
-      db.serialize(() => {
-        db.run(lineClean, err => {
+  close() {
+    this.#db.close((err) => {
+      if (err) {
+        console.error(err.message);
+      }
+      console.log('Closed the database connection.');
+      process.exit(0);
+    });
+  }
+
+  /**
+   * @param {Object} data 
+   * @return {string}
+   */
+  #stringifySQL(data){
+    return JSON.stringify(data).replace(/"/g, "'");
+  }
+
+  /**
+   * @param {string} data 
+   * @return {Object}
+   */
+  #parseSQL(data){
+    return JSON.parse(data.replace(/'/g, '"'));
+  }
+
+  /** ITEM I/O **/
+
+  /**
+   * @param {string} currentInput 
+   * @return {Promise<item[]>}
+   */
+  async get25ItemNamesQuery(currentInput) {
+    return await this.#sqlite3Query(`SELECT item_name, id FROM item_cost WHERE item_name LIKE '%${currentInput}%' LIMIT 25;`).then();
+  }
+
+  /**
+   * @param {string | number} itemID 
+   * @return {Promise<item>}
+   */
+  async getItem(itemID){
+    return (await this.#sqlite3Query(`SELECT * FROM item_cost WHERE id=${itemID} LIMIT 1;`).then())[0];
+  }
+
+  /**
+   * @param {number} lowestPrice 
+   * @param {number} highestPrice 
+   * @return {Promise<item[]>}
+   */
+  async filterItems(lowestPrice, highestPrice) {
+    return await this.#sqlite3Query(`SELECT * FROM item_cost WHERE ${lowestPrice}<=price AND price<=${highestPrice} ORDER BY price ASC;`).then();
+  }
+
+  /**
+   * @param {number} priceTier 
+   * @param {boolean} filterRarity 
+   * @return {Promise<item[]>}
+   */
+  async filterItemsbyTier(priceTier, filterRarity) {
+    const limits = tierToCostLimits[priceTier];
+    return await this.#sqlite3Query(`SELECT * FROM item_cost WHERE ${limits.min}<=price AND price<=${limits.max} ${filterRarity ? `AND rarity IN ("${tierToFindableRarities[priceTier].join('", "')}") ` : ""}ORDER BY price ASC;`).then();
+  }
+
+  /** CHARACTER I/O **/
+
+  /**
+   * @param {string} userID 
+   * @return {Promise<string[]>}
+   */
+  async getCharacters(userID){
+    return (await this.#sqlite3Query(`SELECT character FROM player_characters WHERE discord_id="${userID}";`).then()).map((character) => character.character);
+  }
+
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   * @return {Promise<boolean>}
+   */
+  async characterExists(userID, characterName){
+    const character = await this.#sqlite3Query(`SELECT * FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}" LIMIT 1;`).then();
+    return character.length == 1;
+  }
+
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   * @param {boolean?} used_downtime 
+   */
+  insertCharacter(userID, characterName, used_downtime) {
+    this.#sqlite3Query(`INSERT INTO player_characters (discord_id, character, used_downtime) VALUES ("${userID}", "${characterName}", ${used_downtime ? "TRUE" : "FALSE"});`);
+  }
+
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   */
+  deleteCharacter(userID, characterName) {
+    this.#sqlite3Query(`DELETE FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}";`);
+  }
+
+  /** DOWNTIME I/O **/
+
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   * @param {string} job_id 
+   * @param {dtData} job_data 
+   */
+  createCharacterJob(userID, characterName, job_id, job_data) {
+    const stringData = this.#stringifySQL(job_data);
+    this.#sqlite3Query(`INSERT INTO downtime_record (discord_id, character, job_id, job_data) VALUES ("${userID}", "${characterName}", "${job_id}", "${stringData}");`);
+  }
+
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   * @param {string} job_id 
+   * @return {Promise<dtData>} 
+   */
+  async getCharacterJob(userID, characterName, job_id) {
+    const stringData = await this.#sqlite3Query(`SELECT job_data FROM downtime_record WHERE discord_id="${userID}" AND character="${characterName}" AND job_id="${job_id}" LIMIT 1;`).then();
+    return this.#parseSQL(stringData[0].job_data);
+  }
+
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   * @param {string} job_id 
+   * @param {dtData} job_data 
+   */
+  updateCharacterJob(userID, characterName, job_id, job_data) {
+    this.#sqlite3Query(`UPDATE downtime_record SET job_data="${this.#stringifySQL(job_data)}" WHERE discord_id="${userID}" AND character="${characterName}" AND job_id="${job_id}";`);
+  }
+
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   * @param {string} job_id 
+   */
+  deleteCharacterJob(userID, characterName, job_id) {
+    this.#sqlite3Query(`DELETE FROM downtime_record WHERE discord_id="${userID}" AND character="${characterName}" AND job_id="${job_id}";`);
+  }
+
+  /**
+   * @param {boolean?} used_downtime 
+   * @param {string?} condition 
+   * @return {void}
+   */
+  updateAllCharacterWeeklyDTQuery(used_downtime, condition) {
+    this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? "TRUE" : "FALSE"}${condition ? " WHERE "+condition : ""};`);
+  }
+
+  /**
+  * @param {string} userID 
+  * @param {string} characterName 
+  * @param {boolean?} used_downtime 
+  * @return {void}
+  */
+  updateCharacterWeeklyDTQuery(userID, characterName, used_downtime) {
+    this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? "TRUE" : "FALSE"} WHERE discord_id="${userID}" AND character="${characterName}";`);
+  }
+
+  /**
+  * @param {string} userID 
+  * @param {string} characterName 
+  * @return {Promise<boolean>}
+  */
+  async getCharacterWeeklyDTQuery(userID, characterName) {
+    return 1 === (await this.#sqlite3Query(`SELECT used_downtime FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}" LIMIT 1;`).then())[0].used_downtime;
+  }
+
+  /**
+   * @typedef {Object} dtResult
+   * @property {string} description
+   * @property {string} outcome
+   */
+  /**
+   * @param {string} downtimeTableName 
+   * @param {number} level 
+   * @param {number} roll 
+   * @return {Promise<dtResult>}
+   */
+  async getDowntimeQuery(downtimeTableName, level, roll) {
+    return (await this.#sqlite3Query("SELECT outcome, description " +
+    `FROM ${downtimeTableName} ` +
+    `INNER JOIN ${downtimeTableName}_events ON roll_group=${downtimeTableName}_events.eventID ` +
+    `WHERE roll_group=${roll} AND level=${level};`).then())[0];
+  }
+
+  
+  createDowntimeTables(){
+    const tryDropOld = "DROP TABLE IF EXISTS downtime_record;"
+    
+    const createDef = `CREATE TABLE IF NOT EXISTS downtime_record (discord_id TEXT NOT NULL, character TEXT NOT NULL, job_id TEXT NOT NULL, job_data TEXT NOT NULL, PRIMARY KEY (discord_id, character, job_id));`;
+
+    return [tryDropOld, createDef];
+  }
+
+  createCharTables(){
+    const tryDropOld = "DROP TABLE IF EXISTS player_characters;"
+    
+    const createDef = `CREATE TABLE IF NOT EXISTS player_characters (discord_id TEXT NOT NULL, character TEXT NOT NULL, used_downtime INTEGER NOT NULL, PRIMARY KEY (discord_id, character));`;
+
+    const lines = this.createDowntimeTables().concat([tryDropOld, createDef]);
+
+    for (const characterList of Object.entries(characters)) {
+      const userID = characterList[0];
+      const userCharacters = characterList[1].slice(1);
+
+      for (let index = 0; index < userCharacters.length; index++) {
+        const character = userCharacters[index];
+        lines.push(`INSERT INTO player_characters (discord_id, character, used_downtime) VALUES ("${userID}", "${character}", FALSE);`);
+      }
+    }
+
+    for (const downtimes of Object.entries(activeDowntimes)) {
+      const userID = downtimes[0];
+      const userCharacters = downtimes[1];
+      for (const character of Object.entries(userCharacters)) {
+        lines.push(`UPDATE player_characters SET used_downtime=${character[1].weeklyUsed ? "TRUE" : "FALSE"} WHERE discord_id="${userID}" AND character="${character[0]}";`);
+      }
+    }
+
+    this.#db.serialize(() => {
+      for(let line of lines) {
+        this.#db.run(line, err => {
           if(err != null){
             console.error(err);
           }
-//          console.log(lineClean);
         });
+      }
+    });
+  }
+
+
+  createDB() {
+    const files = [
+      "./data/crime_rewards_events.sql",
+      "./data/crime_rewards.sql",
+      "./data/job_rewards_events.sql",
+      "./data/job_rewards.sql",
+      "./data/training_rewards_events.sql",
+      "./data/training_rewards.sql",
+      "./data/insertItems2.sql"
+    ];
+    for(let file of files) {
+      const codeLines = readDataFile(file).split(";");
+      const cleanLines = codeLines.map(line => line.replace("\n", ""));
+
+      this.#db.serialize(() => {
+        for(let lineClean of cleanLines) {
+          this.#db.run(lineClean, err => {
+            if(err != null){
+              console.error(err);
+            }
+          });
+        }
       });
     }
   }
-}
 
-/**
- *
- * @param {string} query
- * @param {(err: Error | null, rows: Object[]) => void} callback
- */
-export function sqlite3Query(query, callback) {
-  const sql = query;
-  db2.all(sql, [], callback);
+  /**
+   * @param {string} query
+   * @return {Promise<Object[]>}
+   */
+  async #sqlite3Query(query) {
+    const sql = query;
+    const db = this.#db;
+    return await new Promise(function (resolve, reject) {
+      db.all(sql, [], (/** @type {Error | null} */ err, /** @type {Object[]} */ rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+  }
 }
-
-/*
-SELECT roll_group, outcome, description
-FROM crime_rewards
-INNER JOIN crime_rewards_events ON roll_group=crime_rewards_events.eventID
-WHERE roll_group=${roll} AND level=$level;
-*/

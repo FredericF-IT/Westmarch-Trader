@@ -1,8 +1,8 @@
 // @ts-check
 import "dotenv/config";
 import fetch from "node-fetch";
-import { resetAllWeeklyAction } from "./data/dataIO.js";
 import { EventEmitter, EventListener } from "./Events.js";
+import { DBIO } from "./data/createDB.js";
 
 /**
  * @typedef {import("./types.js").responseObject} responseObject
@@ -30,6 +30,8 @@ export const DOWNTIME_RESET_TIME = {
   RELATIVE: "not loaded",
   DAY: "not loaded"
 };
+
+const db = DBIO.getDB();
 
 class DateEmitter extends EventEmitter{
   /** @param {Date} date */
@@ -73,7 +75,7 @@ export function updateDate(isOnStartup) {
     DOWNTIME_RESET_TIME.DAY = now.toLocaleDateString("en-us", {weekday: 'long'});
 
     if(!isOnStartup) {
-      resetAllWeeklyAction();
+      db.updateAllCharacterWeeklyDTQuery(false, null);
       dateEmitter.notify(now);
     }
     console.log(`Next Downtime:${now}`);
@@ -180,9 +182,29 @@ export function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-/** @type {Map<number, {min: number, max: number}>} */
-export const tierToCostLimits = new Map();
-tierToCostLimits.set(1, { min: 500, max: 1000 });
-tierToCostLimits.set(2, { min: 1000, max: 3000 });
-tierToCostLimits.set(3, { min: 3000, max: 5000 });
-tierToCostLimits.set(4, { min: 5000, max: 10000 });
+/** @type {{min: number, max: number}[]} */
+export const tierToCostLimits = [
+  { min: 0, max: 0 }, // tiers begin at 1 in this case
+  { min: 500, max: 1000 },
+  { min: 1000, max: 3000 },
+  { min: 3000, max: 5000 },
+  { min: 5000, max: 10000 },
+];
+
+/** @type {string[]} */
+export const tierToUsableRarity = [
+  "", // tiers begin at 1 in this case
+  "uncommon",
+  "rare",
+  "very rare",
+  "legendrary",
+];
+
+/** @type {string[][]} */
+export const tierToFindableRarities = [
+  [""], // tiers begin at 1 in this case
+  ["uncommon"],
+  ["uncommon", "rare"],
+  ["uncommon", "rare", "very rare"],
+  ["uncommon", "rare", "very rare"],
+];

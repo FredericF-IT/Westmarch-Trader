@@ -10,13 +10,11 @@ import { CHARACTER_TRACKING_CHANNEL, currency, DateListener, DOWNTIME_LOG_CHANNE
 import './itemsList.js';
 import { getDowntimeNames, getProficiencies, getDowntimeTables, jsNameToTableName } from "./downtimes.js";
 import { getDX, requestCharacterRegistration, isAdmin } from './extraUtils.js';
-import { characterExists, setValueDowntime, getCharacters, setCharacters, CRAFTING_CATEGORY, hasUsedWeeklyDowntime, useWeeklyAction } from './data/dataIO.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, westmarchRewardLogResult, acceptTransaction, rewardCharacters as rewardPlayers, makeCharacterSessionSelection } from "./componentResponse.js";
-import sqlite3 from 'sqlite3';
 import { ActionRowBuilder, Client, Events, IntentsBitField, ModalBuilder, Partials, TextChannel, TextInputBuilder, TextInputStyle, User } from "discord.js";
 import { ALL_COMMANDS } from './commands.js';
 import { explanationMessage } from './explanation.js';
-import { createDB, filterItems, filterItemsbyTier, get25ItemNamesQuery, getDowntimeQuery, getItem, sqlite3Query } from './data/createDB.js';
+import { DBIO } from './data/createDB.js';
 
 /**
  * @typedef {import("./types.js").interaction} interaction
@@ -26,9 +24,10 @@ import { createDB, filterItems, filterItemsbyTier, get25ItemNamesQuery, getDownt
  * @typedef {import("./types.js").responseObject} responseObject
  * @typedef {import("./types.js").autocompleteObject} autocompleteObject
  * @typedef {import("./types.js").item} item
+ * @typedef {import("./types.js").craftingDTData} craftingDTData
  * @typedef {import("discord.js").Message} Message
  * @typedef {import("discord.js").Channel} Channel
- * @typedef {import("discord.js").DMChannel} DMChannel
+ * @typedef {import("discord.js").DMChannel} DMChannel 
  */
 
 /** @type {Client} */
@@ -45,8 +44,15 @@ const client = new Client({
   ],
 });
 
+
+process.on('SIGINT', () => {
+  db.close();
+});
+
+const db = DBIO.getDB();
 client.on('ready', (c) => {
   console.log("Bot is running");
+  db.init('./data/trader_v2.db');
 
   registerDateListener(new DateListener((date) => {
     getChannel(c, DOWNTIME_LOG_CHANNEL).then((channel) => {
@@ -58,15 +64,6 @@ client.on('ready', (c) => {
       channel.send(responseMessage(`Downtime was reset!\nNext Downtime reset: <t:${timeStamp}:R>`, false));
     });
   }));
-});
-
-/** @type {sqlite3.Database} */
-export const db2 = new sqlite3.Database('./data/trader_v2.db', (err) => {
-  if (err) {
-    console.error('Failed to connect to the database:', err.message);
-  } else {
-    console.log('Connected to the trader.db SQLite database.');
-  }
 });
 
 const downtimeNames = getDowntimeNames();
@@ -81,11 +78,12 @@ const lastItemResult = new Map();
  * @param {string} id 
  * @param {boolean} useTier 
  */
-function getItemsInRange(interaction, options, id, useTier) {
-  let itemsQuery = "";
+async function getItemsInRange(interaction, options, id, useTier) {
+  /** @type {item[]} */
+  let items = [];
 
   if(useTier) {
-    itemsQuery = filterItemsbyTier(options[0].value, true);
+    items = await db.filterItemsbyTier(options[0].value, true).then();
   } else {
     /** @type {number} */
     let minPrice = options[0].value;
@@ -99,54 +97,52 @@ function getItemsInRange(interaction, options, id, useTier) {
       minPrice = minPrice ^ maxPrice;
     }
   
-    itemsQuery = filterItems(minPrice, maxPrice);
+    items = await db.filterItems(minPrice, maxPrice).then();
+  }
+  
+  let result = [""];
+  let j = 0;
+  for (let i = 0; i < items.length; i++) {
+    const nextSection = "- " + items[i].item_name + " (" + items[i].price + currency + ", " + items[i].rarity + ")\n";
+    if (nextSection.length + result[j].length > 2000) {
+      j++;
+      result[j] = ""
+    }
+    result[j] += nextSection;
   }
 
-  sqlite3Query(itemsQuery, (err, rows) => {
-    let result = [""];
-    let j = 0;
-    for (let i = 0; i < rows.length; i++) {
-      const nextSection = "- " + rows[i].item_name + " " + rows[i].price + currency + " (" + rows[i].rarity + ")\n";
-      if (nextSection.length + result[j].length > 2000) {
-        j++;
-        result[j] = ""
-      }
-      result[j] += nextSection;
-    }
-
-    if(j == 0){
-      return interaction.reply({
-          content: result[0],
-          ephemeral: true,
-      });
-    }
-
-    lastItemResult.set(id, result);
-    
-    const minutesTillDeletion = 5;
-    setTimeout(
-      () => {
-        lastItemResult.delete(id);
-      }, 1000 * 60 * minutesTillDeletion);
-
-    interaction.reply({
-      content: result[0],
-      ephemeral: true,
-      components: [
-        {
-          type: MessageComponentTypes.ACTION_ROW.valueOf(),
-          components: [
-            {
-                type: MessageComponentTypes.BUTTON.valueOf(),
-                // @ts-ignore
-                custom_id: `itemspage_1_`+id,
-                label: "Load more items",
-                style: ButtonStyleTypes.PRIMARY.valueOf(),
-            },
-          ],
-        },
-      ],
+  if(j == 0){
+    return interaction.reply({
+        content: result[0],
+        ephemeral: true,
     });
+  }
+
+  lastItemResult.set(id, result);
+  
+  const minutesTillDeletion = 5;
+  setTimeout(
+    () => {
+      lastItemResult.delete(id);
+    }, 1000 * 60 * minutesTillDeletion);
+
+  interaction.reply({
+    content: result[0],
+    ephemeral: true,
+    components: [
+      {
+        type: MessageComponentTypes.ACTION_ROW.valueOf(),
+        components: [
+          {
+              type: MessageComponentTypes.BUTTON.valueOf(),
+              // @ts-ignore
+              custom_id: `itemspage_1_`+id,
+              label: "Load more items",
+              style: ButtonStyleTypes.PRIMARY.valueOf(),
+          },
+        ],
+      },
+    ],
   });
 }
 
@@ -175,7 +171,7 @@ async function sendDowntimeCopyable(interaction, userID, characterName, characte
         `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` + 
         `\`\`\`**Downtime summary**\nLink: ${message.url}\nEffect: ${effect}\`\`\``,
         true));
-      useWeeklyAction(userID, characterName);
+      db.updateCharacterWeeklyDTQuery(userID, characterName, true);
     });
   });
 }
@@ -199,18 +195,18 @@ downtimeQuery.set(2, (level, roll) => "SELECT outcome FROM xp_rewards WHERE (lev
  * @param {interaction} interaction 
  * @param {[{value: string},{value: string},{value: number}] | option[]} options 
  * @param {string} userID 
- * @return {Promise | void}
+ * @return {Promise<void>}
  */
-function getDowntimeSQLite3(interaction, options, userID) {
+async function getDowntimeSQLite3(interaction, options, userID) {
   const downtimeType = parseInt(options[0].value);
   const characterName = options[1].value;
   const characterLevel = options[2].value;
 
-  if(!characterExists(userID, characterName)){
+  if(!await db.characterExists(userID, characterName).then()){
     return interaction.reply(requestCharacterRegistration("doDowntime", characterName, [downtimeType, characterLevel]));
   }
 
-  if(hasUsedWeeklyDowntime(userID, characterName)){
+  if(await db.getCharacterWeeklyDTQuery(userID, characterName).then()){
     return interaction.reply(errorResponse("You have already used your downtime this week.\nNew downtimes are available "+DOWNTIME_RESET_TIME.DAY+" at "+DOWNTIME_RESET_TIME.HOUR+" ("+DOWNTIME_RESET_TIME.RELATIVE+")"));
   }
 
@@ -220,15 +216,13 @@ function getDowntimeSQLite3(interaction, options, userID) {
 
   const rollGroup = Math.floor((roll - 1) / 10);
   
-  const query = getDowntimeQuery(tableName == undefined ? "" : tableName, characterLevel, rollGroup); 
-
-  sqlite3Query(query, async (err, rows) => {
-    if (err) {
-      console.error(`SQL error:\n  Query: ${query}`, err);
-      return err.message;
-    }
-    sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, rows[0].description, rows[0].outcome);
-  });
+  const result = await db.getDowntimeQuery(tableName == undefined ? "" : tableName, characterLevel, rollGroup).then(); 
+  
+  //if (!rows) {
+  //  console.error(`SQL error:\n  Query: ${query}`, err);
+  //  return err.message;
+  //}
+  return sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, result.description, result.outcome);
 }
 
 /**
@@ -236,42 +230,38 @@ function getDowntimeSQLite3(interaction, options, userID) {
  * @param {string} itemID 
  * @param {string} characterName 
  * @param {string} userID 
- * @return {Promise} JS Object for interaction.reply()
+ * @return {Promise<Promise>} JS Object for interaction.reply()
  */
-function downtimeCraftItem(interaction, itemID, characterName, userID) {
-  if(!characterExists(userID, characterName))
+async function downtimeCraftItem(interaction, itemID, characterName, userID) {
+  if(!await db.characterExists(userID, characterName).then())
     return interaction.reply(requestCharacterRegistration("itemCraft", characterName, [itemID]));
   
-  //const [itemName, {price}] = allItems[parseInt(itemID)];
-  const itemQuery = getItem(itemID);
-  sqlite3Query(itemQuery, (err, rows) => {
-    const item = rows[0];
-    
-    getChannel(client, DOWNTIME_LOG_CHANNEL).then((channel) => {
-      if(!(channel instanceof TextChannel)) {
-        interaction.reply(errorResponse(`Channel <#${DOWNTIME_LOG_CHANNEL}> (Downtime log: ${DOWNTIME_LOG_CHANNEL}) not found.`));
-        return;
-      }
-      channel.send({
-        content: `${characterName} (<@${userID}>) wants to craft ${item.item_name}.\n` +
-          `Material cost: ${item.price}\n` +
-          `You will need to succeed on a craft check using a tool proficiency.\n` +
-          `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n` +
-          "If you have another item in progress, starting a new item will overwrite that one.",
-        components: [
-          {
-            type: MessageComponentTypes.ACTION_ROW.valueOf(),
-            components: [
-              {
-                  type: MessageComponentTypes.BUTTON.valueOf(),
-                  custom_id: `characterThread_${userID}_` + itemID + "_" + characterName,
-                  label: "Start crafting",
-                  style: ButtonStyleTypes.PRIMARY.valueOf(),
-              },
-            ],
-          },
-        ],
-      });
+  const item = await db.getItem(itemID).then();
+  
+  getChannel(client, DOWNTIME_LOG_CHANNEL).then((channel) => {
+    if(!(channel instanceof TextChannel)) {
+      interaction.reply(errorResponse(`Channel <#${DOWNTIME_LOG_CHANNEL}> (Downtime log: ${DOWNTIME_LOG_CHANNEL}) not found.`));
+      return;
+    }
+    channel.send({
+      content: `${characterName} (<@${userID}>) wants to craft ${item.item_name}.\n` +
+        `Material cost: ${item.price}\n` +
+        `You will need to succeed on a craft check using a tool proficiency.\n` +
+        `You may justify how your tool can be useful in crafting with rp / exposition if it is not obvious.\n` +
+        "If you have another item in progress, starting a new item will overwrite that one.",
+      components: [
+        {
+          type: MessageComponentTypes.ACTION_ROW.valueOf(),
+          components: [
+            {
+                type: MessageComponentTypes.BUTTON.valueOf(),
+                custom_id: `characterThread_${userID}_` + itemID + "_" + characterName,
+                label: "Start crafting",
+                style: ButtonStyleTypes.PRIMARY.valueOf(),
+            },
+          ],
+        },
+      ],
     });
   });
 
@@ -288,49 +278,46 @@ function downtimeChangeItem() {
  * @param {[{value: string},{value: string},{value: number}] | option[]} options 
  * @param {boolean} isBuying
  */
-function doTrade(interaction, userID, options, isBuying) {
+async function doTrade(interaction, userID, options, isBuying) {
   const itemID = parseInt(options[0].value);
   const characterName = options[1].value;
   const itemCount = options.length > 2 ? options[2].value : 1;
   
-  if(!characterExists(userID, characterName)){
+  if(!await db.characterExists(userID, characterName).then()){
     return interaction.reply(requestCharacterRegistration("doTrade", characterName, [itemID, itemCount, isBuying]));
   }
 
-  const itemQuery = getItem(itemID);
-  sqlite3Query(itemQuery, (err, rows) => {
-    const item = rows[0];
-    if(item == undefined) {
-      return interaction.reply(errorResponse('Item can not be found.\nIt may be misspelled.'));
-    }
-    if(itemCount < 1) {
-      return interaction.reply(errorResponse("Can not trade less items than 1"));
-    }
+  const item = await db.getItem(itemID).then();
+  if(!item) {
+    return interaction.reply(errorResponse('Item can not be found.\nIt may be misspelled.'));
+  }
+  if(itemCount < 1) {
+    return interaction.reply(errorResponse("Can not trade less items than 1"));
+  }
+
+  const realPrice = item.price / (isBuying ? 1 : 2);
   
-    const realPrice = item.price / (isBuying ? 1 : 2);
-    
-    const itemName = item.item_name;
-  
-    const typeName = isBuying ? 'Buy' : "Sell";
-    interaction.reply({
-      content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? currency + " (" + realPrice + currency + " each)" : currency),
-      ephemeral: true,
-      components: [
-        {
-          type: MessageComponentTypes.ACTION_ROW.valueOf(),
-          components: [
-            {
-                type: MessageComponentTypes.BUTTON.valueOf(),
-                // @ts-ignore
-                custom_id: `acceptTransactionButton_${realPrice}_${itemName}_${itemCount}_${typeName}_${characterName}`,
-                label: typeName,
-                style: ButtonStyleTypes.PRIMARY.valueOf(),
-            },
-          ],
-        },
-      ],
-    });
-  })
+  const itemName = item.item_name;
+
+  const typeName = isBuying ? 'Buy' : "Sell";
+  interaction.reply({
+    content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? currency + " (" + realPrice + currency + " each)" : currency),
+    ephemeral: true,
+    components: [
+      {
+        type: MessageComponentTypes.ACTION_ROW.valueOf(),
+        components: [
+          {
+              type: MessageComponentTypes.BUTTON.valueOf(),
+              // @ts-ignore
+              custom_id: `acceptTransactionButton_${realPrice}_${itemName}_${itemCount}_${typeName}_${characterName}`,
+              label: typeName,
+              style: ButtonStyleTypes.PRIMARY.valueOf(),
+          },
+        ],
+      },
+    ],
+  });
 }
 
 /**
@@ -338,10 +325,10 @@ function doTrade(interaction, userID, options, isBuying) {
  * @param {boolean} isRegister 
  * @param {string} characterName
  * @param {User} user 
- * @return {responseObject} JS Object for interaction.reply()
+ * @return {Promise<responseObject>} JS Object for interaction.reply()
  */
-function registration(isRegister, characterName, user) {
-  let userCharacters = getCharacters(user);
+async function registration(isRegister, characterName, user) {
+  let userCharacters = await db.getCharacters(user.id).then();
 
   if (userCharacters.length >= 11) 
     return errorResponse("You already have 10 characters.");
@@ -352,8 +339,7 @@ function registration(isRegister, characterName, user) {
     if (exists) 
       return errorResponse("You have a character with that name already.");
     
-    userCharacters.push(characterName);
-    setCharacters(user.id, userCharacters);
+    db.insertCharacter(user.id, characterName, false);
 
     return {
       content: "Character added.",
@@ -364,11 +350,8 @@ function registration(isRegister, characterName, user) {
   if (!exists) 
     return errorResponse("Please input a valid name.");
   
-  const charIndex = userCharacters.indexOf(characterName);
-
-  userCharacters.splice(charIndex, 1);
   
-  setCharacters(user.id, userCharacters);
+  db.deleteCharacter(user.id, characterName)
   return {
     content: "Character removed.",
     ephemeral: true,
@@ -377,13 +360,10 @@ function registration(isRegister, characterName, user) {
 
 /**
  * @param {User} user 
- * @return {responseObject} JS Object for interaction.reply()
+ * @return {Promise<responseObject>} JS Object for interaction.reply()
  */
-function showCharacters(user) {
-  let userCharacters = getCharacters(user);
-  
-  //remove username from list
-  userCharacters.shift();
+async function showCharacters(user) {
+  let userCharacters = await db.getCharacters(user.id).then();
   
   return {
     content: "Your characters:\n- " + userCharacters.join("\n- "),
@@ -394,14 +374,11 @@ function showCharacters(user) {
 /**
  * @param {string} currentInput 
  * @param {User} user 
- * @return {autocompleteObject[]} JS autocomplete Object for interaction.respond()
+ * @return {Promise<autocompleteObject[]>} JS autocomplete Object for interaction.respond()
  */
-function characterNamesAutoComplete(currentInput, user) {
-  let userCharacters = getCharacters(user);
-
-  //remove username from list
-  userCharacters.shift();
-
+async function characterNamesAutoComplete(currentInput, user) {
+  let userCharacters = await db.getCharacters(user.id).then();
+  
   const matchingOptions = userCharacters.filter((charName) =>
     charName.toLowerCase().startsWith(currentInput.toLowerCase())
   );
@@ -413,9 +390,6 @@ function characterNamesAutoComplete(currentInput, user) {
       value: `${charName}`}
   });
 
-  //Users can only store 10 characters, so this is never needed
-  //const result = matchingOptionsIndex.slice(0, 25);
-
   return matchingOptionsIndex;
 }
 
@@ -426,29 +400,24 @@ let cachedResults = null;
  * @param {interaction} interaction 
  * @param {string} currentInput
  */
-function itemNamesAutoComplete(interaction, currentInput) {
+async function itemNamesAutoComplete(interaction, currentInput) {
   if(currentInput.length == 0){
     if(cachedResults !== null){
       return interaction.respond(cachedResults);
     }
   }
-  const limitedItemQuery = get25ItemNamesQuery(currentInput);
-  sqlite3Query(limitedItemQuery, async (err, rows) => {
-    if (err) {
-      console.error(`SQL error:\n  Query: ${limitedItemQuery}`, err);
-      return err.message;
-    }
-    const items = rows.map((item) => {
-      return {
-        name: item.item_name,
-        value: item.id.toString()
-      };
-    });
-    interaction.respond(items);
-    if(currentInput.length == 0){
-      cachedResults = items;
-    }
+  const rows = await db.get25ItemNamesQuery(currentInput).then();
+
+  const items = rows.map((item) => {
+    return {
+      name: item.item_name,
+      value: item.id.toString()
+    };
   });
+  interaction.respond(items);
+  if(currentInput.length == 0){
+    cachedResults = items;
+  }
 }
 
 /**
@@ -613,9 +582,8 @@ function parseFullCommand(interaction) {
  * Send response with matching items
  * @param {interaction} interaction 
  * @param {User} user 
- * @return {void}
  */
-function handleAutocomplete(interaction, user) {
+async function handleAutocomplete(interaction, user) {
   const { commandName, options } = parseFullCommand(interaction);
     
   let searchType = "";
@@ -647,12 +615,13 @@ function handleAutocomplete(interaction, user) {
     //case "westmarch item-downtime change":
     //  break; 
   }
+
   // at this point, current input are the letters given to find the characters name.
   if(searchType == "item") {
     itemNamesAutoComplete(interaction, currentInput);
   }
   else if(searchType == "character") {
-    interaction.respond(characterNamesAutoComplete(currentInput, user));
+    interaction.respond(await characterNamesAutoComplete(currentInput, user).then());
   }
 }
 
@@ -661,13 +630,12 @@ function handleAutocomplete(interaction, user) {
  * @param {interaction} interaction 
  * @param {string} componentId 
  * @param {User} user 
- * @return {responseObject | null} JS Object for interaction.reply()
  */
-function handleComponentPreEvent(interaction, componentId, user) {
+async function handleComponentPreEvent(interaction, componentId, user) {
   const partsPre = componentId.split("_");
   partsPre.shift();
   
-  registration(true, partsPre[1], user);
+  await registration(true, partsPre[1], user).then();
 
   let result = null;
 
@@ -686,16 +654,14 @@ function handleComponentPreEvent(interaction, componentId, user) {
       const downtimeType = partsPre[2];
       const characterLevel = parseInt(partsPre[3]);
 
-      //getDowntime(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
       getDowntimeSQLite3(interaction, [{value: downtimeType}, {value: partsPre[1]}, {value: characterLevel}], user.id);
       break;
     default:
-      result = errorResponse("Unknown command");
+      interaction.reply(errorResponse("Unknown command"));
       break;
   }
 
   interaction.deleteReply(interaction.message);
-  return result;
 }
 
 /**
@@ -739,27 +705,17 @@ function displayItemsInRange(parts) {
 
 const rareSeperator = "$.$=$";
 
-process.on('SIGINT', () => {
-  db2.close((err) => {
-    if (err) {
-      console.error(err.message);
-    }
-    console.log('Closed the database connection.');
-    process.exit(0);
-  });
-});
-
 client.on(Events.MessageReactionAdd, (reaction_orig, user) => {
   try{
     if(reaction_orig.message.channelId !== GAME_LOG_CHANNEL)
       return;
     
-    reaction_orig.fetch().then((messageReaction) => {
+    reaction_orig.fetch().then(async (messageReaction) => {
       // @ts-ignore
       if (messageReaction.message.author.id !== process.env.APP_ID)
         return;
       const content = messageReaction.message.content || "";
-      // @ts-ignore
+      
       if(!content.split("\n")[1].includes(user.id))
         return;
       const players = messageReaction.message.mentions.users.map((player) => player).filter((player) => {
@@ -767,7 +723,7 @@ client.on(Events.MessageReactionAdd, (reaction_orig, user) => {
       });
 
       rewardPlayers.set(user.id, players);
-      user.send(makeCharacterSessionSelection(content, 0, players, messageReaction.message.id));
+      user.send(await makeCharacterSessionSelection(content, 0, players, messageReaction.message.id).then());
     })
   } catch(err) {
     console.error(err.message);
@@ -818,9 +774,8 @@ function logPrintMessage(interaction, client, userID, parts) {
  * @param {string[]} parts 
  * @param {string} userID 
  * @param {boolean} isDirectMessage 
- * @returns 
  */
-function logLoadPlayerPage(interaction, parts, userID, isDirectMessage){
+async function logLoadPlayerPage(interaction, parts, userID, isDirectMessage){
   let editMessage = null;
   if(parts.length > 2) {
     editMessage = parts[2];
@@ -830,7 +785,7 @@ function logLoadPlayerPage(interaction, parts, userID, isDirectMessage){
   const players = fetchPlayers(userID, isDirectMessage, interaction);
   if(players == null)
     return interaction.reply(errorResponse("Please re-do the command."));
-  return interaction.update(makeCharacterSessionSelection(interaction.message.content, pageNumber, players, editMessage)); //.edit(interaction.message.content, );
+  return interaction.update(await makeCharacterSessionSelection(interaction.message.content, pageNumber, players, editMessage).then()); //.edit(interaction.message.content, );
 }
 
 /**
@@ -900,9 +855,9 @@ client.on(Events.InteractionCreate,
         case "westmarch character register": 
           isTrue = true;
         case "westmarch character unregister": 
-          return interaction.reply(registration(isTrue, options[0].value, user));
+          return interaction.reply(await registration(isTrue, options[0].value, user).then());
         case "westmarch character show": 
-          return interaction.reply(showCharacters(user));
+          return interaction.reply(await showCharacters(user).then());
         case "westmarch downtime":
           getDowntimeSQLite3(interaction, options, userID); 
           //getDowntime(interaction, options, userID);
@@ -920,8 +875,8 @@ client.on(Events.InteractionCreate,
       const message = interaction.message;
 
       if(componentId.startsWith(rareSeperator)) {
-        const response = handleComponentPreEvent(interaction, componentId, user);
-        return response !== null ? interaction.reply(response) : null;
+        handleComponentPreEvent(interaction, componentId, user);
+        return;
       }
       
       const creatorID = parts[1];
@@ -937,7 +892,7 @@ client.on(Events.InteractionCreate,
             .setCustomId(interaction.customId)
             .setTitle("Notes, further info");
 
-          const data = interaction.message.content.split("\n\n**Notes**:\n\`\`\`");
+          const data = interaction.message.content.split("\n\n**Notes**:\`\`\`\n");
           let existingNotes = "";
           if(data.length > 1) {
             existingNotes = data[1].replace("\`\`\`", "");
@@ -981,28 +936,37 @@ client.on(Events.InteractionCreate,
           let proficiency = interaction.values[0];
           
           if (isTrue) { 
-            setValueDowntime(userID, characterName, CRAFTING_CATEGORY, messageID, "proficiency", proficiency)
+            /** @type {craftingDTData} */
+            const currentData = await db.getCharacterJob(userID, characterName, messageID).then();
+            currentData.profType = proficiency;
+            db.updateCharacterJob(userID, characterName, messageID, currentData);
             return interaction.reply(responseMessage("Proficiency is set to " + proficiencyNames[proficiency].toLowerCase(), true));
           }
+
           proficiency = parseInt(proficiency);
-          setValueDowntime(userID, characterName, CRAFTING_CATEGORY, messageID, "profMod", proficiency)
+          /** @type {craftingDTData} */
+          const currentData = await db.getCharacterJob(userID, characterName, messageID).then();
+          currentData.profMod = proficiency;
+          db.updateCharacterJob(userID, characterName, messageID, currentData);
           return interaction.reply(responseMessage("Proficiency level is set to " + proficiency, true));
           
         case "characterThread":
-          return interaction.reply(startCharacterDowntimeThread(message, parts, userID, interaction.message.id));
+          return interaction.reply(await startCharacterDowntimeThread(message, parts, userID, interaction.message.id).then());
         case "characterThreadFinished":
           return rollCharacterDowntimeThread(parts, userID, interaction);
         case "westmarchrewardlog":
           return westmarchRewardLogResult(parts, interaction.message.createdTimestamp, interaction);
         case "acceptTransactionButton":
-          getChannel(client, TRANSACTION_LOG_CHANNEL).then((channel) => {
-            if(!channel) {
-              interaction.reply(errorResponse(`Channel <#${TRANSACTION_LOG_CHANNEL}> (Transaction log: ${TRANSACTION_LOG_CHANNEL}) not found.`));
-              return;
-            }
-            acceptTransaction(componentId, userID, channel, interaction);
-          });
-
+          const channel = await getChannel(client, TRANSACTION_LOG_CHANNEL).then();
+          if(!channel) {
+            interaction.reply(errorResponse(`Channel <#${TRANSACTION_LOG_CHANNEL}> (Transaction log: ${TRANSACTION_LOG_CHANNEL}) not found.`));
+            return;
+          }
+          if(!(channel instanceof TextChannel)) {
+            console.error(`This channel is not a text channel.`);
+            return;
+          }
+          acceptTransaction(componentId, userID, channel, interaction);
           return;
         case "dmExplanation":
           return explainMe(interaction, client, "", user, isDirectMessage);
@@ -1027,11 +991,11 @@ client.on(Events.InteractionCreate,
           return interaction.reply(errorResponse("Please re-do the command."));
         
         for(let answer of answers) {
-          const sections = content.split("\n\n**Notes**:\n\`\`\`");
+          const sections = content.split("\n\n**Notes**:\`\`\`\n");
           const newNotes = answer.value.trim();
-          sections[1] = newNotes === "" ? "" : "\n\n**Notes**:\n\`\`\`" + newNotes + "\`\`\`";
+          sections[1] = newNotes === "" ? "" : "\n\n**Notes**:\`\`\`\n" + newNotes + "\`\`\`";
           const newContent = sections[0] + sections[1];
-          return interaction.update(makeCharacterSessionSelection(newContent, pageNumber, players, editMessage));
+          return interaction.update(await makeCharacterSessionSelection(newContent, pageNumber, players, editMessage).then());
         }
       }
     }
@@ -1053,5 +1017,5 @@ if(shouldUpdate) {
 
 const shouldCreateDB = false;
 if(shouldCreateDB) {
-  createDB(db2);
+  db.createDB();
 }

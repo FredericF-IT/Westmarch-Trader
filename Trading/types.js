@@ -94,11 +94,28 @@
  */
 
 /**
+ * @typedef {Object} craftingDTData
+ * @property {number?} profMod
+ * @property {string?} profType
+ * @property {number} itemID
+ */
+
+/**
+ * @typedef {Object} exampleDTData
+ * @property {number?} numberProperty
+ * @property {string?} stringProperty
+ */
+
+/** @typedef {craftingDTData | exampleDTData} dtData */
+
+/**
  * @typedef {Object} item
+ * @property {number} id
+ * @property {string} item_name
  * @property {number} price
  * @property {string} rarity
  * @property {number} priceTier
- * @property {number} consumableType
+ * @property {number} consumable
  */
 
 export {};

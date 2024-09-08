@@ -4730,31 +4730,11 @@ function createUpdatedData(store) {
     const consumableType = conType.get(item[0]);
     if(consumableType === undefined) {
 //      console.error(item[0] + " has no counterpart with consumable");
-      itemData.consumableType = -1; // <---- CHANGE HERE
+      itemData.consumable = -1; // <---- CHANGE HERE
     } else {
-      itemData.consumableType = consumableType;
+      itemData.consumable = consumableType;
     }
     
-    /* Rarity and price are current
-    if(itemData.rarity === "") itemData.rarity = "common";
-    // @ts-ignore
-    if(itemData.price < tierToCostLimits.get(1).min) {
-      itemData.priceTier = 0;
-    // @ts-ignore
-    } else if(itemData.price <= tierToCostLimits.get(2).min) {
-      itemData.priceTier = 1;
-    // @ts-ignore
-    } else if(itemData.price <= tierToCostLimits.get(3).min) {
-      itemData.priceTier = 2;
-    // @ts-ignore
-    } else if(itemData.price <= tierToCostLimits.get(4).min) {
-      itemData.priceTier = 3;
-    // @ts-ignore
-    } else if(itemData.price <= tierToCostLimits.get(4).max) {
-      itemData.priceTier = 4;
-    } else {
-      itemData.priceTier = 5;
-    }//*/
     newItems[items[index][0]] = itemData;
   }
 
@@ -4771,20 +4751,18 @@ function createUpdatedData(store) {
 	    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
 			"price INTEGER, " +
 			"rarity TEXT, " +
-			"consumable INTEGER, " + 
-			"price_tier INTEGER);\n" +
+			"consumable INTEGER);\n" +
 		"-- Insert the data;\n";
 
   try {
     writeDataFileRequest("./data/itemsList2.js", "export const updatedItems = " + JSON.stringify(newItems, null, "\t"));
     let outputSQL = definitionText;
     for(let item of items){
-      const entryString = 'INSERT INTO item_cost (item_name, price, rarity, consumable, price_tier) VALUES ("' +
+      const entryString = 'INSERT INTO item_cost (item_name, price, rarity, consumable) VALUES ("' +
       item[0] + '", ' +
       item[1].price + ', "' +
       item[1].rarity + '", ' +
-      item[1].consumableType + ", " +
-      item[1].priceTier + ");\n";
+      item[1].consumable + ");\n";
       outputSQL += entryString;
     }
     writeDataFileRequest("./data/insertItems2.sql", outputSQL);

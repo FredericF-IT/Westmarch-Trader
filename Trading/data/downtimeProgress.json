@@ -11,6 +11,16 @@
 		"Kelten": {
 			"crafting": {},
 			"weeklyUsed": false
+		},
+		"Sauron": {
+			"crafting": {
+				"1282411338525835335": {
+					"proficiency": null,
+					"profMod": 0,
+					"item": 191
+				}
+			},
+			"weeklyUsed": true
 		}
 	},
 	"329710676169981963": {

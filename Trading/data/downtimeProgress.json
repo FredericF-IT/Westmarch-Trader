@@ -2,7 +2,7 @@
 	"367891183344812034": {
 		"Thomson": {
 			"crafting": {},
-			"weeklyUsed": true
+			"weeklyUsed": false
 		},
 		"Kronk": {
 			"crafting": {},
@@ -10,7 +10,7 @@
 		},
 		"Kelten": {
 			"crafting": {},
-			"weeklyUsed": true
+			"weeklyUsed": false
 		}
 	},
 	"329710676169981963": {
@@ -25,10 +25,10 @@
 	},
 	"618479756404326450": {
 		"Vix": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		},
 		"Vex Thicketstalker": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		}
 	},
 	"666791057408786432": {
@@ -38,7 +38,7 @@
 	},
 	"450476712594112524": {
 		"Jorgin": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		}
 	},
 	"126157062886391808": {
@@ -61,7 +61,7 @@
 	},
 	"388707203768385547": {
 		"Zefar": {
-			"weeklyUsed": true
+			"weeklyUsed": false
 		}
 	}
 }

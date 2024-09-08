@@ -37,6 +37,7 @@ You can follow [this official guide](https://discord.com/developers/docs/quick-s
 To stop git from wanting to share your private key, use
 
 `git update-index --assume-unchanged ./Trading/.env`
+### .env Channels
 `/Trading/.env` will also need to know the channels it should send specific messages to.
 
 Using Discord Developer mode, copy the channel ID's and replace the existing ones.
@@ -49,8 +50,14 @@ Using Discord Developer mode, copy the channel ID's and replace the existing one
   The bot will offer copy/pastable summaries of transactions and downtimes, and link this channel as the target.
 - GAME_LOG_CHANNEL will be used to display the logs created using `/westmarch logbook`
 
+### Additional Settings
+In `utils.js`, you can set some extra parameters:
 
+- currency (default is `"gp"`)
+- RESET_DAY is when the downtime resets each week. 0 is sunday, 1 is monday, ...
+- RESET_HOUR is the time of the reset.
 
+  These two settings are in the local timezone of the machine running the bot.
 ## Installation (On your discord server)
 In the `Installation` tab, You should select the `applications.commands` and `bot` Scopes.
 

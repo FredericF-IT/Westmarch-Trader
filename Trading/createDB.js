@@ -1,21 +1,51 @@
 // @ts-check
 import sqlite3 from 'sqlite3';
-import { readDataFile } from './dataIO.js';
-import { tierToCostLimits, tierToFindableRarities } from '../utils.js';
-import { updateItems } from '../itemsList.js';
-import { createDowntimeSQLs } from '../downtimes.js';
+import { readDataFile } from './data/dataIO.js';
+import { errorResponse, tierToCostLimits, tierToFindableRarities } from './utils.js';
+import { updateItems } from './itemsList.js';
+import { EventEmitter, EventListener } from './Events.js';
 
 /**
- * @typedef {import("../types.js").item} item
- * @typedef {import("../types.js").dtData} dtData
+ * @typedef {import("./types.js").item} item
+ * @typedef {import("./types.js").dtData} dtData
+ * @typedef {import("./types.js").responseObject} responseObject
 */
+
+class DBLoadedEventEmitter extends EventEmitter {
+  notify(){super.notify(null);}
+}
+
+export class DBLoadedListener extends EventListener{
+  /** @param {(args: Date) => void} func */
+  constructor(func) { super(func); }
+}
+
+export class CharacterNotFoundError extends Error{
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   */
+  constructor(userID, characterName){
+    super();
+    this.characterName = characterName;
+    this.name = "CharacterNotFoundError";
+    this.message = "User "+userID+" has unregistered character and tried using it again. Check for downtime resetting by unregistering.";
+  }
+
+  /**
+   * @return {responseObject}
+   */
+  getErrorResponse(){
+    return errorResponse("Character is not in database. Please register them again to continue.\n\`\`\`/westmarch character register name:"+this.characterName+"\`\`\`");
+  }
+}
 
 export class DBIO{
   /** @type {sqlite3.Database} */
   #db;
 
-  /** @type {DBIO} */
-  static #dbInstance;
+  /** @type {DBIO | null} */
+  static #dbInstance = null;
   /** @type {boolean} */
   static #allowInstance;
 
@@ -36,6 +66,13 @@ export class DBIO{
     return this.#dbInstance;
   }
 
+  dbLoadedEmitter = new DBLoadedEventEmitter();
+
+  /** @param {DBLoadedListener} listener */
+  registerDBLoadedListener(listener){
+    this.dbLoadedEmitter.registerListener(listener);
+  }
+
   /**
    * @param {string} path 
    */
@@ -46,6 +83,7 @@ export class DBIO{
         console.error('Failed to connect to the database:', err.message);
       } else {
         console.log('Connected to the trader.db SQLite database.');
+        this.dbLoadedEmitter.notify();
       }
       //this.createCharTables();
     });
@@ -76,6 +114,40 @@ export class DBIO{
   #parseSQL(data){
     return JSON.parse(data.replace(/'/g, '"'));
   }
+
+  /**
+   * @return {Promise<string[]>}
+   */
+  async getDowntimeNames(){
+    return (await this.#sqlite3Query("SELECT name FROM downtimes;").then()).map(data => data.name);
+  }
+
+  /**
+   * @typedef {Object} downtimeData
+   * @property {string} name
+   * @property {number} id
+   */
+  /**
+   * @return {Promise<downtimeData[]>}
+   */
+  async getDowntimes() {
+    return ((await this.#sqlite3Query("SELECT id, name FROM downtimes;").then()).map(data => {
+      return {name: data.name, id: data.id-1};
+    }));
+  }
+
+  /**
+   * @return {Promise<string[]>}
+   */
+    async getDowntimeNameToTableName() {
+      const data = await this.#sqlite3Query("SELECT id, dbTableName FROM downtimes;").then();
+      /** @type {string[]} */
+      const mapper = [];
+      for (const activity of data) {
+        mapper[activity.id - 1] = activity.dbTableName;
+      }
+      return mapper;
+    }
 
   /** ITEM I/O **/
 
@@ -131,7 +203,7 @@ export class DBIO{
    */
   async characterExists(userID, characterName){
     const character = await this.#sqlite3Query(`SELECT * FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}" LIMIT 1;`).then();
-    return character.length == 1;
+    return character.length >= 1;
   }
 
   /**
@@ -214,12 +286,16 @@ export class DBIO{
   }
 
   /**
+  * @throws {CharacterNotFoundError} Will throw error if character is not in db
   * @param {string} userID 
   * @param {string} characterName 
   * @return {Promise<boolean>}
   */
   async getCharacterDowntimeActionUsed(userID, characterName) {
-    return 1 === (await this.#sqlite3Query(`SELECT used_downtime FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}" LIMIT 1;`).then())[0].used_downtime;
+    const charDT = (await this.#sqlite3Query(`SELECT used_downtime FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}" LIMIT 1;`).then());
+    if(charDT.length == 0)
+      throw new CharacterNotFoundError(userID, characterName);
+    return 1 === charDT[0].used_downtime;
   }
 
   /**
@@ -252,9 +328,55 @@ export class DBIO{
     return [tryDropOld, createDef, tryDropOldDT, createDefDT];
   }
 
+  // needs input file
+  /**createDowntimeSQLs() {
+    for(let jsTableName of Object.keys(downtimeTables)) {
+      const sqlTableName = jsNameToTableName.get(jsTableName);
+      const baseString = "-- SQLite;\n" +
+      `DROP TABLE IF EXISTS ${sqlTableName};\n` +
+      `CREATE TABLE ${sqlTableName} (` +
+        "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+        "level INTEGER NOT NULL," +
+        "roll_group INTEGER NOT NULL," +
+        "outcome TEXT NOT NULL" +
+      ");\n\n" +
+      "-- Insert the data;\n";
+  
+      const baseStringEvents = "-- SQLite;\n" +
+      `DROP TABLE IF EXISTS ${sqlTableName}_events;\n` + 
+      `CREATE TABLE ${sqlTableName}_events (` +
+        "eventID int NOT NULL, " +
+        "description TEXT NOT NULL" +
+      ");\n\n" +
+      "-- Insert the data;\n";
+  
+      let resultMain = baseString;
+      let resultEvents = baseStringEvents;
+  
+      const data = downtimeTables[jsTableName].table;
+      for (let rollGroup = 0; rollGroup < data[0].length; rollGroup++) {
+        const event = data[0][rollGroup];
+        resultEvents += `INSERT INTO ${sqlTableName}_events (eventID, description) VALUES (` +
+          rollGroup + ', "' + event +'");\n';
+        for (let level = 1; level < data.length; level++) {
+          const effect = data[level][rollGroup];
+          const entry = `INSERT INTO ${sqlTableName} (level, roll_group, outcome) VALUES (`+
+            (level + 1) + ", " +
+            rollGroup + ', "' +
+            effect + '");\n';
+  
+          resultMain += entry;
+        }
+      }
+      
+      writeDataFileRequest(`./data/${sqlTableName}.sql`, resultMain);
+      writeDataFileRequest(`./data/${sqlTableName}_events.sql`, resultEvents);
+    }
+  }*/
+
   async createDB() {
     await updateItems().then();
-    createDowntimeSQLs();
+    //this.createDowntimeSQLs();
     // These files were created above.
     // Now they will be ised to create Tables in our database.
     const files = [

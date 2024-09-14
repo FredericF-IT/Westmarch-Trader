@@ -1,6 +1,13 @@
-import { currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, GAME_LOG_CHANNEL, TRANSACTION_LOG_CHANNEL } from "./utils.js";
+import { MessageComponentTypes, ButtonStyleTypes } from "discord-interactions";
+import { TextChannel } from "discord.js";
+import { isAdmin } from "./extraUtils.js";
+import { currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, GAME_LOG_CHANNEL, getChannel, responseMessage, TRANSACTION_LOG_CHANNEL } from "./utils.js";
 import 'dotenv/config';
 
+/** 
+ * @typedef {import("discord.js").Message} Message
+ * @typedef {import("discord.js").DMChannel} DMChannel 
+*/
 
 export const explanationMessage = [
 `# The Trader Bot
@@ -84,3 +91,95 @@ explanationMessage.forEach(message => {
         throw new Error(`Message ${message.substring(0,15)} exceeds discord message length limit.`);
     }
 });
+
+/**
+ * Sends the command explanation as mutliple messages.
+ * @param {interaction} interaction
+ * @param {Client} client
+ * @param {string} channelID
+ * @param {User?} user
+ * @param {boolean} isDirectMessage
+ */
+export async function explainMe(interaction, client, channelID, user, isDirectMessage) {
+  if (!isDirectMessage && !isAdmin(interaction.member)) {
+    const response = errorResponse("You do not have permission to post this on a server.\nI can send it to you as a dm.");
+    response.components = [
+      {
+        type: MessageComponentTypes.ACTION_ROW.valueOf(),
+        components: [
+          {
+            type: MessageComponentTypes.BUTTON.valueOf(),
+            // @ts-ignore
+            custom_id: `dmExplanation`,
+            label: "Send in DM",
+            style: ButtonStyleTypes.PRIMARY.valueOf(),
+          },
+        ],
+      },
+    ];
+    return interaction.reply(response);
+  }
+
+  if (isDirectMessage) {
+    updateExplainMe(user ? user.dmChannel : null);
+  } else {
+    let channel = await getChannel(channelID).then();
+    if (!(channel instanceof TextChannel)) {
+      return interaction.reply(errorResponse("This channel is not a text channel."));
+    }
+    updateExplainMe(channel);
+  }
+  interaction.reply(responseMessage("Explanation sent", true));
+}
+
+/**
+ * Updates bots messages to the current command explanation.
+ * @param {TextChannel | DMChannel | null} channel
+ * @return {responseObject}
+ */
+async function updateExplainMe(channel) {
+  if (!channel) {
+    return errorResponse("Channel not found");
+  } 
+
+  /** @type {Map<string, Message>}*/ 
+  const messages = await channel.messages.fetch({ limit: 100 }).then();
+  const neededMessages = explanationMessage.length;
+  let j = 0;
+
+  for (let message of messages.entries()) {
+    if (message[1].author.id !== process.env.APP_ID) {
+      messages.delete(message[0]);
+    } else if (j >= neededMessages) {
+      messages.delete(message[0]);
+      message[1].delete();
+    } else {
+      j++;
+    }
+  }
+
+  const existingMessages = messages.size;
+  let updateWait = 0;
+  // sends as many new messages as needed
+  // j is the first index of text that doesnt have a message
+  for (let j = existingMessages; j < neededMessages; j++) {
+    setTimeout(() => {
+      channel.send({ content: explanationMessage[j] });
+    }, 500 * updateWait++);
+  }
+
+  // discord returns messages in reversed order.
+  // we start at the last message that was already sent and 
+  // update it with the corresponding text section
+  let i = existingMessages - 1;
+  messages.forEach(message => {
+    if (i < 0) return;
+    setTimeout((number) => {
+      if (message.content !== explanationMessage[number]) {
+        message.edit(explanationMessage[number]);
+        console.log("Updated an explanation message.");
+      }
+    }, 500 * updateWait++, i);
+    i--;
+  });
+}

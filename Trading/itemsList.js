@@ -3,7 +3,7 @@
  * @typedef {import("./types.js").item} item
  */
 
-import { DBIO } from "./data/createDB.js";
+import { DBIO } from "./createDB.js";
 import { writeDataFileRequest } from "./data/dataIO.js";
 
 /**

@@ -2,7 +2,7 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 import { EventEmitter, EventListener } from "./Events.js";
-import { DBIO } from "./data/createDB.js";
+import { DBIO } from "./createDB.js";
 
 /**
  * @typedef {import("./types.js").responseObject} responseObject
@@ -20,6 +20,16 @@ const CHARACTER_TRACKING_CHANNEL = process.env.CHARACTER_TRACKING_CHANNEL || "No
 
 const RESET_DAY = 0; // 0 = Sunday, 1 = Monday, ...
 const RESET_HOUR = 10; // 24 hour clock, time at which to reset
+
+/** @type {(null | Client)[]} */
+const client = [null];
+
+/**
+ * @param {Client} discordClient 
+ */
+export function setClient(discordClient){
+  client[0] = discordClient;
+}
 
 export const currency = "gp";
 
@@ -115,12 +125,14 @@ export function errorResponse(errorMessage) {
 }
 
 /**
- * @param {Client} client 
  * @param {string} channelID 
  * @return {Promise<Channel | null>}
  */
-export function getChannel(client, channelID){
-  return client.channels.fetch(channelID);
+export function getChannel(channelID){
+  if(client[0] == null){
+    throw new Error("Client was not set with setClient()");
+  }
+  return client[0].channels.fetch(channelID);
 }
 
 /**

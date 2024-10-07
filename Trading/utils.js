@@ -2,7 +2,7 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 import { EventEmitter, EventListener } from "./Events.js";
-import { DBIO } from "./createDB.js";
+import { DBIO, DBLoadedListener } from "./createDB.js";
 
 /**
  * @typedef {import("./types.js").responseObject} responseObject
@@ -98,7 +98,9 @@ export function updateDate(isOnStartup) {
   }
 }
 
-updateDate(true);
+db.registerDBLoadedListener(new DBLoadedListener(async () => {
+  updateDate(true);
+}));
 
 /**
  * Turn string message to replyable object

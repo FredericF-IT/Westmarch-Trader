@@ -86,6 +86,7 @@ export class DBIO{
         this.dbLoadedEmitter.notify();
       }
       //this.createCharTables();
+      this.#createMissingLists();
     });
   }
 
@@ -139,15 +140,15 @@ export class DBIO{
   /**
    * @return {Promise<string[]>}
    */
-    async getDowntimeNameToTableName() {
-      const data = await this.#sqlite3Query("SELECT id, dbTableName FROM downtimes;").then();
-      /** @type {string[]} */
-      const mapper = [];
-      for (const activity of data) {
-        mapper[activity.id - 1] = activity.dbTableName;
-      }
-      return mapper;
+  async getDowntimeNameToTableName() {
+    const data = await this.#sqlite3Query("SELECT id, dbTableName FROM downtimes;").then();
+    /** @type {string[]} */
+    const mapper = [];
+    for (const activity of data) {
+      mapper[activity.id - 1] = activity.dbTableName;
     }
+    return mapper;
+  }
 
   /** ITEM I/O **/
 
@@ -213,6 +214,7 @@ export class DBIO{
    */
   insertCharacter(userID, characterName, used_downtime) {
     this.#sqlite3Query(`INSERT INTO player_characters (discord_id, character, used_downtime) VALUES ("${userID}", "${characterName}", ${used_downtime ? "TRUE" : "FALSE"});`);
+    this.#createDowntimeList(userID, characterName);
   }
 
   /**
@@ -314,6 +316,55 @@ export class DBIO{
     `FROM ${downtimeTableName} ` +
     `INNER JOIN ${downtimeTableName}_events ON roll_group=${downtimeTableName}_events.eventID ` +
     `WHERE roll_group=${roll} AND level=${level};`).then())[0];
+  }
+
+  /**
+  * @param {string} userID 
+  * @param {string} characterName 
+  */
+  #downtimeListName(userID, characterName) {
+    return characterName.replace(/ /g, "").toLowerCase()+"_"+userID+"_dt";
+  }
+
+  async #createMissingLists() {
+    /** @type {{discord_id: string, character: string}[]} */
+    const chars = await this.#sqlite3Query("SELECT discord_id, character FROM player_characters;");
+    chars.forEach((char) => {
+      console.log(char);
+      this.#createDowntimeList(char.discord_id, char.character);
+    });
+  }
+
+  /**
+  * @param {string} userID 
+  * @param {string} characterName 
+  */
+  #createDowntimeList(userID, characterName) {
+    const createDef = `CREATE TABLE IF NOT EXISTS ${this.#downtimeListName(userID, characterName)} (downtime_id INTEGER PRIMARY KEY AUTOINCREMENT, summary TEXT NOT NULL);`;
+    console.log(createDef);
+    this.#sqlite3Query(createDef);
+  }
+
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   * @param {string} summary 
+   */
+  insertDowntimeResult(userID, characterName, summary) {
+    this.#sqlite3Query(`INSERT INTO ${this.#downtimeListName(userID, characterName)} (summary) VALUES ("${summary}");`);
+  }
+
+  /**
+   * @typedef {Object} dtListEntry
+   * @property {string} summary
+   */
+  /**
+   * @param {string} userID 
+   * @param {string} characterName
+   * @returns {Promise<dtListEntry[]>}
+   */
+  async getDowntimeList(userID, characterName) {
+    return await this.#sqlite3Query(`SELECT summary FROM ${this.#downtimeListName(userID, characterName)};`).then();
   }
 
   createCharTables(){

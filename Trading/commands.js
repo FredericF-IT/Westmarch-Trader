@@ -268,6 +268,20 @@ export class commandCreator{
           ],
         },
         {
+          type: 1,
+          name: 'downtimehistory',
+          description: "List all downtimes your character did",
+          options: [
+            {
+              type: 3,
+              name: 'character',
+              description: 'Name of your character',
+              required: true,
+              autocomplete: true,
+            },
+          ],
+        },
+        {
           name: 'character',
           type: 2,
           description: "Add or remove a character's name from the bot record",

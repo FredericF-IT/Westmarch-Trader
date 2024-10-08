@@ -52,6 +52,7 @@ export async function handleAutocomplete(interaction, user) {
   let searchType = "";
   let currentInput = "";
   switch (commandName) {
+    case "westmarch downtimehistory":
     case "westmarch character unregister":
       currentInput = options[0].value;
       searchType = "character";

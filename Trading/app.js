@@ -16,8 +16,9 @@ import { DBIO, DBLoadedListener } from './createDB.js';
 import { parseFullCommand, handleAutocomplete, handleComponentPreEvent } from './commandInteractions.js';
 import { emojiReactionLogbook, requestLogBookNotes, logLoadPlayerPage, logPrintMessage, logSelectCharacter, receiveLogBookNotes, westmarchRewardLogResult, westmarchLog } from './logbook.js';
 import { acceptTransaction, doTrade } from './transaction.js';
-import { displayItemsInRange, getItemsInRange } from './displayItems.js';
-import { getDowntimeSQLite3 } from './downtimes.js';
+import { /*displayItemsInRange,*/ getItemsInRange } from './displayItems.js';
+import { getDowntimeSQLite3, sendDowntimeCopyableAll } from './downtimes.js';
+import { MultiMessageSender } from './MultiMessageSender.js';
 
 /**
  * @typedef {import("./types.js").interaction} interaction
@@ -196,6 +197,8 @@ client.on(Events.InteractionCreate,
 
         case "westmarch downtime":
           return getDowntimeSQLite3(interaction, options, userID);
+          case "westmarch downtimehistory":
+            return sendDowntimeCopyableAll(interaction, userID, options[0].value);
         case "westmarch item-downtime craft": 
           return downtimeCraftItem(interaction, options[0].value, options[1].value, userID, options[2].value);
         case "westmarch item-downtime change": 
@@ -235,8 +238,11 @@ client.on(Events.InteractionCreate,
       
       const creatorID = parts[1];
       switch(parts[0]){
-        case "itemspage":
-          return interaction.reply(displayItemsInRange(parts));
+        case MultiMessageSender.getID():
+          return MultiMessageSender.nextPage(interaction);
+
+        //case "itemspage":
+        //  return interaction.reply(displayItemsInRange(parts));
 
         case "wmRewardPrint":
           return logPrintMessage(interaction, client, userID, parts);

@@ -3,6 +3,7 @@ import { TextChannel } from "discord.js";
 import { CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, responseMessage } from "./utils.js";
 import { CharacterNotFoundError, DBIO, DBLoadedListener } from "./createDB.js";
 import { getDX, requestCharacterRegistration } from "./extraUtils.js";
+import { MultiMessageSender } from "./MultiMessageSender.js";
 
 /**
  * @typedef {import("./types.js").option} option
@@ -75,14 +76,38 @@ async function sendDowntimeCopyable(interaction, userID, characterName, characte
     await channel.send({
       content: `<@${userID}>\nCharacter: "`+ characterName + '" (Level ' + characterLevel + ')'+'\nActivity: ' + downtimeNames[downtimeType] + '\nRoll: ' + roll.toString() + "\nEvent: " + event + "\nEffect: " + effect,
     }).then((/** @type {Message} */ message) => {
+      const summary = `${effect} (${message.url})`;
       interaction.reply(responseMessage(
         (interaction.channelId != DOWNTIME_LOG_CHANNEL ? `Result was sent to <#${DOWNTIME_LOG_CHANNEL}>\n` : "") +
         `Copy this to your character sheet in <#${CHARACTER_TRACKING_CHANNEL}>:\n` + 
-        `\`\`\`**Downtime summary**\nLink: ${message.url}\nEffect: ${effect}\`\`\``,
+        `\`\`\`**Downtime summary**\nEffect: ${summary}\`\`\``,
         true));
+      db.insertDowntimeResult(userID, characterName, "- " + summary);
       db.setCharacterDowntimeActionUsed(userID, characterName, true);
     });
   });
+}
+
+/**
+ * 
+ * @param {interaction} interaction 
+ * @param {string} userID 
+ * @param {string} characterName
+ */
+export async function sendDowntimeCopyableAll(interaction, userID, characterName) {
+  if(!await db.characterExists(userID, characterName)) {
+    return interaction.reply(errorResponse("Character does not exists."));
+  }
+  const allDTs = await db.getDowntimeList(userID, characterName).then();
+  var result = ["You can copy the following by clicking the symbol in the top right of the grey rectangle.", "\`\`\`**Downtime History**"];
+  
+  const lines = allDTs.map((dt) => {
+    return dt.summary;
+  });
+  result = result.concat(lines);
+  result.push("\`\`\`");
+
+  MultiMessageSender.sendLongMessage(result, interaction, true, "\n", "\`\`\`");
 }
 
 /**
@@ -117,10 +142,6 @@ export async function getDowntimeSQLite3(interaction, options, userID) {
   const rollGroup = Math.floor((roll - 1) / 10);
   
   const result = await db.getDowntimeResult(tableName == undefined ? "" : tableName, characterLevel, rollGroup).then(); 
-  
-  //if (!rows) {
-  //  console.error(`SQL error:\n  Query: ${query}`, err);
-  //  return err.message;
-  //}
+
   return sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, result.description, result.outcome);
 }

@@ -55,7 +55,12 @@ I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the
 
 > # Changing item properties
 > \`\`\`/westmarch item-downtime change\`\`\`
-> May not be implemented.`
+> May not be implemented.
+
+> # Downtime history
+> Did you forget to add a downtime to your log, or accidentally deleted the message containing them all?
+> You can now get a summary of all your future downtimes via
+> \`\`\`/westmarch downtimehistory character:\`\`\``
 ,
 `# For DMs:
 > - Create a logbook entry at end of session:

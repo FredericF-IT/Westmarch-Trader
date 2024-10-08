@@ -86,7 +86,7 @@ export class DBIO{
         this.dbLoadedEmitter.notify();
       }
       //this.createCharTables();
-      this.#createMissingLists();
+      //this.#createMissingLists();
     });
   }
 
@@ -330,7 +330,6 @@ export class DBIO{
     /** @type {{discord_id: string, character: string}[]} */
     const chars = await this.#sqlite3Query("SELECT discord_id, character FROM player_characters;");
     chars.forEach((char) => {
-      console.log(char);
       this.#createDowntimeList(char.discord_id, char.character);
     });
   }
@@ -341,7 +340,6 @@ export class DBIO{
   */
   #createDowntimeList(userID, characterName) {
     const createDef = `CREATE TABLE IF NOT EXISTS ${this.#downtimeListName(userID, characterName)} (downtime_id INTEGER PRIMARY KEY AUTOINCREMENT, summary TEXT NOT NULL);`;
-    console.log(createDef);
     this.#sqlite3Query(createDef);
   }
 

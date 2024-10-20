@@ -40,6 +40,19 @@ export class CharacterNotFoundError extends Error{
   }
 }
 
+/**
+ * @typedef {Object} databaseTypes
+ * @property {player[]} player_characters
+ */
+
+/** 
+ * @typedef {Object} player 
+ * @property {string} discord_id
+ * @property {string} character
+ * @property {number} used_downtime represents boolean
+ * @property {number} character_id
+ */ 
+
 export class DBIO{
   /** @type {sqlite3.Database} */
   #db;
@@ -78,15 +91,14 @@ export class DBIO{
    */
   init(path) {
     /** @type {sqlite3.Database} */
-    this.#db = new sqlite3.Database(path, (err) => {
+    this.#db = new sqlite3.Database(path, async (err) => {
       if (err) {
         console.error('Failed to connect to the database:', err.message);
       } else {
         console.log('Connected to the trader.db SQLite database.');
+        await this.updateTables().then();
         this.dbLoadedEmitter.notify();
       }
-      //this.createCharTables();
-      //this.#createMissingLists();
     });
   }
 
@@ -120,7 +132,7 @@ export class DBIO{
    * @return {Promise<string[]>}
    */
   async getDowntimeNames(){
-    return (await this.#sqlite3Query("SELECT name FROM downtimes;").then()).map(data => data.name);
+    return (await this.#sqlite3Query("SELECT name FROM downtimes;", []).then()).map(data => data.name);
   }
 
   /**
@@ -132,7 +144,7 @@ export class DBIO{
    * @return {Promise<downtimeData[]>}
    */
   async getDowntimes() {
-    return ((await this.#sqlite3Query("SELECT id, name FROM downtimes;").then()).map(data => {
+    return ((await this.#sqlite3Query("SELECT id, name FROM downtimes;", []).then()).map(data => {
       return {name: data.name, id: data.id-1};
     }));
   }
@@ -141,7 +153,7 @@ export class DBIO{
    * @return {Promise<string[]>}
    */
   async getDowntimeNameToTableName() {
-    const data = await this.#sqlite3Query("SELECT id, dbTableName FROM downtimes;").then();
+    const data = await this.#sqlite3Query("SELECT id, dbTableName FROM downtimes;", []).then();
     /** @type {string[]} */
     const mapper = [];
     for (const activity of data) {
@@ -157,7 +169,7 @@ export class DBIO{
    * @return {Promise<item[]>}
    */
   async get25ItemNamesQuery(currentInput) {
-    return await this.#sqlite3Query(`SELECT item_name, id FROM item_cost WHERE item_name LIKE '%${currentInput}%' LIMIT 25;`).then();
+    return await this.#sqlite3Query(`SELECT item_name, id FROM item_cost WHERE item_name LIKE ? LIMIT 25;`, ["%"+currentInput+"%"]).then();
   }
 
   /**
@@ -165,7 +177,7 @@ export class DBIO{
    * @return {Promise<item>}
    */
   async getItem(itemID){
-    return (await this.#sqlite3Query(`SELECT * FROM item_cost WHERE id=${itemID} LIMIT 1;`).then())[0];
+    return (await this.#sqlite3Query("SELECT * FROM item_cost WHERE id=? LIMIT 1;", [itemID]).then())[0];
   }
 
   /**
@@ -174,7 +186,7 @@ export class DBIO{
    * @return {Promise<item[]>}
    */
   async filterItems(lowestPrice, highestPrice) {
-    return await this.#sqlite3Query(`SELECT * FROM item_cost WHERE ${lowestPrice}<=price AND price<=${highestPrice} ORDER BY price ASC;`).then();
+    return await this.#sqlite3Query("SELECT * FROM item_cost WHERE ?<=price AND price<=? ORDER BY price ASC;", [lowestPrice, highestPrice]).then();
   }
 
   /**
@@ -184,7 +196,7 @@ export class DBIO{
    */
   async filterItemsbyTier(priceTier, filterRarity) {
     const limits = tierToCostLimits[priceTier];
-    return await this.#sqlite3Query(`SELECT * FROM item_cost WHERE ${limits.min}<=price AND price<=${limits.max} ${filterRarity ? `AND rarity IN ("${tierToFindableRarities[priceTier].join('", "')}") ` : ""}ORDER BY price ASC;`).then();
+    return await this.#sqlite3Query("SELECT * FROM item_cost WHERE ?<=price AND price<=? " + (filterRarity ? `AND rarity IN ("${tierToFindableRarities[priceTier].join('", "')}") ` : "") + "ORDER BY price ASC;", [limits.min, limits.max]).then();
   }
 
   /** CHARACTER I/O **/
@@ -194,7 +206,7 @@ export class DBIO{
    * @return {Promise<string[]>}
    */
   async getCharacters(userID){
-    return (await this.#sqlite3Query(`SELECT character FROM player_characters WHERE discord_id="${userID}";`).then()).map((character) => character.character);
+    return (await this.#sqlite3Query("SELECT character FROM player_characters WHERE discord_id=?;", [userID]).then()).map((character) => character.character);
   }
 
   /**
@@ -203,7 +215,7 @@ export class DBIO{
    * @return {Promise<boolean>}
    */
   async characterExists(userID, characterName){
-    const character = await this.#sqlite3Query(`SELECT * FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}" LIMIT 1;`).then();
+    const character = await this.#sqlite3Query("SELECT * FROM player_characters WHERE discord_id=? AND character=? LIMIT 1;", [userID, characterName]).then();
     return character.length >= 1;
   }
 
@@ -213,8 +225,10 @@ export class DBIO{
    * @param {boolean?} used_downtime 
    */
   insertCharacter(userID, characterName, used_downtime) {
-    this.#sqlite3Query(`INSERT INTO player_characters (discord_id, character, used_downtime) VALUES ("${userID}", "${characterName}", ${used_downtime ? "TRUE" : "FALSE"});`);
-    this.#createDowntimeList(userID, characterName);
+    this.#db.serialize(async () => {
+      await this.#sqlite3Query("INSERT INTO player_characters (discord_id, character, used_downtime) VALUES (?, ?, ?);", [userID, characterName, used_downtime ? 1 : 0]).then();
+      this.#createDowntimeList(userID, characterName);
+    });
   }
 
   /**
@@ -222,7 +236,11 @@ export class DBIO{
    * @param {string} characterName 
    */
   deleteCharacter(userID, characterName) {
-    this.#sqlite3Query(`DELETE FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}";`);
+    // TODO
+    this.#db.serialize(() => {
+      this.#deleteDowntimeList(userID, characterName);
+      this.#sqlite3Query("DELETE FROM player_characters WHERE discord_id=? AND character=?;", [userID, characterName]);
+    });
   }
 
   /** DOWNTIME I/O **/
@@ -235,7 +253,7 @@ export class DBIO{
    */
   createCharacterJob(userID, characterName, job_id, job_data) {
     const stringData = this.#stringifySQL(job_data);
-    this.#sqlite3Query(`INSERT INTO downtime_record (discord_id, character, job_id, job_data) VALUES ("${userID}", "${characterName}", "${job_id}", "${stringData}");`);
+    this.#sqlite3Query("INSERT INTO downtime_record (discord_id, character, job_id, job_data) VALUES (?, ?, ?, ?);", [userID, characterName, job_id, stringData]);
   }
 
   /**
@@ -245,7 +263,7 @@ export class DBIO{
    * @return {Promise<dtData>} 
    */
   async getCharacterJob(userID, characterName, job_id) {
-    const stringData = await this.#sqlite3Query(`SELECT job_data FROM downtime_record WHERE discord_id="${userID}" AND character="${characterName}" AND job_id="${job_id}" LIMIT 1;`).then();
+    const stringData = await this.#sqlite3Query("SELECT job_data FROM downtime_record WHERE discord_id=? AND character=? AND job_id=? LIMIT 1;", [userID, characterName, job_id]).then();
     return this.#parseSQL(stringData[0].job_data);
   }
 
@@ -256,7 +274,7 @@ export class DBIO{
    * @param {dtData} job_data 
    */
   updateCharacterJob(userID, characterName, job_id, job_data) {
-    this.#sqlite3Query(`UPDATE downtime_record SET job_data="${this.#stringifySQL(job_data)}" WHERE discord_id="${userID}" AND character="${characterName}" AND job_id="${job_id}";`);
+    this.#sqlite3Query("UPDATE downtime_record SET job_data=? WHERE discord_id=? AND character=? AND job_id=?;", [this.#stringifySQL(job_data), userID, characterName, job_id]);
   }
 
   /**
@@ -265,7 +283,7 @@ export class DBIO{
    * @param {string} job_id 
    */
   deleteCharacterJob(userID, characterName, job_id) {
-    this.#sqlite3Query(`DELETE FROM downtime_record WHERE discord_id="${userID}" AND character="${characterName}" AND job_id="${job_id}";`);
+    this.#sqlite3Query("DELETE FROM downtime_record WHERE discord_id=? AND character=? AND job_id=?;", [userID, characterName, job_id]);
   }
 
   /**
@@ -274,7 +292,7 @@ export class DBIO{
    * @return {void}
    */
   setAllCharactersDowntimeActionUsed(used_downtime, condition) {
-    this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? "TRUE" : "FALSE"}${condition ? " WHERE "+condition : ""};`);
+    this.#sqlite3QueryUnparamtered(`UPDATE player_characters SET used_downtime=${used_downtime ? 1 : 0}${condition ? " WHERE "+condition : ""};`, []);
   }
 
   /**
@@ -284,7 +302,7 @@ export class DBIO{
   * @return {void}
   */
   setCharacterDowntimeActionUsed(userID, characterName, used_downtime) {
-    this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? "TRUE" : "FALSE"} WHERE discord_id="${userID}" AND character="${characterName}";`);
+    this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? 1 : 0} WHERE discord_id=? AND character=?";`, [userID, characterName]);
   }
 
   /**
@@ -294,7 +312,7 @@ export class DBIO{
   * @return {Promise<boolean>}
   */
   async getCharacterDowntimeActionUsed(userID, characterName) {
-    const charDT = (await this.#sqlite3Query(`SELECT used_downtime FROM player_characters WHERE discord_id="${userID}" AND character="${characterName}" LIMIT 1;`).then());
+    const charDT = (await this.#sqlite3Query("SELECT used_downtime FROM player_characters WHERE discord_id=? AND character=? LIMIT 1;", [userID, characterName]).then());
     if(charDT.length == 0)
       throw new CharacterNotFoundError(userID, characterName);
     return 1 === charDT[0].used_downtime;
@@ -315,20 +333,34 @@ export class DBIO{
     return (await this.#sqlite3Query("SELECT outcome, description " +
     `FROM ${downtimeTableName} ` +
     `INNER JOIN ${downtimeTableName}_events ON roll_group=${downtimeTableName}_events.eventID ` +
-    `WHERE roll_group=${roll} AND level=${level};`).then())[0];
+    `WHERE roll_group=? AND level=?;`, [roll, level]).then())[0];
   }
 
   /**
   * @param {string} userID 
   * @param {string} characterName 
+  * @return {Promise<string>}
   */
-  #downtimeListName(userID, characterName) {
-    return characterName.replace(/ /g, "").toLowerCase()+"_"+userID+"_dt";
+  async #getCharacterID(userID, characterName) {
+    const result = await this.#sqlite3Query("SELECT character_id FROM player_characters WHERE discord_id=? AND character=? LIMIT 1;", [userID, characterName]).then();
+    console.log(result);
+    return result[0].character_id;
+  }
+
+  /**
+  * @param {string} userID 
+  * @param {string} characterName 
+  * @return {Promise<string>}
+  */
+  async #downtimeListName(userID, characterName) {
+    const char_id = await this.#getCharacterID(userID, characterName).then();
+    console.log(char_id);
+    return "dt_history_" + char_id;
   }
 
   async #createMissingLists() {
     /** @type {{discord_id: string, character: string}[]} */
-    const chars = await this.#sqlite3Query("SELECT discord_id, character FROM player_characters;");
+    const chars = await this.#sqlite3Query("SELECT discord_id, character FROM player_characters;", []);
     chars.forEach((char) => {
       this.#createDowntimeList(char.discord_id, char.character);
     });
@@ -338,18 +370,27 @@ export class DBIO{
   * @param {string} userID 
   * @param {string} characterName 
   */
-  #createDowntimeList(userID, characterName) {
-    const createDef = `CREATE TABLE IF NOT EXISTS ${this.#downtimeListName(userID, characterName)} (downtime_id INTEGER PRIMARY KEY AUTOINCREMENT, summary TEXT NOT NULL);`;
-    this.#sqlite3Query(createDef);
+  async #createDowntimeList(userID, characterName) {
+    const createDef = `CREATE TABLE IF NOT EXISTS ${await this.#downtimeListName(userID, characterName).then()} (downtime_id INTEGER PRIMARY KEY AUTOINCREMENT, summary TEXT NOT NULL);`;
+    this.#sqlite3QueryUnparamtered(createDef, []);
   }
 
   /**
-   * @param {string} userID 
+  * @param {string} userID 
+  * @param {string} characterName 
+  */
+  async #deleteDowntimeList(userID, characterName) {
+    const createDef = `DROP TABLE IF EXISTS ${await this.#downtimeListName(userID, characterName).then()};`;
+    this.#sqlite3QueryUnparamtered(createDef, []);
+  }
+
+  /**
+   * @param {string} userID
    * @param {string} characterName 
    * @param {string} summary 
    */
-  insertDowntimeResult(userID, characterName, summary) {
-    this.#sqlite3Query(`INSERT INTO ${this.#downtimeListName(userID, characterName)} (summary) VALUES ("${summary}");`);
+  async insertDowntimeResult(userID, characterName, summary) {
+    this.#sqlite3QueryUnparamtered(`INSERT INTO ${await this.#downtimeListName(userID, characterName).then()} (summary) VALUES (?);`, [summary]);
   }
 
   /**
@@ -362,66 +403,62 @@ export class DBIO{
    * @returns {Promise<dtListEntry[]>}
    */
   async getDowntimeList(userID, characterName) {
-    return await this.#sqlite3Query(`SELECT summary FROM ${this.#downtimeListName(userID, characterName)};`).then();
+    return await this.#sqlite3QueryUnparamtered(`SELECT summary FROM ${await this.#downtimeListName(userID, characterName).then()};`, []).then();
   }
 
   createCharTables(){
     const tryDropOld = "DROP TABLE IF EXISTS player_characters;"
     
-    const createDef = `CREATE TABLE IF NOT EXISTS player_characters (discord_id TEXT NOT NULL, character TEXT NOT NULL, used_downtime INTEGER NOT NULL, PRIMARY KEY (discord_id, character));`;
+    const createDef = `CREATE TABLE IF NOT EXISTS player_characters (character_id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT NOT NULL, character TEXT NOT NULL, used_downtime INTEGER NOT NULL, UNIQUE (discord_id, character));`;
     
     const tryDropOldDT = "DROP TABLE IF EXISTS downtime_record;"
     
-    const createDefDT = `CREATE TABLE IF NOT EXISTS downtime_record (discord_id TEXT NOT NULL, character TEXT NOT NULL, job_id TEXT NOT NULL, job_data TEXT NOT NULL, PRIMARY KEY (discord_id, character, job_id));`;
+    const createDefDT = `CREATE TABLE IF NOT EXISTS downtime_record (character_id INTEGER PRIMARY KEY, job_id TEXT NOT NULL UNIQUE, job_data TEXT NOT NULL);`;
 
     return [tryDropOld, createDef, tryDropOldDT, createDefDT];
   }
 
-  // needs input file
-  /**createDowntimeSQLs() {
-    for(let jsTableName of Object.keys(downtimeTables)) {
-      const sqlTableName = jsNameToTableName.get(jsTableName);
-      const baseString = "-- SQLite;\n" +
-      `DROP TABLE IF EXISTS ${sqlTableName};\n` +
-      `CREATE TABLE ${sqlTableName} (` +
-        "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-        "level INTEGER NOT NULL," +
-        "roll_group INTEGER NOT NULL," +
-        "outcome TEXT NOT NULL" +
-      ");\n\n" +
-      "-- Insert the data;\n";
-  
-      const baseStringEvents = "-- SQLite;\n" +
-      `DROP TABLE IF EXISTS ${sqlTableName}_events;\n` + 
-      `CREATE TABLE ${sqlTableName}_events (` +
-        "eventID int NOT NULL, " +
-        "description TEXT NOT NULL" +
-      ");\n\n" +
-      "-- Insert the data;\n";
-  
-      let resultMain = baseString;
-      let resultEvents = baseStringEvents;
-  
-      const data = downtimeTables[jsTableName].table;
-      for (let rollGroup = 0; rollGroup < data[0].length; rollGroup++) {
-        const event = data[0][rollGroup];
-        resultEvents += `INSERT INTO ${sqlTableName}_events (eventID, description) VALUES (` +
-          rollGroup + ', "' + event +'");\n';
-        for (let level = 1; level < data.length; level++) {
-          const effect = data[level][rollGroup];
-          const entry = `INSERT INTO ${sqlTableName} (level, roll_group, outcome) VALUES (`+
-            (level + 1) + ", " +
-            rollGroup + ', "' +
-            effect + '");\n';
-  
-          resultMain += entry;
-        }
+  async updateTables() {
+
+    /** @type {Map<string, player>} */
+    const oldTables = new Map();
+    
+    const tryDropOld = "DROP TABLE IF EXISTS player_characters;"
+    const createDef = `CREATE TABLE IF NOT EXISTS player_characters (character_id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT NOT NULL, character TEXT NOT NULL, used_downtime INTEGER NOT NULL, UNIQUE (discord_id, character));`;
+    
+    const tryDropOldDT = "DROP TABLE IF EXISTS downtime_record;"
+    const createDefDT = `CREATE TABLE IF NOT EXISTS downtime_record (character_id INTEGER PRIMARY KEY, job_id TEXT NOT NULL UNIQUE, job_data TEXT NOT NULL);`;
+
+    let lines = [tryDropOld, createDef, tryDropOldDT, createDefDT];
+
+    /** @type {player[]} */
+    const oldData = await this.#sqlite3Query("SELECT * FROM player_characters;", []).then();
+    console.log(oldData);
+
+    let i = 1;
+    oldData.forEach((player) => {
+      lines.push(`INSERT INTO player_characters (character_id, discord_id, character, used_downtime) VALUES (${i}, "${player.discord_id}", "${player.character}", ${player.used_downtime});`);  
+
+      const oldTableName = player.character.replace(/ /g, "").toLowerCase()+"_"+player.discord_id+"_dt";
+      lines.push(`ALTER TABLE ${oldTableName} RENAME TO ${"dt_history_"+i};`);
+      oldTables.set(oldTableName, player);
+      i++;
+    });
+    console.log(lines);
+
+    this.#db.serialize(() => {
+      for(let line of lines) {
+        console.log(line);
+        this.#db.run(line, err => {
+          if(err != null){
+            console.error(err);
+          } else {
+            console.log("success");
+          }
+        });
       }
-      
-      writeDataFileRequest(`./data/${sqlTableName}.sql`, resultMain);
-      writeDataFileRequest(`./data/${sqlTableName}_events.sql`, resultEvents);
-    }
-  }*/
+    });
+  }
 
   async createDB() {
     await updateItems().then();
@@ -453,15 +490,43 @@ export class DBIO{
     }
   }
 
+  /** @type {Map<String, sqlite3.Statement>} */
+  #Statements = new Map();
+
   /**
    * @param {string} query
+   * @param {Object[]} args 
    * @return {Promise<Object[]>}
    */
-  async #sqlite3Query(query) {
-    const sql = query;
-    const db = this.#db;
+  async #sqlite3Query(query, args) {
+    let statement = this.#Statements.get(query);
+    if(statement == undefined) {
+      statement = this.#db.prepare(query);
+      this.#Statements.set(query, statement);
+    }
+    
     return await new Promise(function (resolve, reject) {
-      db.all(sql, [], (/** @type {Error | null} */ err, /** @type {Object[]} */ rows) => {
+      statement.all(args, (/** @type {Error | null} */ err, /** @type {Object[]} */ rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+  }
+
+  /**
+   * Only used when the query cannot be fully parametered (contains variable table or coloumn names etc)
+   * @param {string} query
+   * @param {Object[]} args 
+   * @return {Promise<Object[]>}
+   */
+  async #sqlite3QueryUnparamtered(query, args) {
+    const statement = this.#db.prepare(query);
+
+    return await new Promise(function (resolve, reject) {
+      statement.all(args, (/** @type {Error | null} */ err, /** @type {Object[]} */ rows) => {
         if (err) {
           reject(err);
         } else {

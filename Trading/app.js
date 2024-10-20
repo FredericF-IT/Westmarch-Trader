@@ -129,7 +129,7 @@ export async function registration(isRegister, characterName, user) {
     if (exists) 
       return errorResponse("You have a character with that name already.");
     
-    db.insertCharacter(user.id, characterName, false);
+    await db.insertCharacter(user.id, characterName, false).then();
 
     return {
       content: "Character added.",
@@ -141,7 +141,7 @@ export async function registration(isRegister, characterName, user) {
     return errorResponse("Please input a valid name.");
   
   
-  db.deleteCharacter(user.id, characterName)
+  await db.deleteCharacter(user.id, characterName).then();
   return {
     content: "Character removed.",
     ephemeral: true,

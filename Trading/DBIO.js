@@ -36,13 +36,14 @@ export class CharacterNotFoundError extends Error{
    * @return {responseObject}
    */
   getErrorResponse(){
-    return errorResponse("Character is not in database. Please register them again to continue.\n\`\`\`/westmarch character register name:"+this.characterName+"\`\`\`");
+    return errorResponse("Character is not in database. Deleted characters cannot be used, please (re-)create them and restart this proocess.");
   }
 }
 
 /**
  * @typedef {Object} databaseTypes
  * @property {player[]} player_characters
+ * @property {downtime_job[]} downtime_record
  */
 
 /** 
@@ -52,6 +53,13 @@ export class CharacterNotFoundError extends Error{
  * @property {number} used_downtime represents boolean
  * @property {number} character_id
  */ 
+
+/**
+ * @typedef {Object} downtime_job
+ * @property {number} character_id
+ * @property {string} job_id
+ * @property {string} job_data
+ */
 
 export class DBIO{
   /** @type {sqlite3.Database} */
@@ -96,7 +104,6 @@ export class DBIO{
         console.error('Failed to connect to the database:', err.message);
       } else {
         console.log('Connected to the trader.db SQLite database.');
-        await this.updateTables().then();
         this.dbLoadedEmitter.notify();
       }
     });
@@ -224,23 +231,19 @@ export class DBIO{
    * @param {string} characterName 
    * @param {boolean?} used_downtime 
    */
-  insertCharacter(userID, characterName, used_downtime) {
-    this.#db.serialize(async () => {
-      await this.#sqlite3Query("INSERT INTO player_characters (discord_id, character, used_downtime) VALUES (?, ?, ?);", [userID, characterName, used_downtime ? 1 : 0]).then();
-      this.#createDowntimeList(userID, characterName);
-    });
+  async insertCharacter(userID, characterName, used_downtime) {
+    await this.#sqlite3Query("INSERT INTO player_characters (discord_id, character, used_downtime) VALUES (?, ?, ?);", [userID, characterName, used_downtime ? 1 : 0]).then();
+    await this.#createDowntimeList(userID, characterName).then();
   }
 
   /**
    * @param {string} userID 
    * @param {string} characterName 
    */
-  deleteCharacter(userID, characterName) {
-    // TODO
-    this.#db.serialize(() => {
-      this.#deleteDowntimeList(userID, characterName);
-      this.#sqlite3Query("DELETE FROM player_characters WHERE discord_id=? AND character=?;", [userID, characterName]);
-    });
+  async deleteCharacter(userID, characterName) {
+      await this.#deleteDowntimeList(userID, characterName).then();
+      await this.#deleteCharacterJobsAll(userID, characterName).then();
+      await this.#sqlite3Query("DELETE FROM player_characters WHERE discord_id=? AND character=?;", [userID, characterName]).then();
   }
 
   /** DOWNTIME I/O **/
@@ -251,9 +254,10 @@ export class DBIO{
    * @param {string} job_id 
    * @param {dtData} job_data 
    */
-  createCharacterJob(userID, characterName, job_id, job_data) {
+  async createCharacterJob(userID, characterName, job_id, job_data) {
     const stringData = this.#stringifySQL(job_data);
-    this.#sqlite3Query("INSERT INTO downtime_record (discord_id, character, job_id, job_data) VALUES (?, ?, ?, ?);", [userID, characterName, job_id, stringData]);
+    const character_id = await this.#getCharacterID(userID, characterName).then();
+    this.#sqlite3Query("INSERT INTO downtime_record (character_id, job_id, job_data) VALUES (?, ?, ?);", [character_id, job_id, stringData]);
   }
 
   /**
@@ -263,7 +267,8 @@ export class DBIO{
    * @return {Promise<dtData>} 
    */
   async getCharacterJob(userID, characterName, job_id) {
-    const stringData = await this.#sqlite3Query("SELECT job_data FROM downtime_record WHERE discord_id=? AND character=? AND job_id=? LIMIT 1;", [userID, characterName, job_id]).then();
+    const character_id = await this.#getCharacterID(userID, characterName).then();
+    const stringData = await this.#sqlite3Query("SELECT job_data FROM downtime_record WHERE character_id=? AND job_id=? LIMIT 1;", [character_id, job_id]).then();
     return this.#parseSQL(stringData[0].job_data);
   }
 
@@ -273,8 +278,9 @@ export class DBIO{
    * @param {string} job_id 
    * @param {dtData} job_data 
    */
-  updateCharacterJob(userID, characterName, job_id, job_data) {
-    this.#sqlite3Query("UPDATE downtime_record SET job_data=? WHERE discord_id=? AND character=? AND job_id=?;", [this.#stringifySQL(job_data), userID, characterName, job_id]);
+  async updateCharacterJob(userID, characterName, job_id, job_data) {
+    const character_id = await this.#getCharacterID(userID, characterName).then();
+    this.#sqlite3Query("UPDATE downtime_record SET job_data=? WHERE character_id=? AND job_id=?;", [this.#stringifySQL(job_data), character_id, job_id]);
   }
 
   /**
@@ -282,8 +288,18 @@ export class DBIO{
    * @param {string} characterName 
    * @param {string} job_id 
    */
-  deleteCharacterJob(userID, characterName, job_id) {
-    this.#sqlite3Query("DELETE FROM downtime_record WHERE discord_id=? AND character=? AND job_id=?;", [userID, characterName, job_id]);
+  async deleteCharacterJob(userID, characterName, job_id) {
+    const character_id = await this.#getCharacterID(userID, characterName).then();
+    this.#sqlite3Query("DELETE FROM downtime_record WHERE character_id=? AND job_id=?;", [character_id, job_id]);
+  }
+
+  /**
+   * @param {string} userID 
+   * @param {string} characterName 
+   */
+  async #deleteCharacterJobsAll(userID, characterName) {
+    const character_id = await this.#getCharacterID(userID, characterName).then();
+    this.#sqlite3Query("DELETE FROM downtime_record WHERE character_id=?;", [character_id]);
   }
 
   /**
@@ -302,7 +318,7 @@ export class DBIO{
   * @return {void}
   */
   setCharacterDowntimeActionUsed(userID, characterName, used_downtime) {
-    this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? 1 : 0} WHERE discord_id=? AND character=?";`, [userID, characterName]);
+    this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? 1 : 0} WHERE discord_id=? AND character=?;`, [userID, characterName]);
   }
 
   /**
@@ -342,9 +358,7 @@ export class DBIO{
   * @return {Promise<string>}
   */
   async #getCharacterID(userID, characterName) {
-    const result = await this.#sqlite3Query("SELECT character_id FROM player_characters WHERE discord_id=? AND character=? LIMIT 1;", [userID, characterName]).then();
-    console.log(result);
-    return result[0].character_id;
+    return (await this.#sqlite3Query("SELECT character_id FROM player_characters WHERE discord_id=? AND character=? LIMIT 1;", [userID, characterName]).then())[0].character_id;
   }
 
   /**
@@ -353,9 +367,7 @@ export class DBIO{
   * @return {Promise<string>}
   */
   async #downtimeListName(userID, characterName) {
-    const char_id = await this.#getCharacterID(userID, characterName).then();
-    console.log(char_id);
-    return "dt_history_" + char_id;
+    return "dt_history_" + (await this.#getCharacterID(userID, characterName).then());
   }
 
   async #createMissingLists() {
@@ -416,48 +428,6 @@ export class DBIO{
     const createDefDT = `CREATE TABLE IF NOT EXISTS downtime_record (character_id INTEGER PRIMARY KEY, job_id TEXT NOT NULL UNIQUE, job_data TEXT NOT NULL);`;
 
     return [tryDropOld, createDef, tryDropOldDT, createDefDT];
-  }
-
-  async updateTables() {
-
-    /** @type {Map<string, player>} */
-    const oldTables = new Map();
-    
-    const tryDropOld = "DROP TABLE IF EXISTS player_characters;"
-    const createDef = `CREATE TABLE IF NOT EXISTS player_characters (character_id INTEGER PRIMARY KEY AUTOINCREMENT, discord_id TEXT NOT NULL, character TEXT NOT NULL, used_downtime INTEGER NOT NULL, UNIQUE (discord_id, character));`;
-    
-    const tryDropOldDT = "DROP TABLE IF EXISTS downtime_record;"
-    const createDefDT = `CREATE TABLE IF NOT EXISTS downtime_record (character_id INTEGER PRIMARY KEY, job_id TEXT NOT NULL UNIQUE, job_data TEXT NOT NULL);`;
-
-    let lines = [tryDropOld, createDef, tryDropOldDT, createDefDT];
-
-    /** @type {player[]} */
-    const oldData = await this.#sqlite3Query("SELECT * FROM player_characters;", []).then();
-    console.log(oldData);
-
-    let i = 1;
-    oldData.forEach((player) => {
-      lines.push(`INSERT INTO player_characters (character_id, discord_id, character, used_downtime) VALUES (${i}, "${player.discord_id}", "${player.character}", ${player.used_downtime});`);  
-
-      const oldTableName = player.character.replace(/ /g, "").toLowerCase()+"_"+player.discord_id+"_dt";
-      lines.push(`ALTER TABLE ${oldTableName} RENAME TO ${"dt_history_"+i};`);
-      oldTables.set(oldTableName, player);
-      i++;
-    });
-    console.log(lines);
-
-    this.#db.serialize(() => {
-      for(let line of lines) {
-        console.log(line);
-        this.#db.run(line, err => {
-          if(err != null){
-            console.error(err);
-          } else {
-            console.log("success");
-          }
-        });
-      }
-    });
   }
 
   async createDB() {

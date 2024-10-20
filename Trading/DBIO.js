@@ -99,7 +99,7 @@ export class DBIO{
    */
   init(path) {
     /** @type {sqlite3.Database} */
-    this.#db = new sqlite3.Database(path, async (err) => {
+    this.#db = new sqlite3.Database(path, (err) => {
       if (err) {
         console.error('Failed to connect to the database:', err.message);
       } else {
@@ -110,6 +110,10 @@ export class DBIO{
   }
 
   close() {
+    for(const statement of this.#Statements.values()) {
+      statement.finalize();
+    }
+    this.#Statements.clear();
     this.#db.close((err) => {
       if (err) {
         console.error(err.message);
@@ -241,9 +245,9 @@ export class DBIO{
    * @param {string} characterName 
    */
   async deleteCharacter(userID, characterName) {
-      await this.#deleteDowntimeList(userID, characterName).then();
-      await this.#deleteCharacterJobsAll(userID, characterName).then();
-      await this.#sqlite3Query("DELETE FROM player_characters WHERE discord_id=? AND character=?;", [userID, characterName]).then();
+    await this.#deleteDowntimeList(userID, characterName).then();
+    await this.#deleteCharacterJobsAll(userID, characterName).then();
+    await this.#sqlite3Query("DELETE FROM player_characters WHERE discord_id=? AND character=?;", [userID, characterName]).then();
   }
 
   /** DOWNTIME I/O **/

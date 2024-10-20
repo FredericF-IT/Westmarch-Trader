@@ -12,7 +12,7 @@ import { startCharacterDowntimeThread, rollCharacterDowntimeThread, selectCrafti
 import { Client, Events, IntentsBitField, Partials, TextChannel, User } from "discord.js";
 import { commandCreator } from './commands.js';
 import { explainMe } from './explanation.js';
-import { DBIO, DBLoadedListener } from './createDB.js';
+import { DBIO, DBLoadedListener } from './DBIO.js';
 import { parseFullCommand, handleAutocomplete, handleComponentPreEvent } from './commandInteractions.js';
 import { emojiReactionLogbook, requestLogBookNotes, logLoadPlayerPage, logPrintMessage, logSelectCharacter, receiveLogBookNotes, westmarchRewardLogResult, westmarchLog } from './logbook.js';
 import { acceptTransaction, doTrade } from './transaction.js';

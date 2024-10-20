@@ -1,5 +1,5 @@
 // @ts-check
-import { DBIO } from "./createDB.js";
+import { DBIO } from "./DBIO.js";
 import { currency } from "./utils.js";
 import { MultiMessageSender } from "./MultiMessageSender.js";
 

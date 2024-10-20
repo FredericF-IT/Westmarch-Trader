@@ -1,6 +1,6 @@
 // @ts-check
 import { downtimeCraftItem, registration } from "./app.js";
-import { DBIO } from "./createDB.js";
+import { DBIO } from "./DBIO.js";
 import { getDowntimeSQLite3 } from "./downtimes.js";
 import { doTrade } from "./transaction.js";
 import { errorResponse } from "./utils.js";

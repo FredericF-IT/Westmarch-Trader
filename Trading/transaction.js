@@ -1,6 +1,6 @@
 // @ts-check
 import { ButtonStyleTypes, MessageComponentTypes } from 'discord-interactions';
-import { DBIO } from './createDB.js';
+import { DBIO } from './DBIO.js';
 import { requestCharacterRegistration } from './extraUtils.js';
 import { errorResponse, responseMessage, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, currency, getChannel } from './utils.js';
 import { TextChannel } from 'discord.js';

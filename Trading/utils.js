@@ -2,7 +2,7 @@
 import "dotenv/config";
 import fetch from "node-fetch";
 import { EventEmitter, EventListener } from "./Events.js";
-import { DBIO, DBLoadedListener } from "./createDB.js";
+import { DBIO, DBLoadedListener } from "./DBIO.js";
 
 /**
  * @typedef {import("./types.js").responseObject} responseObject

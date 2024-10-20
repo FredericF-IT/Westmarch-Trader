@@ -3,7 +3,7 @@
 import { ActionRowBuilder, ModalBuilder, TextChannel, TextInputBuilder, TextInputStyle } from "discord.js";
 import { currency, errorResponse, GAME_LOG_CHANNEL, getChannel, responseMessage } from "./utils.js";
 import { ButtonStyleTypes, MessageComponentTypes } from "discord-interactions";
-import { DBIO } from "./createDB.js";
+import { DBIO } from "./DBIO.js";
 
 /**
 * @typedef {import("./types.js").interaction} interaction

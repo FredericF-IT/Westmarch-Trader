@@ -1,7 +1,7 @@
 // @ts-check
 import 'dotenv/config';
 import { capitalize, currency } from './utils.js';
-import { DBIO } from './createDB.js';
+import { DBIO } from './DBIO.js';
 
 export class commandCreator{
   /**

@@ -1,7 +1,7 @@
 // @ts-check
 import { TextChannel } from "discord.js";
 import { CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, responseMessage } from "./utils.js";
-import { CharacterNotFoundError, DBIO, DBLoadedListener } from "./createDB.js";
+import { CharacterNotFoundError, DBIO, DBLoadedListener } from "./DBIO.js";
 import { getDX, requestCharacterRegistration } from "./extraUtils.js";
 import { MultiMessageSender } from "./MultiMessageSender.js";
 

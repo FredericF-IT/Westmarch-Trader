@@ -6,7 +6,7 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { CharacterNotFoundError, DBIO } from './createDB.js';
+import { CharacterNotFoundError, DBIO } from './DBIO.js';
 
 
 /**

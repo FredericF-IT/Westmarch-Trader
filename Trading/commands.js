@@ -1,6 +1,6 @@
 // @ts-check
 import 'dotenv/config';
-import { capitalize, currency } from './utils.js';
+import { capitalize, currency, rarity } from './utils.js';
 import { DBIO } from './DBIO.js';
 
 export class commandCreator{
@@ -30,6 +30,26 @@ export class commandCreator{
       });
     } 
     return commandChoices;
+  }
+
+
+  static createRarityChoices() {
+    return [{
+      name: rarity.common,
+      value: "0",
+    },{
+      name: rarity.uncommon,
+      value: "1",
+    },{
+      name: rarity.rare,
+      value: "2",
+    },{
+      name: rarity.very_rare,
+      value: "3",
+    },{
+      name: rarity.legendary,
+      value: "4",
+    }];
   }
 
 
@@ -98,6 +118,46 @@ export class commandCreator{
       name: 'westmarch',
       description: "The different westmarch commands",
       options: [
+        {
+          name: 'settings',
+          type: 2,
+          description: 'Commands to change settings',
+          options: [
+            {
+              type: 1,
+              name: 'additem',
+              description: "Add an item to the database",
+              options: [
+                {
+                  type: 3,
+                  name: 'name',
+                  description: 'Name of the item',
+                  required: true
+                },
+                {
+                  type: 3,
+                  name: 'rarity',
+                  description: 'Rarity of the item',
+                  required: true,
+                  choices: commandCreator.createRarityChoices(),
+                }
+              ],
+            },{
+              type: 1,
+              name: 'removeitem',
+              description: "Delete an item from the database",
+              options: [
+                {
+                  type: 3,
+                  name: 'item',
+                  description: 'Name of the item',
+                  required: true,
+                  autocomplete: true,
+                }
+              ],
+            },
+          ],
+        },
         {
           name: 'buy',
           type: 1,

@@ -11,6 +11,10 @@ import { writeDataFileRequest } from "./data/dataIO.js";
  */
 export async function updateItems() {
 	const db = DBIO.getDB();
+
+  if(!db.hasLoaded) {
+    return;
+  }
   const items = await db.filterItems(0, Number.MAX_SAFE_INTEGER).then();
 
   /** @type {Object} */

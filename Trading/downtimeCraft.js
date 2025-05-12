@@ -1,7 +1,7 @@
 // @ts-check
 import { errorResponse, responseMessage, createThread, DOWNTIME_RESET_TIME } from './utils.js';
 import { createProficiencyChoices, getProficiencies } from "./downtimes.js";
-import { getDX } from './extraUtils.js';
+import { roll1DX, RollType } from './extraUtils.js';
 import {
   MessageComponentTypes,
   ButtonStyleTypes,
@@ -158,7 +158,7 @@ export async function rollCharacterDowntimeThread(parts, userID, interaction) {
 
   const item = await db.getItem(data.itemID).then();
   const DC = 15;
-  const roll = getDX(20); 
+  const roll = roll1DX(20, RollType.neutral); 
   const success = (roll + data.profMod >= DC);
   const result = `DC: ${DC}\nResult: ${(roll + data.profMod)} (${roll}+${data.profMod}) using ${proficiencyNames[data.profType].toLowerCase()}.\n${(success ? `Successfully crafted ${item.item_name}.\nWait until a dm approves this activity.` : `Try again with your next downtime action!`)}`;
 

@@ -2,8 +2,9 @@
 import { ButtonStyleTypes, MessageComponentTypes } from 'discord-interactions';
 import { DBIO } from './DBIO.js';
 import { requestCharacterRegistration } from './extraUtils.js';
-import { errorResponse, responseMessage, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, currency, getChannel } from './utils.js';
+import { errorResponse, responseMessage, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, currency, getChannel, rarity } from './utils.js';
 import { TextChannel } from 'discord.js';
+import { rollItemPrice } from "./itemCost.js"
 
 /**
  * @typedef {import("discord.js").Message} Message
@@ -37,6 +38,9 @@ export async function acceptTransaction(componentId, userID, client, interaction
   const itemCount = parseInt(parts[3]);
   const buyOrSell = parts[4];
   const characterName = parts[5];
+  if(!await db.existsItem(itemName).then()) {
+    return interaction.reply(errorResponse("Item could not be found."));
+  }
 
   channel.send({
     content: `Approved transaction: ${characterName} (<@${userID}>) ${buyOrSell.toLowerCase()}s ${(itemCount > 1 ? `${itemCount}x ` : '')}"${itemName}" for ${itemCount * price}${currency}`,
@@ -69,14 +73,25 @@ export async function doTrade(interaction, userID, options, isBuying) {
     return interaction.reply(errorResponse('Item can not be found.\nIt may be misspelled.'));
   }
   if(itemCount < 1) {
-    return interaction.reply(errorResponse("Can not trade less items than 1"));
+    return interaction.reply(errorResponse("Cannot trade less items than 1"));
+  }
+  if(item.rarity == rarity.legendary) {
+    return interaction.reply(errorResponse("Cannot buy legendary items."));
   }
 
-  const realPrice = item.price / (isBuying ? 1 : 2);
+  let price = item.price;
+  if(price == 0) {
+    // hasn't been looked up this week, set price in db.
+    price = rollItemPrice(item);
+    await db.updateItemPrice(item, price).then();
+  }
+
+  const realPrice = isBuying ? price : price / 2;
   
   const itemName = item.item_name;
 
   const typeName = isBuying ? 'Buy' : "Sell";
+
   interaction.reply({
     content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? currency + " (" + realPrice + currency + " each)" : currency),
     ephemeral: true,

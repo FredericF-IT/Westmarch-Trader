@@ -5,9 +5,9 @@ import {
   MessageComponentTypes,
   ButtonStyleTypes,
 } from 'discord-interactions';
-import { DateListener, DOWNTIME_LOG_CHANNEL, errorResponse, getChannel, InstallGlobalCommands, registerDateListener, responseMessage, setClient } from './utils.js';
+import { DateListener, DOWNTIME_LOG_CHANNEL, errorResponse, getChannel, InstallGlobalCommands, rarityFromId, registerDateListener, responseMessage, setClient } from './utils.js';
 import './itemsList.js';
-import { requestCharacterRegistration } from './extraUtils.js';
+import { hasRole, isAdmin, requestCharacterRegistration } from './extraUtils.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, selectCraftingOption } from "./downtimeCraft.js";
 import { Client, Events, IntentsBitField, Partials, TextChannel, User } from "discord.js";
 import { commandCreator } from './commands.js';
@@ -19,6 +19,7 @@ import { acceptTransaction, doTrade } from './transaction.js';
 import { /*displayItemsInRange,*/ getItemsInRange } from './displayItems.js';
 import { getDowntimeSQLite3, sendDowntimeCopyableAll } from './downtimes.js';
 import { MultiMessageSender } from './MultiMessageSender.js';
+import { addItem, removeItem } from './settings.js';
 
 /**
  * @typedef {import("./types.js").interaction} interaction
@@ -172,6 +173,9 @@ client.on(Events.InteractionCreate,
   /** @param {interaction} interaction */
   async (interaction) => {
   try{
+    if(!db.hasLoaded) {
+      return interaction.reply(db.notLoadedResponse);
+    }
     const { type, id } = interaction;
     const user = interaction.user == null ? interaction.member.user : interaction.user;
     const userID = user.id;
@@ -213,6 +217,10 @@ client.on(Events.InteractionCreate,
         case "westmarch sell": 
           return doTrade(interaction, userID, options, isTrue);
         
+        case "westmarch settings additem":
+          return interaction.reply(await addItem(interaction, options).then());
+        case "westmarch settings removeitem": 
+          return interaction.reply(await removeItem(interaction, options).then());
         case "westmarch character register": 
           isTrue = true;
         case "westmarch character unregister": 

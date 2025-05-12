@@ -5,6 +5,7 @@ import { errorResponse, rarityFromId, responseMessage } from './utils.js';
 /**
 * @typedef {import("./types.js").interaction} interaction
 * @typedef {import("./types.js").option} option
+* @typedef {import("./types.js").responseObject} responseObject
 */
 
 const db = DBIO.getDB();
@@ -13,7 +14,7 @@ const db = DBIO.getDB();
  * 
  * @param {interaction} interaction 
  * @param {option[]} options 
- * @returns 
+ * @returns {Promise<responseObject>}
  */
 export async function addItem(interaction, options) {
   if(!hasRole(interaction.member, "1264672445844164669")) {
@@ -35,19 +36,19 @@ export async function addItem(interaction, options) {
  * 
  * @param {interaction} interaction 
  * @param {option[]} options 
- * @returns 
+ * @returns {Promise<responseObject>}
  */
 export async function removeItem(interaction, options) {
   if(!isAdmin(interaction.member)) {
-    return interaction.reply(errorResponse("Only admins may delete items."));
+    return errorResponse("Only admins may delete items.");
   }
 
   const itemID = parseInt(options[0].value);
   const item = await db.getItem(itemID).then();
   if(!item) {
-    return interaction.reply(errorResponse("Item could not be found."));
+    return errorResponse("Item could not be found.");
   }
 
   db.deleteItem(item.id);
-  return interaction.reply(responseMessage(`Item ${item.item_name} was deleted.`, true));
+  return responseMessage(`Item ${item.item_name} was deleted.`, true);
 }

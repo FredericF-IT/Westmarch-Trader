@@ -33,7 +33,10 @@ I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the
 > Optionally, you can buy multiple of the same item at once with the option \`amount\`
 > 
 > Before the transaction happens, the price of the item is displayed in a message (prompt). 
-> You can ignore the message, or accept the transaction by clicking the confirmation button.`
+> You can ignore the message, or accept the transaction by clicking the confirmation button.
+> 
+> Item prices are rolled using dice, each rarity has its own range. 
+> The prices are reset at the same time as the downtimes. Using the buying command will roll the new price.`
 ,
 `> # Downtimes
 > **All downtime activities are sent to <#${DOWNTIME_LOG_CHANNEL}>, no matter where you used the command.**
@@ -48,14 +51,6 @@ I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the
 >   You hone your skills, be those martial or magical.
 >   Rolling low may mean you hurt yourself or damage your weapon.
 > **You get a new downtime action every ${DOWNTIME_RESET_TIME.DAY} at ${DOWNTIME_RESET_TIME.HOUR} after you play in your first game.**
-
-> # Crafting items
-> \`\`\`/westmarch item-downtime craft item: character:\`\`\`
-> Not final.
-
-> # Changing item properties
-> \`\`\`/westmarch item-downtime change\`\`\`
-> May not be implemented.
 
 > # Downtime history
 > Did you forget to add a downtime to your log, or accidentally deleted the message containing them all?

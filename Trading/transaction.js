@@ -4,7 +4,7 @@ import { DBIO } from './DBIO.js';
 import { requestCharacterRegistration } from './extraUtils.js';
 import { errorResponse, responseMessage, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, currency, getChannel, rarity } from './utils.js';
 import { TextChannel } from 'discord.js';
-import { rollItemPrice } from "./itemCost.js"
+import { rollItemPrice, tierSellPrice } from "./itemCost.js"
 
 /**
  * @typedef {import("discord.js").Message} Message
@@ -86,13 +86,13 @@ export async function doTrade(interaction, userID, options, isBuying) {
     await db.updateItemPrice(item, price).then();
   }
 
-  const realPrice = isBuying ? price : price / 2;
+  const realPrice = isBuying ? price : tierSellPrice[item.rarity];
   
   const itemName = item.item_name;
 
   const typeName = isBuying ? 'Buy' : "Sell";
 
-  interaction.reply({
+  return interaction.reply({
     content: "Character: " + characterName + '\nItem: ' + itemName + " x" + itemCount +'\nPrice: ' + (itemCount * realPrice) + (itemCount > 1 ? currency + " (" + realPrice + currency + " each)" : currency),
     ephemeral: true,
     components: [

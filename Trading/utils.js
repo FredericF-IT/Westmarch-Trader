@@ -101,7 +101,6 @@ export async function updateDate(isOnStartup) {
 
 db.registerDBLoadedListener(new DBLoadedListener(async () => {
   updateDate(true);
-  //await db.setAllItemPricesUnknown().then();
 }));
 
 /**

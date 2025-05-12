@@ -44,6 +44,24 @@ rarityGold[rarity.very_rare] = 1000;
 rarityGold[rarity.legendary] = 25000;
 
 /**
+ * Calculate selling price of magic items of a rarity, which is the lowest possible roll for each die.
+ * @param {string} rarity 
+ * @returns 
+ */
+function caclulateBasePrice(rarity) {
+    return (rarityDiceNumber[rarity] * 1 + rarityDiceBonus[rarity]) * rarityGold[rarity];
+}
+
+/** @type {Object<string, number>} */
+export const tierSellPrice = {};
+tierSellPrice[rarity.common] = caclulateBasePrice(rarity.common);
+tierSellPrice[rarity.uncommon] = caclulateBasePrice(rarity.uncommon);
+tierSellPrice[rarity.rare] = caclulateBasePrice(rarity.rare);
+tierSellPrice[rarity.very_rare] = caclulateBasePrice(rarity.very_rare);
+tierSellPrice[rarity.legendary] = caclulateBasePrice(rarity.legendary);
+
+
+/**
  * Roll price for a given item
  * @param {item} item 
  */

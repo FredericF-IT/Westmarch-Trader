@@ -1,7 +1,7 @@
 // @ts-check
 import sqlite3 from 'sqlite3';
 import { readDataFile } from './data/dataIO.js';
-import { errorResponse, tierToCostLimits, tierToRarity } from './utils.js';
+import { errorResponse, tierToCostLimits, tierToFindableRarities } from './utils.js';
 import { updateItems } from './itemsList.js';
 import { EventEmitter, EventListener } from './Events.js';
 
@@ -65,9 +65,6 @@ export class DBIO{
   /** @type {sqlite3.Database} */
   #db;
 
-  hasLoaded = false;
-  notLoadedResponse = errorResponse("Please wait until database has finished setup.");
-
   /** @type {DBIO | null} */
   static #dbInstance = null;
   /** @type {boolean} */
@@ -107,7 +104,6 @@ export class DBIO{
         console.error('Failed to connect to the database:', err.message);
       } else {
         console.log('Connected to the trader.db SQLite database.');
-        this.hasLoaded = true;
         this.dbLoadedEmitter.notify();
       }
     });
@@ -196,51 +192,6 @@ export class DBIO{
   }
 
   /**
-   * Sets an items price to the given value. HAs to be more than 0.
-   * @param {item} item 
-   * @param {number} newPrice 
-   */
-  async updateItemPrice(item, newPrice) {
-    if(newPrice <= 0) { return; }
-    item.price = newPrice;
-    this.#sqlite3Query("UPDATE item_cost SET price=? WHERE id=?;", [item.price, item.id]);
-  }
-
-  /**
-   * Creates a new item entry.
-   * @param {string} name 
-   * @param {string} rarity 
-   */
-  async addItem(name, rarity) {
-    await this.#sqlite3Query("INSERT INTO item_cost (item_name, price, rarity, consumable) VALUES (?, ?, ?, ?);", [name, 0, rarity, -1]).then();
-  }
-
-  /**
-   * Removes an item entry.
-   * @param {string} name 
-   * @returns {Promise<boolean>}
-   */
-  async existsItem(name) {
-    const item = await this.#sqlite3Query("SELECT * FROM item_cost WHERE item_name=? LIMIT 1;", [name]).then();
-    return item.length > 0;
-  }
-
-  /**
-   * Removes an item entry.
-   * @param {number} id 
-   */
-  async deleteItem(id) {
-    await this.#sqlite3Query("DELETE FROM item_cost WHERE id=?;", [id]).then();
-  }
-
-  /**
-   * Sets all item prices to 0, they will be rolled when looked up for the first time.
-   */
-  async setAllItemPricesUnknown() {
-    await this.#sqlite3QueryUnparamtered(`UPDATE item_cost SET price=0;`, []).then();
-  }
-
-  /**
    * @param {number} lowestPrice 
    * @param {number} highestPrice 
    * @return {Promise<item[]>}
@@ -250,12 +201,13 @@ export class DBIO{
   }
 
   /**
-   * @param {number} tier 
+   * @param {number} priceTier 
+   * @param {boolean} filterRarity 
    * @return {Promise<item[]>}
    */
-  async filterItemsbyTier(tier) {
-    console.log(tier);
-    return await this.#sqlite3Query(`SELECT * FROM item_cost WHERE rarity IN ("${tierToRarity[tier].join('", "')}") ORDER BY price ASC;`, []).then();
+  async filterItemsbyTier(priceTier, filterRarity) {
+    const limits = tierToCostLimits[priceTier];
+    return await this.#sqlite3Query("SELECT * FROM item_cost WHERE ?<=price AND price<=? " + (filterRarity ? `AND rarity IN ("${tierToFindableRarities[priceTier].join('", "')}") ` : "") + "ORDER BY price ASC;", [limits.min, limits.max]).then();
   }
 
   /** CHARACTER I/O **/
@@ -356,19 +308,21 @@ export class DBIO{
 
   /**
    * @param {boolean?} used_downtime 
-   * @param {string?} condition
+   * @param {string?} condition 
+   * @return {void}
    */
-  async setAllCharactersDowntimeActionUsed(used_downtime, condition) {
-    await this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? 1 : 0}${condition ? " WHERE "+condition : ""};`, []).then();
+  setAllCharactersDowntimeActionUsed(used_downtime, condition) {
+    this.#sqlite3QueryUnparamtered(`UPDATE player_characters SET used_downtime=${used_downtime ? 1 : 0}${condition ? " WHERE "+condition : ""};`, []);
   }
 
   /**
   * @param {string} userID 
   * @param {string} characterName 
   * @param {boolean?} used_downtime 
+  * @return {void}
   */
-  async setCharacterDowntimeActionUsed(userID, characterName, used_downtime) {
-    await this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? 1 : 0} WHERE discord_id=? AND character=?;`, [userID, characterName]).then();
+  setCharacterDowntimeActionUsed(userID, characterName, used_downtime) {
+    this.#sqlite3Query(`UPDATE player_characters SET used_downtime=${used_downtime ? 1 : 0} WHERE discord_id=? AND character=?;`, [userID, characterName]);
   }
 
   /**

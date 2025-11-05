@@ -1,7 +1,8 @@
 // @ts-check
 import sqlite3 from 'sqlite3';
+import * as fs from 'fs';
 import { readDataFile } from './data/dataIO.js';
-import { errorResponse, tierToCostLimits, tierToFindableRarities } from './utils.js';
+import { errorResponse, tierToCostLimits, tierToFindableRarities, rarityFromId, rollItemPrice } from './utils.js';
 import { updateItems } from './itemsList.js';
 import { EventEmitter, EventListener } from './Events.js';
 
@@ -180,7 +181,7 @@ export class DBIO{
    * @return {Promise<item[]>}
    */
   async get25ItemNamesQuery(currentInput) {
-    return await this.#sqlite3Query(`SELECT item_name, id FROM item_cost WHERE item_name LIKE ? LIMIT 25;`, ["%"+currentInput+"%"]).then();
+    return await this.#sqlite3Query(`SELECT item_name, id FROM item_cost WHERE item_name LIKE ? ORDER BY item_name LIMIT 25;`, ["%"+currentInput+"%"]).then();
   }
 
   /**
@@ -188,7 +189,17 @@ export class DBIO{
    * @return {Promise<item>}
    */
   async getItem(itemID){
-    return (await this.#sqlite3Query("SELECT * FROM item_cost WHERE id=? LIMIT 1;", [itemID]).then())[0];
+    let item = (await this.#sqlite3Query("SELECT * FROM item_cost WHERE id=? LIMIT 1;", [itemID]).then())[0];
+    if(item != null && item.price == 0){
+        //need to calculate a price and update db with new price
+        let price = rollItemPrice(item);
+        //update database with rolled price
+        const data = await this.#sqlite3QueryUnparamtered(`update item_cost set price = ? where id = ?;`, [price, item.id]);
+        //set price in item being returned
+        item.price = price;
+    }
+
+    return item;
   }
 
   /**
@@ -449,18 +460,86 @@ export class DBIO{
       "./data/insertItems2.sql"
     ];
     for(let file of files) {
-      const codeLines = readDataFile(file).split(";");
-      const cleanLines = codeLines.map(line => line.replace("\n", ""));
+		const sql = fs.readFileSync(file, 'utf8');
 
-      this.#db.serialize(() => {
-        for(let lineClean of cleanLines) {
-          this.#db.run(lineClean, err => {
-            if(err != null){
-              console.error(err);
-            }
-          });
-        }
-      });
+		await new Promise((resolve, reject) => {
+			this.#db.serialize(() => {
+				console.log(`Running SQL file: ${file}`);
+				this.#db.exec(sql, err => {
+					if(err){
+						console.error(`Error executing ${file}:`, err.message);
+						reject(err);
+					}else{
+						console.log(`Executed ${file} successfully`);
+						resolve();
+					}
+				});
+			});
+		});
+    }
+	
+	//delete version table if we call createDB
+    let data = await this.#sqlite3Query(`drop table if exists db_version;`, []).then();
+
+    return "DB Created";
+  }
+
+  async dbAddItem(item, rarity, price, consumable){
+    return await this.#sqlite3QueryUnparamtered(`insert into item_cost (item_name, rarity, price, consumable, rolled) values (?,?,?,?,?);`, [item, rarityFromId(rarity), price, consumable, price == 0 ? 1 : 0]).then();
+  }
+
+  async dbEditItem(itemId, rarity, price, consumable){
+    return await this.#sqlite3QueryUnparamtered(`update item_cost set rarity = ?, price = ?, consumable = ?, rolled = ? where id = ?;`, [rarityFromId(rarity), price, consumable, price == 0 ? 1 : 0, itemId]);
+  }
+  
+  async dbRemoveItem(itemId){
+    return await this.#sqlite3QueryUnparamtered(`delete from item_cost where id = ?;`, [itemId]);
+  }
+
+  async updateDB(runCreateDb){
+    const max_version = 1;
+    let data = await this.#sqlite3Query(`select exists(select 1 from sqlite_master where type = 'table' and name = 'db_version') ver_table;`, []).then();
+    let version = 0;
+    if(data[0].ver_table != 0){
+      data = await this.#sqlite3Query(`select version from db_version where id = ?;`, [0]).then();
+      version = data[0].version;
+    }
+
+    if(runCreateDb) {
+      data = await this.createDB();
+      console.log('createDB: ' + data);
+    }
+   
+    if (version < max_version){
+      console.log('Need to update db: ' + version + ' to ' + max_version);
+      let next_version = version;
+      switch(version){
+        case 0:
+          //create version table
+          console.log('Create db_versions table');
+          data = await this.#sqlite3QueryUnparamtered(`create table if not exists db_version (id INTEGER PRIMARY KEY CHECK (id = 0), version INTEGER);`, []);
+          console.log('Add initioal 0 version to the table');
+          data = await this.#sqlite3QueryUnparamtered(`insert into db_version (id, version) values (?,?) on conflict(id) do update set version = ?;`, [0, 0, 0]);
+          //add rolled column to item_cost table (let us know if the item was rolled or hard set)
+          console.log('Update item costs table with rolled column');
+          data = await this.#sqlite3QueryUnparamtered(`alter table item_cost add column rolled INTEGER DEFAULT 0;`, []);
+          
+          //update version, needed after each case
+          next_version = version + 1;
+          data = await this.#sqlite3QueryUnparamtered(`insert into db_version (id, version) values (?,?) on conflict(id) do update set version = ?;`, [0, next_version, next_version]);
+          console.log('Update db_version table verssion number');
+          break;
+        default:
+          console.log('Boggle, should not get here: ' + version);
+          return;
+      }
+    
+      console.log('Database updated to version: ' + next_version);
+
+    }else if (version > max_version){
+      console.log('Unknown db version: ' + version);
+    }else{
+      console.log('No updates required, Database version at: ' + version);
     }
   }
 

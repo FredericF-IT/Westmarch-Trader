@@ -80,3 +80,13 @@ Then open ./Trading/app.js, scroll all the way down, and set shouldUpdate to tru
 After saving the file wait a few seconds, set it back to false and save again.
 
 Now thew bot should have its commands available in your server.
+
+## Using Docker
+I included a docker file in the repo, along with a build script: `build_container.sh`
+
+The above script will create a node_sqlite_wm_bot container.
+
+You can then run that container with the following command, with the path pointing to your code.
+```docker run -d --rm --name docker_bot -v <path>/Westmarch-Trader/:/usr/src/app/bot -w /usr/src/app/bot/Trading node_sqlite_wm_bot:latest```
+
+It is the same as above, you will need to update the Trading/.env file and set the app.js file `shouldUpdate` to true along with `updateDb(true)` to do the initial db updates and push commands.  After that, they can be set to false.

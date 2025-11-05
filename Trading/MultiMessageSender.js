@@ -101,7 +101,7 @@ export class MultiMessageSender {
     const parts = interaction.customId.split("_");
     const page = parseInt(parts[1]);
     const id = parts[2];
-    console.log(parts);
+    
     const section = this.#memory.get(id);
     if(!section) {
       return interaction.reply(errorResponse("Content expired. Please retype command."));

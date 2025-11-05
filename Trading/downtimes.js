@@ -2,7 +2,7 @@
 import { TextChannel } from "discord.js";
 import { CHARACTER_TRACKING_CHANNEL, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, getChannel, responseMessage } from "./utils.js";
 import { CharacterNotFoundError, DBIO, DBLoadedListener } from "./DBIO.js";
-import { getDX, requestCharacterRegistration } from "./extraUtils.js";
+import { roll1DX, requestCharacterRegistration, RollType } from "./extraUtils.js";
 import { MultiMessageSender } from "./MultiMessageSender.js";
 
 /**
@@ -136,7 +136,7 @@ export async function getDowntimeSQLite3(interaction, options, userID) {
     return;
   }
 
-  const roll = getDX(100);
+  const roll = roll1DX(100, RollType.neutral);
   const tableName = (await db.getDowntimeNameToTableName().then())[downtimeType];
 
   const rollGroup = Math.floor((roll - 1) / 10);

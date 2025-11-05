@@ -65,6 +65,7 @@ export async function handleAutocomplete(interaction, user) {
 
     case "westmarch buy":
     case "westmarch sell":
+    case "westmarch settings removeitem":
     case "westmarch item-downtime craft":
       let i = 0;
       for (let j = 0; j < 3; j++) {

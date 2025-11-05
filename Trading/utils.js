@@ -63,7 +63,7 @@ export function registerDateListener(listener){
 /**
  * @param {boolean} isOnStartup 
  */
-export async function updateDate(isOnStartup) {
+export function updateDate(isOnStartup) {
   try{
 
     const now = new Date();
@@ -85,8 +85,7 @@ export async function updateDate(isOnStartup) {
     DOWNTIME_RESET_TIME.DAY = now.toLocaleDateString("en-us", {weekday: 'long'});
 
     if(!isOnStartup) {
-      await db.setAllCharactersDowntimeActionUsed(false, null).then();
-      await db.setAllItemPricesUnknown().then();
+      db.setAllCharactersDowntimeActionUsed(false, null);
       dateEmitter.notify(now);
     }
     console.log(`Next Downtime:${now}`);
@@ -206,39 +205,20 @@ export const tierToCostLimits = [
   { min: 5000, max: 10000 },
 ];
 
-export const rarity = {
-  common : "common",
-  uncommon : "uncommon",
-  rare : "rare",
-  very_rare : "very rare",
-  legendary : "legendary"
-}
-
-/**
- * Get rarity by its id (natural ordering)
- * @param {number} id 
- * @returns {string}
- */
-export function rarityFromId(id) {
-  switch(id) {
-    case 0:
-      return rarity.common;
-    case 1:
-      return rarity.uncommon;
-    case 2:
-      return rarity.rare;
-    case 3:
-      return rarity.very_rare;
-    case 4:
-      return rarity.legendary;
-  }
-  return "";
-}
+/** @type {string[]} */
+export const tierToUsableRarity = [
+  "", // tiers begin at 1 in this case
+  "uncommon",
+  "rare",
+  "very rare",
+  "legendrary",
+];
 
 /** @type {string[][]} */
-export const tierToRarity = [
-  [rarity.common, rarity.uncommon],
-  [rarity.common, rarity.uncommon, rarity.rare],
-  [rarity.common, rarity.uncommon, rarity.rare, rarity.very_rare],
-  [rarity.common, rarity.uncommon, rarity.rare, rarity.very_rare],
+export const tierToFindableRarities = [
+  [""], // tiers begin at 1 in this case
+  ["uncommon"],
+  ["uncommon", "rare"],
+  ["uncommon", "rare", "very rare"],
+  ["uncommon", "rare", "very rare"],
 ];

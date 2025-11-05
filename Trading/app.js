@@ -213,11 +213,11 @@ client.on(Events.InteractionCreate,
           return doTrade(interaction, userID, options, isTrue);
 	
         case "wm_dm additem":
-          return addEditItem(interaction, userID, options);
+          return addEditItem(interaction, options, true);
         case "wm_dm removeitem":
-          return removeItem(interaction, userID, options);
+          return removeItem(interaction, options);
         case "wm_dm edititem":
-          return addEditItem(interaction, userID, options);
+          return addEditItem(interaction, options, false);
         
         case "wm character register": 
           isTrue = true;
@@ -273,8 +273,8 @@ client.on(Events.InteractionCreate,
         case "acceptTransactionButton":
           return acceptTransaction(componentId, userID, client, interaction);
         
-	case "acceptItemEditsButton":
-          return acceptItemEdits(componentId, userID, client, interaction);
+	      case "acceptItemEditsButton":
+          return acceptItemEdits(componentId, userID, interaction);
 
         case "dmExplanation":
           return explainMe(interaction, client, "", user, isDirectMessage);

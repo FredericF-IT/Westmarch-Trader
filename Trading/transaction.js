@@ -1,8 +1,8 @@
 // @ts-check
 import { ButtonStyleTypes, MessageComponentTypes } from 'discord-interactions';
 import { DBIO } from './DBIO.js';
-import { requestCharacterRegistration } from './extraUtils.js';
-import { errorResponse, responseMessage, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, ITEM_ADDITION_CHANNEL, currency, getChannel, rarity, rarityFromId, tierSellPrice } from './utils.js';
+import { hasRole, isAdmin, requestCharacterRegistration } from './extraUtils.js';
+import { errorResponse, responseMessage, TRANSACTION_LOG_CHANNEL, CHARACTER_TRACKING_CHANNEL, ITEM_ADDITION_CHANNEL, currency, getChannel, rarity, rarityFromId, tierSellPrice, capitalize } from './utils.js';
 import { TextChannel } from 'discord.js';
 
 /**
@@ -108,17 +108,12 @@ export async function doTrade(interaction, userID, options, isBuying) {
   });
 }
 
-function isStringIntegerRegex(str) {
-  return /^-?\d+$/.test(str);
-}
-
 /**
  * @param {string} componentId 
  * @param {string} userID 
- * @param {Client} client 
  * @param {interaction} interaction 
  */
-export async function acceptItemEdits(componentId, userID, client, interaction) {
+export async function acceptItemEdits(componentId, userID, interaction) {
   const channel = await getChannel(ITEM_ADDITION_CHANNEL).then();
   if(!channel) {
     interaction.reply(errorResponse(`Channel <#${ITEM_ADDITION_CHANNEL}> (Transaction log: ${ITEM_ADDITION_CHANNEL}) not found.`));
@@ -128,6 +123,9 @@ export async function acceptItemEdits(componentId, userID, client, interaction) 
     console.error(`This channel is not a text channel.`);
     return;
   }
+
+  // Need to respond quickly, or discord thinks there is no response
+  interaction.reply(responseMessage(`Operation successfull.`, true));
 
   //custom_id: `acceptItemEditsButton_${typeName}_${item}_${itemId}_${rarity}_${price}_${consumable}`,
   const parts = componentId.split("_");
@@ -140,11 +138,11 @@ export async function acceptItemEdits(componentId, userID, client, interaction) 
   const price = parseFloat(parts[5]);
   const consumable = parseInt(parts[6]);
 
-  const rarityName = rarityFromId(itemRarity);
+  const rarityName = capitalize(rarityFromId(itemRarity));
   
   //need to add item to database or edit item in database
   let data;
-  let contentMsg =  `<@${userID}>\n**${tType} item:**  ${item}\n**rarity:**  ${rarityName}   **price:**  ${price}${currency}\n**consumable:**  ${consumable ? "true" : "false"}   **roll:**  ${price == 0 ? "true" : "false"}   **Not for sale:**  ${price < 0 ? "true" : "false"}`;
+  let contentMsg = `<@${userID}>\n**Action:** ${tType}\n**Item:** ${item}\n**Rarity:** ${rarityName}\n**Price:** ${price}${currency}\n**Consumable:** ${consumable ? "Yes" : "No"}\n**Roll:** ${price == 0 ? "Yes" : "No"}\n**Can be bought:** ${price < 0 || itemRarity >= 4 ? "No" : "Yes"}`;
   switch(tType){
       case "Add":
           data = await db.dbAddItem(item, itemRarity, price, consumable);
@@ -154,32 +152,37 @@ export async function acceptItemEdits(componentId, userID, client, interaction) 
           break;
       case "Remove":
           data = await db.dbRemoveItem(itemId);
-          contentMsg =  `<@${userID}> ${tType}: *item:* ${item}`;
+          contentMsg =  `<@${userID}>\n**Action:** ${tType}\n**Item:** ${item}`;
           break;
       default:
           console.log('Unknown Transaction Type: ' + tType);
           return;
   }
 
-  channel.send({
+  await channel.send({
       content: `${contentMsg}`, 
-  }).then((/** @type {Message} */ message) => {
-    interaction.reply(responseMessage(
-      `Item ${tType} ${item}\n${interaction.channelId != ITEM_ADDITION_CHANNEL ? `Log was sent to <#${ITEM_ADDITION_CHANNEL}>\n` : ""}`,
-      true));
   });
 }
 
-export async function addEditItem(interaction, userID, options){
+const dungeonMasterRole = "1264672445844164669";
+
+/**
+ * @param {interaction} interaction 
+ * @param {option[]} options 
+ * @param {boolean} isAdd 
+ */
+export async function addEditItem(interaction, options, isAdd){
+    if(interaction.member == null) {
+      return interaction.reply(errorResponse('You need to use this command in a channel of the server.'));
+    } 
+    
+    if(!hasRole(interaction.member, dungeonMasterRole)) {
+      return interaction.reply(errorResponse('You do not have the role <@&'+dungeonMasterRole+'>.'));
+    }
+
     let item = options[0].value;
     let itemId = -1;
     const itemRarity = parseInt(options[1].value);
-
-    //check if we have and id or item text
-    let isID = false;
-    if(isStringIntegerRegex(options[0].value)){
-        isID = true;
-    }
 
     let price = 0;
     let consumable = 0;
@@ -200,24 +203,32 @@ export async function addEditItem(interaction, userID, options){
     }
 
     //lookup to see if item exists
-    if(isID){
+    if(isAdd){
+      let itemLookup = await db.tryGetItem(item).then();
+      if(itemLookup != null){
+        return interaction.reply(errorResponse('Item "' + itemLookup.item_name + '" already exists. Choose a unique name.'));
+      }
+    }
+    else {
         itemId = parseInt(item);
         const lookupItem = await db.getItem(itemId).then()    
         if(!lookupItem){
-            return interaction.reply(errorResponse('Item(' + item + ') can not be found.'));
+            return interaction.reply(errorResponse('Item "' + item + '" can not be found.'));
         }else{
             item = lookupItem.item_name;
         }
     }
 
     if(rarityFromId(itemRarity) === rarity.common && price === 0){
-        return interaction.reply(errorResponse('Item(' + item + ') of rarity(' + rarityFromId(itemRarity) + ') must have set price.'));
+        return interaction.reply(errorResponse('Item "' + item + '" of rarity "' + capitalize(rarityFromId(itemRarity)) + '" must have set price.'));
     }
 
-    const typeName = isID ? 'Edit' : "Add";
+    const typeName = isAdd ? 'Add' : "Edit";
+
+    const consumableString = consumable == 1 ? "Yes" : "No";
 
     interaction.reply({
-        content: "Action: " + typeName + "\nItem: " + item + "\nrarity: " + itemRarity + "\nprice: " + price + "\nconsumable: " + consumable + "\n",
+        content: "Action: " + typeName + "\nItem: " + item + "\nRarity: " + capitalize(rarityFromId(itemRarity)) + "\nPrice: " + price + currency + "\nConsumable: " + consumableString + "\n",
       ephemeral: true,
       components: [
         {
@@ -236,26 +247,29 @@ export async function addEditItem(interaction, userID, options){
     });
 }
 
-export async function removeItem(interaction, userID, options){
-    let item = options[0].value;
-    let itemId = -1;
-
-    //check if we have and id or item text
-    let isID = false;
-    if(isStringIntegerRegex(options[0].value)){
-        isID = true;
-    }else{
-        return interaction.reply(errorResponse('Item(' + item + ') can not be found.'));
+/**
+ * @param {interaction} interaction 
+ * @param {option[]} options 
+ */
+export async function removeItem(interaction, options){
+    if(interaction.member == null) {
+      return interaction.reply(errorResponse('You need to use this command in a channel of the server.'));
+    } 
+    
+    if(!isAdmin(interaction.member)) {
+      return interaction.reply(errorResponse('Only admins can remove items from the database.'));
     }
+
+    let item = options[0].value;
 
     let itemRarity = 0;
     let price = 0;
     let consumable = 0;
 
-    itemId = parseInt(item);
-    const lookupItem = await db.getItem(itemId).then()    
+    const itemId = parseInt(item);
+    const lookupItem = await db.getItem(itemId).then();    
     if(!lookupItem){
-        return interaction.reply(errorResponse('Item(' + item + ') can not be found.'));
+        return interaction.reply(errorResponse('Item with id "' + item + '" can not be found.'));
     }else{
         item = lookupItem.item_name;
     }

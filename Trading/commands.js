@@ -53,11 +53,11 @@ export class commandCreator{
 
   static createTrueFalseChoices() {
     return [{
-      name: 'false',
-      value: '0',
-    },{
-      name: 'true',
+      name: 'Yes',
       value: '1',
+    },{
+      name: 'No',
+      value: '0',
     }];
   }
 

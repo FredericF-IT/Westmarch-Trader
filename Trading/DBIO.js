@@ -185,6 +185,18 @@ export class DBIO{
   }
 
   /**
+   * @param {string} name 
+   * @return {Promise<item?>}
+   */
+  async tryGetItem(name) {
+    let item = await this.#sqlite3Query(`SELECT * FROM item_cost WHERE item_name=? OR id=? LIMIT 1;`, [name, name]).then();
+    if(item != null) {
+      return item[0];
+    }
+    return item;
+  }
+
+  /**
    * @param {string | number} itemID 
    * @return {Promise<item>}
    */
@@ -471,7 +483,7 @@ export class DBIO{
 						reject(err);
 					}else{
 						console.log(`Executed ${file} successfully`);
-						resolve();
+						resolve(null);
 					}
 				});
 			});
@@ -485,15 +497,15 @@ export class DBIO{
   }
 
   async dbAddItem(item, rarity, price, consumable){
-    return await this.#sqlite3QueryUnparamtered(`insert into item_cost (item_name, rarity, price, consumable, rolled) values (?,?,?,?,?);`, [item, rarityFromId(rarity), price, consumable, price == 0 ? 1 : 0]).then();
+    return await this.#sqlite3Query(`insert into item_cost (item_name, rarity, price, consumable, rolled) values (?,?,?,?,?);`, [item, rarityFromId(rarity), price, consumable, price == 0 ? 1 : 0]).then();
   }
 
   async dbEditItem(itemId, rarity, price, consumable){
-    return await this.#sqlite3QueryUnparamtered(`update item_cost set rarity = ?, price = ?, consumable = ?, rolled = ? where id = ?;`, [rarityFromId(rarity), price, consumable, price == 0 ? 1 : 0, itemId]);
+    return await this.#sqlite3Query(`update item_cost set rarity = ?, price = ?, consumable = ?, rolled = ? where id = ?;`, [rarityFromId(rarity), price, consumable, price == 0 ? 1 : 0, itemId]);
   }
   
   async dbRemoveItem(itemId){
-    return await this.#sqlite3QueryUnparamtered(`delete from item_cost where id = ?;`, [itemId]);
+    return await this.#sqlite3Query(`delete from item_cost where id = ?;`, [itemId]);
   }
 
   async updateDB(runCreateDb){
@@ -506,7 +518,7 @@ export class DBIO{
     }
 
     if(runCreateDb) {
-      data = await this.createDB();
+      let data = await this.createDB();
       console.log('createDB: ' + data);
     }
    

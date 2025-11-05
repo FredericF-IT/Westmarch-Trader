@@ -1,0 +1,13 @@
+{
+  "apps": [
+    {
+      "name": "wm_bot",
+      "script": "app.js",
+      "watch": true,
+      "ignore_watch": ["data", "Trading/data" ],
+      watch_options: {
+        followSymlinks: false,
+      },
+    }
+  ]
+}

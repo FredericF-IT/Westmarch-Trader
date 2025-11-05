@@ -1,6 +1,6 @@
 // @ts-check
 import 'dotenv/config';
-import { capitalize, currency } from './utils.js';
+import { capitalize, currency, rarity } from './utils.js';
 import { DBIO } from './DBIO.js';
 
 export class commandCreator{
@@ -32,6 +32,34 @@ export class commandCreator{
     return commandChoices;
   }
 
+  static createRarityChoices() {
+    return [{
+      name: rarity.common,
+      value: "0",
+    },{
+      name: rarity.uncommon,
+      value: "1",
+    },{
+      name: rarity.rare,
+      value: "2",
+    },{
+      name: rarity.very_rare,
+      value: "3",
+    },{
+      name: rarity.legendary,
+      value: "4",
+    }];
+  }
+
+  static createTrueFalseChoices() {
+    return [{
+      name: 'false',
+      value: '0',
+    },{
+      name: 'true',
+      value: '1',
+    }];
+  }
 
   static ITEM_RANGE_COMMAND = {
     name: 'getitemsinrange',
@@ -95,7 +123,7 @@ export class commandCreator{
   static async getCommands(db){
     const WESTMARCH_COMMANDS = {
       type: 1,
-      name: 'westmarch',
+      name: 'wm',
       description: "The different westmarch commands",
       options: [
         {
@@ -323,6 +351,99 @@ export class commandCreator{
       ],
     };
 
-    return [WESTMARCH_COMMANDS, commandCreator.EXPLAIN_ME_COMMAND, commandCreator.ITEM_RANGE_COMMAND, commandCreator.ITEM_TIER_COMMAND];
+    const WESTMARCH_DM_COMMANDS = {
+      type: 1,
+      name: 'wm_dm',
+      description: "The different westmarch dm commands",
+      options: [
+        {
+          name: 'additem',
+          type: 1,
+          description: 'Add item to westmarch trader',
+	  //default_member_permissions: PermissionsBitField.Flags.KickMembers (Dungeon Maestro),
+          options: [
+            {
+              type: 3,
+              name: 'item',
+              description: 'Name of the item to add',
+              required: true,
+              autocomplete: true,
+            },
+            {
+              type: 3,
+              name: 'rarity',
+              description: 'Sets item rarity (common must have set price)',
+              required: true,
+	      choices: commandCreator.createRarityChoices(),
+            },
+            {
+              type: 4,
+              name: 'price',
+              description: 'Item Price: (not set rolls price based on rarity, < 0 not available, >= 0 hard set price)',
+              required: false,
+            },
+            {
+              type: 4,
+              name: 'consumable',
+              description: 'Sets if item is consumable',
+              required: false,
+	      choices: commandCreator.createTrueFalseChoices(),
+            },
+          ],
+        },
+        {
+          name: 'removeitem',
+          type: 1,
+          description: 'Remove item from westmarch trader',
+	  //default_member_permissions: PermissionsBitField.Flags.KickMembers (Dungeon Maestro),
+          options: [
+            {
+              type: 3,
+              name: 'item',
+              description: 'Name of the item to remove',
+              required: true,
+              autocomplete: true,
+            },
+          ],
+        },
+        {
+          name: 'edititem',
+          type: 1,
+          description: 'Edit item from westmarch trader',
+	  //default_member_permissions: PermissionsBitField.Flags.KickMembers (Dungeon Maestro),
+          options: [
+            {
+              type: 3,
+              name: 'item',
+              description: 'Name of the item to edit',
+              required: true,
+              autocomplete: true,
+            },
+            {
+              type: 3,
+              name: 'rarity',
+              description: 'Sets item rarity (common must have set price)',
+              required: true,
+	      choices: commandCreator.createRarityChoices(),
+            },
+            {
+              type: 4,
+              name: 'price',
+              description: 'Item Price: (not set rolls price based on rarity, < 0 not available, >= 0 hard set price)',
+              required: false,
+            },
+            {
+              type: 4,
+              name: 'consumable',
+              description: 'Sets if item is consumable, defaults to false',
+              required: false,
+	      choices: commandCreator.createTrueFalseChoices(),
+            },
+          ],
+        },
+      ],
+    };
+
+    return [WESTMARCH_COMMANDS, WESTMARCH_DM_COMMANDS, commandCreator.EXPLAIN_ME_COMMAND, commandCreator.ITEM_RANGE_COMMAND, commandCreator.ITEM_TIER_COMMAND];
   }
 }

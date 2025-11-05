@@ -51,22 +51,23 @@ export async function handleAutocomplete(interaction, user) {
 
   let searchType = "";
   let currentInput = "";
+  let i = 0;
   switch (commandName) {
-    case "westmarch downtimehistory":
-    case "westmarch character unregister":
+    case "wm downtimehistory":
+    case "wm character unregister":
       currentInput = options[0].value;
       searchType = "character";
       break;
 
-    case "westmarch downtime":
+    case "wm downtime":
       currentInput = options[1].value;
       searchType = "character";
       break;
 
-    case "westmarch buy":
-    case "westmarch sell":
-    case "westmarch item-downtime craft":
-      let i = 0;
+    case "wm buy":
+    case "wm sell":
+    case "wm item-downtime craft":
+      i = 0;
       for (let j = 0; j < 3; j++) {
         if (options[i].focused) break;
         i++;
@@ -76,7 +77,21 @@ export async function handleAutocomplete(interaction, user) {
       searchType = options[i].name; // is either item or character
       break;
 
-    //case "westmarch item-downtime change":
+    case "wm_dm additem":
+    case "wm_dm edititem":
+      i = 0;
+      for (let j = 0; j < 4; j++){
+        if (options[i].focused) break;
+        i++;
+      }
+      currentInput = options[i].value;
+      searchType = options[i].name;
+      break;
+    case "wm_dm removeitem":
+      currentInput = options[0].value;
+      searchType = options[0].name;
+      break;
+    //case "wm item-downtime change":
     //  break; 
   }
 

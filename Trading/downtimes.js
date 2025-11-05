@@ -140,8 +140,10 @@ export async function getDowntimeSQLite3(interaction, options, userID) {
   const tableName = (await db.getDowntimeNameToTableName().then())[downtimeType];
 
   const rollGroup = Math.floor((roll - 1) / 10);
-  
+
+  console.log('table: ' + tableName + ' rollGroup: ' + rollGroup);
   const result = await db.getDowntimeResult(tableName == undefined ? "" : tableName, characterLevel, rollGroup).then(); 
+  console.log('result: ' + result);
 
   return sendDowntimeCopyable(interaction, userID, characterName, characterLevel, downtimeType, roll, result.description, result.outcome);
 }

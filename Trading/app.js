@@ -15,7 +15,7 @@ import { explainMe } from './explanation.js';
 import { DBIO, DBLoadedListener } from './DBIO.js';
 import { parseFullCommand, handleAutocomplete, handleComponentPreEvent } from './commandInteractions.js';
 import { emojiReactionLogbook, requestLogBookNotes, logLoadPlayerPage, logPrintMessage, logSelectCharacter, receiveLogBookNotes, westmarchRewardLogResult, westmarchLog } from './logbook.js';
-import { acceptTransaction, doTrade } from './transaction.js';
+import { acceptTransaction, acceptItemEdits, doTrade, addEditItem, removeItem } from './transaction.js';
 import { /*displayItemsInRange,*/ getItemsInRange } from './displayItems.js';
 import { getDowntimeSQLite3, sendDowntimeCopyableAll } from './downtimes.js';
 import { MultiMessageSender } from './MultiMessageSender.js';
@@ -184,7 +184,6 @@ client.on(Events.InteractionCreate,
      */
     if (type === InteractionType.APPLICATION_COMMAND) {
       const { commandName, options } = parseFullCommand(interaction);
-      
       let isTrue = false; 
       switch(commandName) {
         case "explanationtrader": 
@@ -195,29 +194,36 @@ client.on(Events.InteractionCreate,
         case "getitemsinrange": 
           return getItemsInRange(interaction, options, id, isTrue);
 
-        case "westmarch downtime":
+        case "wm downtime":
           return getDowntimeSQLite3(interaction, options, userID);
-          case "westmarch downtimehistory":
+          case "wm downtimehistory":
             return sendDowntimeCopyableAll(interaction, userID, options[0].value);
-        case "westmarch item-downtime craft": 
+        case "wm item-downtime craft": 
           return downtimeCraftItem(interaction, options[0].value, options[1].value, userID, options[2].value);
-        case "westmarch item-downtime change": 
+        case "wm item-downtime change": 
           return interaction.reply(downtimeChangeItem());
         
-        case "westmarch logbook": 
+        case "wm logbook": 
           if(isDirectMessage) return interaction.reply(errorResponse("Please use this only in the server.\nYou will need to select your players."));
           return interaction.reply(westmarchLog(options, user));
         
-        case "westmarch buy": 
+        case "wm buy": 
           isTrue = true;
-        case "westmarch sell": 
+        case "wm sell": 
           return doTrade(interaction, userID, options, isTrue);
+	
+        case "wm_dm additem":
+          return addEditItem(interaction, userID, options);
+        case "wm_dm removeitem":
+          return removeItem(interaction, userID, options);
+        case "wm_dm edititem":
+          return addEditItem(interaction, userID, options);
         
-        case "westmarch character register": 
+        case "wm character register": 
           isTrue = true;
-        case "westmarch character unregister": 
+        case "wm character unregister": 
           return interaction.reply(await registration(isTrue, options[0].value, user).then());
-        case "westmarch character show": 
+        case "wm character show": 
           return interaction.reply(await showCharacters(user).then());
       }
     }
@@ -266,6 +272,9 @@ client.on(Events.InteractionCreate,
 
         case "acceptTransactionButton":
           return acceptTransaction(componentId, userID, client, interaction);
+        
+	case "acceptItemEditsButton":
+          return acceptItemEdits(componentId, userID, client, interaction);
 
         case "dmExplanation":
           return explainMe(interaction, client, "", user, isDirectMessage);
@@ -290,15 +299,14 @@ client.on(Events.InteractionCreate,
 
 client.login(process.env.DISCORD_TOKEN);
 
+  //if we messeup are connection, we need this line to atleast mess with db
+  //db.init('./data/trader_v2.db');
+
 db.registerDBLoadedListener(new DBLoadedListener(async () => {
   const shouldUpdate = false;
   if(shouldUpdate) {
     InstallGlobalCommands(process.env.APP_ID, await commandCreator.getCommands(db).then());
   }
 
-
-  const shouldCreateDB = false;
-  if(shouldCreateDB) {
-    db.createDB();
-  }
+  db.updateDB(false);
 }))

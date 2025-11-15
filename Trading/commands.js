@@ -4,6 +4,8 @@ import { capitalize, currency, rarity } from './utils.js';
 import { DBIO } from './DBIO.js';
 
 export class commandCreator{
+  static BOT_TEST = process.env.BOT_TEST || "";
+
   /**
    * @param {DBIO} db 
    * @returns 
@@ -62,7 +64,7 @@ export class commandCreator{
   }
 
   static ITEM_RANGE_COMMAND = {
-    name: 'getitemsinrange',
+    name: this.BOT_TEST + 'getitemsinrange',
     description: "Print a list of items within two " + currency + " values, according to sane's.",
     options: [
       {
@@ -96,7 +98,7 @@ export class commandCreator{
   }];
 
   static ITEM_TIER_COMMAND = {
-    name: 'getitemsbytier',
+    name: this.BOT_TEST + 'getitemsbytier',
     description: "Print a list of items that appear as random loot at a tier.",
     options: [
       {
@@ -111,7 +113,7 @@ export class commandCreator{
   };
 
   static EXPLAIN_ME_COMMAND = {
-    name: 'explanationtrader',
+    name: this.BOT_TEST + 'explanationtrader',
     description: "Get / Update the explanation of the bot. Deletes all his previous messages.",
     type: 1,
   };
@@ -123,7 +125,7 @@ export class commandCreator{
   static async getCommands(db){
     const WESTMARCH_COMMANDS = {
       type: 1,
-      name: 'wm',
+      name: this.BOT_TEST + 'wm',
       description: "The different westmarch commands",
       options: [
         {
@@ -353,7 +355,7 @@ export class commandCreator{
 
     const WESTMARCH_DM_COMMANDS = {
       type: 1,
-      name: 'wm_dm',
+      name: this.BOT_TEST + 'wm_dm',
       description: "The different westmarch dm commands",
       options: [
         {

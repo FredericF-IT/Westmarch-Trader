@@ -183,8 +183,10 @@ client.on(Events.InteractionCreate,
      * See https://discord.com/developers/docs/interactions/application-commands#slash-commands
      */
     if (type === InteractionType.APPLICATION_COMMAND) {
-      const { commandName, options } = parseFullCommand(interaction);
-      let isTrue = false; 
+      let { commandName, options } = parseFullCommand(interaction);
+      let isTrue = false;
+      const regex_test = new RegExp("^" + process.env.BOT_TEST || "");
+      commandName = commandName.replace(regex_test, "");
       switch(commandName) {
         case "explanationtrader": 
           return explainMe(interaction, client, channelID, user, isDirectMessage);
@@ -196,8 +198,8 @@ client.on(Events.InteractionCreate,
 
         case "wm downtime":
           return getDowntimeSQLite3(interaction, options, userID);
-          case "wm downtimehistory":
-            return sendDowntimeCopyableAll(interaction, userID, options[0].value);
+        case "wm downtimehistory":
+          return sendDowntimeCopyableAll(interaction, userID, options[0].value);
         case "wm item-downtime craft": 
           return downtimeCraftItem(interaction, options[0].value, options[1].value, userID, options[2].value);
         case "wm item-downtime change": 
@@ -273,7 +275,7 @@ client.on(Events.InteractionCreate,
         case "acceptTransactionButton":
           return acceptTransaction(componentId, userID, client, interaction);
         
-	      case "acceptItemEditsButton":
+        case "acceptItemEditsButton":
           return acceptItemEdits(componentId, userID, interaction);
 
         case "dmExplanation":

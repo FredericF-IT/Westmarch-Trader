@@ -47,7 +47,10 @@ export function parseFullCommand(interaction) {
  * @param {User} user
  */
 export async function handleAutocomplete(interaction, user) {
-  const { commandName, options } = parseFullCommand(interaction);
+  let { commandName, options } = parseFullCommand(interaction);
+
+  const regex_test = new RegExp("^" + process.env.BOT_TEST || "");
+  commandName = commandName.replace(regex_test, "");
 
   let searchType = "";
   let currentInput = "";

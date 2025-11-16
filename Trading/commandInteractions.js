@@ -1,14 +1,17 @@
 // @ts-check
 import { downtimeCraftItem, registration } from "./app.js";
+import { commandCreator } from "./commands.js";
 import { DBIO } from "./DBIO.js";
 import { getDowntimeSQLite3 } from "./downtimes.js";
+import { isAdmin } from "./extraUtils.js";
 import { doTrade } from "./transaction.js";
-import { errorResponse } from "./utils.js";
+import { errorResponse, InstallGlobalCommands, responseMessage } from "./utils.js";
 
 const db = DBIO.getDB();
 
 /**
  * @typedef {import("./types.js").interaction} interaction
+ * @typedef {import("./types.js").option} option
  * @typedef {import("./types.js").command} command
  * @typedef {import("./types.js").autocompleteObject} autocompleteObject
  * @typedef {import("discord.js").User} User
@@ -45,54 +48,67 @@ export function parseFullCommand(interaction) {
  * Send response with matching items
  * @param {interaction} interaction
  * @param {User} user
+ * @param {string} prefix 
  */
-export async function handleAutocomplete(interaction, user) {
+export async function handleAutocomplete(interaction, user, prefix) {
   const { commandName, options } = parseFullCommand(interaction);
+
+  const [category, ...specifics] = commandName.split(" ");
+  const remainingCommand = specifics.join(" ");
 
   let searchType = "";
   let currentInput = "";
   let i = 0;
-  switch (commandName) {
-    case "wm downtimehistory":
-    case "wm character unregister":
-      currentInput = options[0].value;
-      searchType = "character";
-      break;
 
-    case "wm downtime":
-      currentInput = options[1].value;
-      searchType = "character";
-      break;
-
-    case "wm buy":
-    case "wm sell":
-    case "wm item-downtime craft":
-      i = 0;
-      for (let j = 0; j < 3; j++) {
-        if (options[i].focused) break;
-        i++;
+  switch (category) {
+    case prefix:
+      switch (remainingCommand) {
+        case `downtimehistory`:
+        case `character unregister`:
+          currentInput = options[0].value;
+          searchType = "character";
+          break;
+    
+        case `downtime`:
+          currentInput = options[1].value;
+          searchType = "character";
+          break;
+    
+        case `buy`:
+        case `sell`:
+        case `item-downtime craft`:
+          i = 0;
+          for (let j = 0; j < 3; j++) {
+            if (options[i].focused) break;
+            i++;
+          }
+          currentInput = options[i].value;
+    
+          searchType = options[i].name; // is either item or character
+          break;
       }
-      currentInput = options[i].value;
-
-      searchType = options[i].name; // is either item or character
       break;
 
-    case "wm_dm additem":
-    case "wm_dm edititem":
-      i = 0;
-      for (let j = 0; j < 4; j++){
-        if (options[i].focused) break;
-        i++;
+    case `${prefix}_dm`:
+      switch(remainingCommand) {
+        case `additem`:
+          case `edititem`:
+            i = 0;
+            for (let j = 0; j < 4; j++){
+              if (options[i].focused) break;
+              i++;
+            }
+            currentInput = options[i].value;
+            searchType = options[i].name;
+            break;
+          case `removeitem`:
+            currentInput = options[0].value;
+            searchType = options[0].name;
+            break;
+          //case "wm item-downtime change":
+          //  break; 
       }
-      currentInput = options[i].value;
-      searchType = options[i].name;
       break;
-    case "wm_dm removeitem":
-      currentInput = options[0].value;
-      searchType = options[0].name;
-      break;
-    //case "wm item-downtime change":
-    //  break; 
   }
 
   // at this point, current input are the letters given to find the characters name.
@@ -190,3 +206,50 @@ export async function itemNamesAutoComplete(interaction, currentInput) {
   }
 }
 
+/**
+ * @param {interaction} interaction 
+ * @returns {Promise<any>}
+ */
+export async function updateCommands(interaction) {
+  if(!interaction.guildId) {
+    return interaction.reply(errorResponse('Please only use this in the server you wish to use it in.'));
+  }
+  if(!isAdmin(interaction.member)) {
+    return interaction.reply(errorResponse('You need to be an admin to use this command.'));
+  }
+  let server_id = parseInt(interaction.guildId);
+
+  InstallGlobalCommands(process.env.APP_ID, await commandCreator.getCommands(db, server_id).then());
+  return interaction.reply(responseMessage("The commands are being updated.\nYou may need to completely terminate discord and restart it to see any changes.", true));
+}
+
+/**
+ * 
+ * @param {interaction} interaction 
+ * @param {option[]} options
+ */
+export async function setCommandPrefix(interaction, options) {
+  if(!interaction.guildId) {
+    return interaction.reply(errorResponse('Please only use this in the server you wish to use it in.'));
+  }
+  if(!isAdmin(interaction.member)) {
+    return interaction.reply(errorResponse('You need to be an admin to use this command.'));
+  }
+  let server_id = parseInt(interaction.guildId);
+
+  let new_prefix = options[0].value.toLowerCase();
+  let is_valid = /^[-_'\p{L}\p{N}\p{sc=Deva}\p{sc=Thai}]{1,20}$/u.test(new_prefix);
+  if(!is_valid) {
+    return interaction.reply(errorResponse('The new prefix does not conform to discord\'s pattern. Please use at most 20 characters.'));
+  }
+  
+  console.log("Actual Prefix: "+ new_prefix);
+
+
+  let object = interaction.reply(responseMessage("Prefix is getting updated. The commands will be refreshed automatically.\nYou may need to completely terminate discord and restart it to see any changes.", true));
+  await db.setWestmarchPrefix(server_id, new_prefix);
+  await InstallGlobalCommands(process.env.APP_ID, await commandCreator.getCommands(db, server_id).then());
+  //console.log(options);
+  
+  return object;
+}

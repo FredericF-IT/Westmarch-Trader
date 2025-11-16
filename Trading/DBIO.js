@@ -5,9 +5,11 @@ import { readDataFile } from './data/dataIO.js';
 import { errorResponse, tierToCostLimits, tierToFindableRarities, rarityFromId, rollItemPrice } from './utils.js';
 import { updateItems } from './itemsList.js';
 import { EventEmitter, EventListener } from './Events.js';
+import { editServerSettings } from './app.js';
 
 /**
  * @typedef {import("./types.js").item} item
+ * @typedef {import("./types.js").server_setting_table} server_setting_table
  * @typedef {import("./types.js").dtData} dtData
  * @typedef {import("./types.js").responseObject} responseObject
 */
@@ -104,6 +106,7 @@ export class DBIO{
       if (err) {
         console.error('Failed to connect to the database:', err.message);
       } else {
+        this.makeCustomizationTable();
         console.log('Connected to the trader.db SQLite database.');
         this.dbLoadedEmitter.notify();
       }
@@ -172,6 +175,46 @@ export class DBIO{
       mapper[activity.id - 1] = activity.dbTableName;
     }
     return mapper;
+  }
+
+  /** Server Customization  **/
+
+  SERVER_SETTING_TABLE = "server_settings";
+
+  async makeCustomizationTable() {
+    await this.#sqlite3QueryUnparamtered(`CREATE TABLE IF NOT EXISTS ${this.SERVER_SETTING_TABLE} (server_id INTEGER PRIMARY KEY, command_prefix TEXT NOT NULL);`, []);
+  }
+
+  /**
+   * 
+   * @param {number} server_id 
+   * @returns {Promise<server_setting_table>}
+   */
+  async getWestmarchPrefix(server_id) {
+    let output = await this.#sqlite3Query(`SELECT * FROM ${this.SERVER_SETTING_TABLE} WHERE server_id=? LIMIT 1;`, [server_id]);
+    /** @type {server_setting_table} */
+    let prefix;
+    if(output && output.length != 0) {
+      prefix = output[0];
+    } else {
+      prefix = {server_id: server_id, command_prefix: "wm"}
+    }
+
+    console.log(`Prefix loaded: ${this.#stringifySQL(prefix)}`);
+
+    console.log(`out: ${this.#stringifySQL(output)}`);
+    return prefix;
+  }
+
+  /**
+   * 
+   * @param {number} server_id 
+   * @param {string} prefix 
+   */
+  async setWestmarchPrefix(server_id, prefix) {
+    editServerSettings(server_id, {server_id: server_id, command_prefix: prefix});
+    await this.#sqlite3Query(`INSERT INTO ${this.SERVER_SETTING_TABLE} (server_id, command_prefix) VALUES (?, ?) ` +
+    `ON CONFLICT (server_id) DO UPDATE SET command_prefix=?;`, [server_id, prefix, prefix]);
   }
 
   /** ITEM I/O **/

@@ -3,32 +3,41 @@ import { TextChannel } from "discord.js";
 import { isAdmin } from "./extraUtils.js";
 import { currency, DOWNTIME_LOG_CHANNEL, DOWNTIME_RESET_TIME, errorResponse, GAME_LOG_CHANNEL, getChannel, responseMessage, TRANSACTION_LOG_CHANNEL } from "./utils.js";
 import 'dotenv/config';
+import { getServerSettings } from "./app.js";
 
 /** 
  * @typedef {import("discord.js").Message} Message
  * @typedef {import("discord.js").DMChannel} DMChannel 
 */
 
-export const explanationMessage = [
+/**
+ * 
+ * @param {number} server_id 
+ * @returns {Promise<string[]>}
+ */
+async function getExplanationMessage(server_id) {
+  const prefix = (await getServerSettings(server_id)).command_prefix;
+
+  return [
 `# The Trader Bot
 I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the server.
 > # Register characters
 > I will need to know your characters name, so you should add them:
 > - You can register them via
-> \`\`\`/wm character register name:\`\`\`
+> \`\`\`/${prefix} character register name:\`\`\`
 > - You can remove a character using
-> \`\`\`/wm character unregister name:\`\`\`
+> \`\`\`/${prefix} character unregister name:\`\`\`
 > - You can see your registered characters via
-> \`\`\`/wm character show\`\`\`
+> \`\`\`/${prefix} character show\`\`\`
 > You can have a maximum of **ten** characters registered with the bot.
 > If a character is not registered, but is used in a command, I will automatically ask if you want to register the character.`
 ,
 `> # Buying / Selling items
 > **All transaction logs are sent to <#${TRANSACTION_LOG_CHANNEL}>, no matter where you used the command.**
 > To create a trade prompt, use
-> \`\`\`/wm buy item: character: amount:\`\`\` 
+> \`\`\`/${prefix} buy item: character: amount:\`\`\` 
 > or 
-> \`\`\`/wm sell item: character: amount:\`\`\`
+> \`\`\`/${prefix} sell item: character: amount:\`\`\`
 > I require the options \`item\` and \`character\` to know who's buying what.
 > Optionally, you can buy multiple of the same item at once with the option \`amount\`
 > 
@@ -37,7 +46,7 @@ I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the
 ,
 `> # Downtimes
 > **All downtime activities are sent to <#${DOWNTIME_LOG_CHANNEL}>, no matter where you used the command.**
-> \`\`\`/wm downtime activity: character: level:\`\`\`
+> \`\`\`/${prefix} downtime activity: character: level:\`\`\`
 > There are currently three options. More may be added later.
 > - Doing a job:
 >  You get paid for your work, but with a low dice result, you may get scammed.
@@ -50,21 +59,21 @@ I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the
 > **You get a new downtime action every ${DOWNTIME_RESET_TIME.DAY} at ${DOWNTIME_RESET_TIME.HOUR} after you play in your first game.**
 
 > # Crafting items
-> \`\`\`/wm item-downtime craft item: character:\`\`\`
+> \`\`\`/${prefix} item-downtime craft item: character:\`\`\`
 > Not final.
 
 > # Changing item properties
-> \`\`\`/wm item-downtime change\`\`\`
+> \`\`\`/${prefix} item-downtime change\`\`\`
 > May not be implemented.
 
 > # Downtime history
 > Did you forget to add a downtime to your log, or accidentally deleted the message containing them all?
 > You can now get a summary of all your future downtimes via
-> \`\`\`/wm downtimehistory character:\`\`\``
+> \`\`\`/${prefix} downtimehistory character:\`\`\``
 ,
 `# For DMs:
 > - Create a logbook entry at end of session:
-> \`\`\`/wm logbook session: tier: xp: randomitem: ${currency}:\`\`\`
+> \`\`\`/${prefix} logbook session: tier: xp: randomitem: ${currency}:\`\`\`
 > \`session\` is the name of your session.
 > \`tier\` will be the one that was advertised in your games' post, \`xp\` is the total the party earned.
 > \`randomItem\` determines if the bot should generate a random item per player.
@@ -88,14 +97,8 @@ I, <@${process.env.APP_ID}>, will help you with many westmarch activities on the
 > This returns all items of appropriate price. There may be more items than fit in a discord message, so there is a button to send the next message until all items are displayed.`
 ,
 `**Should you encounter any problems with the bot, please notify <@367891183344812034>!**`
-]
-
-explanationMessage.forEach(message => {
-    //console.log(message.length);
-    if(message.length >= 2000) {
-        throw new Error(`Message ${message.substring(0,15)} exceeds discord message length limit.`);
-    }
-});
+    ]
+}
 
 /**
  * Sends the command explanation as mutliple messages.
@@ -104,8 +107,9 @@ explanationMessage.forEach(message => {
  * @param {string} channelID
  * @param {User?} user
  * @param {boolean} isDirectMessage
+ * @param {number} server_id 
  */
-export async function explainMe(interaction, client, channelID, user, isDirectMessage) {
+export async function explainMe(interaction, client, channelID, user, isDirectMessage, server_id) {
   if (!isDirectMessage && !isAdmin(interaction.member)) {
     const response = errorResponse("You do not have permission to post this on a server.\nI can send it to you as a dm.");
     response.components = [
@@ -132,7 +136,7 @@ export async function explainMe(interaction, client, channelID, user, isDirectMe
     if (!(channel instanceof TextChannel)) {
       return interaction.reply(errorResponse("This channel is not a text channel."));
     }
-    updateExplainMe(channel);
+    updateExplainMe(channel, server_id);
   }
   interaction.reply(responseMessage("Explanation sent", true));
 }
@@ -140,12 +144,15 @@ export async function explainMe(interaction, client, channelID, user, isDirectMe
 /**
  * Updates bots messages to the current command explanation.
  * @param {TextChannel | DMChannel | null} channel
+ * @param {number} server_id 
  * @return {responseObject}
  */
-async function updateExplainMe(channel) {
+async function updateExplainMe(channel, server_id) {
+  const explanationMessage = await getExplanationMessage(server_id);
   if (!channel) {
     return errorResponse("Channel not found");
   } 
+  console.log(explanationMessage);
 
   /** @type {Map<string, Message>}*/ 
   const messages = await channel.messages.fetch({ limit: 100 }).then();

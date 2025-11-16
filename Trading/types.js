@@ -14,6 +14,12 @@
  */
 
 /**
+ * @typedef {Object} server_setting_table
+ * @property {number} server_id
+ * @property {string} command_prefix
+ */
+
+/**
  * Object type sent in interaction.reply()
  * @typedef {Object} responseObject
  * @property {string=} content

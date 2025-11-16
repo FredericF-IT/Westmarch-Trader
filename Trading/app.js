@@ -7,13 +7,13 @@ import {
 } from 'discord-interactions';
 import { DateListener, DOWNTIME_LOG_CHANNEL, errorResponse, getChannel, InstallGlobalCommands, registerDateListener, responseMessage, setClient } from './utils.js';
 import './itemsList.js';
-import { requestCharacterRegistration } from './extraUtils.js';
+import { isAdmin, requestCharacterRegistration } from './extraUtils.js';
 import { startCharacterDowntimeThread, rollCharacterDowntimeThread, selectCraftingOption } from "./downtimeCraft.js";
 import { Client, Events, IntentsBitField, Partials, TextChannel, User } from "discord.js";
 import { commandCreator } from './commands.js';
 import { explainMe } from './explanation.js';
 import { DBIO, DBLoadedListener } from './DBIO.js';
-import { parseFullCommand, handleAutocomplete, handleComponentPreEvent } from './commandInteractions.js';
+import { parseFullCommand, handleAutocomplete, handleComponentPreEvent, updateCommands, setCommandPrefix } from './commandInteractions.js';
 import { emojiReactionLogbook, requestLogBookNotes, logLoadPlayerPage, logPrintMessage, logSelectCharacter, receiveLogBookNotes, westmarchRewardLogResult, westmarchLog } from './logbook.js';
 import { acceptTransaction, acceptItemEdits, doTrade, addEditItem, removeItem } from './transaction.js';
 import { /*displayItemsInRange,*/ getItemsInRange } from './displayItems.js';
@@ -22,6 +22,7 @@ import { MultiMessageSender } from './MultiMessageSender.js';
 
 /**
  * @typedef {import("./types.js").interaction} interaction
+ * @typedef {import("./types.js").server_setting_table} server_setting_table
  * @typedef {import("./types.js").responseObject} responseObject
  */
 
@@ -167,6 +168,34 @@ client.on(Events.MessageReactionAdd, (reaction_orig, user) => {
   emojiReactionLogbook(reaction_orig, user);
 });
 
+/**
+ * @type {Object<number, server_setting_table>}
+ */
+const SERVER_PREFIXES = {};
+
+/**
+ * @param {number} server_id 
+ * @returns {Promise<server_setting_table>}
+ */
+export async function getServerSettings(server_id) {
+  let server_settings = SERVER_PREFIXES[server_id];
+
+  if(!server_settings) {
+    server_settings = (await db.getWestmarchPrefix(server_id));
+    SERVER_PREFIXES[server_id] = server_settings;
+  }
+
+  return server_settings;
+}
+
+/**
+ * @param {number} server_id 
+ * @param {server_setting_table} new_settings 
+ */
+export async function editServerSettings(server_id, new_settings) {
+  SERVER_PREFIXES[server_id] = new_settings;
+}
+
 // @ts-ignore
 client.on(Events.InteractionCreate, 
   /** @param {interaction} interaction */
@@ -177,6 +206,8 @@ client.on(Events.InteractionCreate,
     const userID = user.id;
     const channelID = interaction.channelId;
     const isDirectMessage = interaction.guildId == null;
+    const server_id = interaction.guildId == null ? 0 : parseInt(interaction.guildId);
+    const command_prefix = isDirectMessage ? "wm" : (await getServerSettings(server_id)).command_prefix;
 
     /**
      * Handle slash command requests
@@ -186,50 +217,55 @@ client.on(Events.InteractionCreate,
       const { commandName, options } = parseFullCommand(interaction);
       let isTrue = false; 
       switch(commandName) {
-        case "explanationtrader": 
-          return explainMe(interaction, client, channelID, user, isDirectMessage);
+        case `explanationtrader`: 
+          return explainMe(interaction, client, channelID, user, isDirectMessage, server_id);
 
-        case "getitemsbytier": 
+        case `getitemsbytier`: 
           isTrue = true;
-        case "getitemsinrange": 
+        case `getitemsinrange`: 
           return getItemsInRange(interaction, options, id, isTrue);
 
-        case "wm downtime":
+        case `${command_prefix} downtime`:
           return getDowntimeSQLite3(interaction, options, userID);
-          case "wm downtimehistory":
+          case `${command_prefix} downtimehistory`:
             return sendDowntimeCopyableAll(interaction, userID, options[0].value);
-        case "wm item-downtime craft": 
+        case `${command_prefix} item-downtime craft`: 
           return downtimeCraftItem(interaction, options[0].value, options[1].value, userID, options[2].value);
-        case "wm item-downtime change": 
+        case `${command_prefix} item-downtime change`: 
           return interaction.reply(downtimeChangeItem());
         
-        case "wm logbook": 
+        case `${command_prefix} logbook`: 
           if(isDirectMessage) return interaction.reply(errorResponse("Please use this only in the server.\nYou will need to select your players."));
           return interaction.reply(westmarchLog(options, user));
         
-        case "wm buy": 
+        case `${command_prefix} buy`: 
           isTrue = true;
-        case "wm sell": 
+        case `${command_prefix} sell`: 
           return doTrade(interaction, userID, options, isTrue);
-	
-        case "wm_dm additem":
-          return addEditItem(interaction, options, true);
-        case "wm_dm removeitem":
-          return removeItem(interaction, options);
-        case "wm_dm edititem":
-          return addEditItem(interaction, options, false);
         
-        case "wm character register": 
+        case `${command_prefix} character register`: 
           isTrue = true;
-        case "wm character unregister": 
+        case `${command_prefix} character unregister`: 
           return interaction.reply(await registration(isTrue, options[0].value, user).then());
-        case "wm character show": 
+        case `${command_prefix} character show`: 
           return interaction.reply(await showCharacters(user).then());
+	
+        case `${command_prefix}_dm additem`:
+          return addEditItem(interaction, options, true);
+        case `${command_prefix}_dm removeitem`:
+          return removeItem(interaction, options);
+        case `${command_prefix}_dm edititem`:
+          return addEditItem(interaction, options, false);
+
+        case `${command_prefix}_dm command update`:
+          return updateCommands(interaction);
+        case `${command_prefix}_dm command change_prefix`:
+          return setCommandPrefix(interaction, options);
       }
     }
 
     else if (type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) { // is Autocomplete
-      return handleAutocomplete(interaction, user);
+      return handleAutocomplete(interaction, user, command_prefix);
     }
 
     else if (type === InteractionType.MESSAGE_COMPONENT) {
@@ -277,7 +313,7 @@ client.on(Events.InteractionCreate,
           return acceptItemEdits(componentId, userID, interaction);
 
         case "dmExplanation":
-          return explainMe(interaction, client, "", user, isDirectMessage);
+          return explainMe(interaction, client, "", user, isDirectMessage, 0);
       }
     }
     else if (type === InteractionType.MODAL_SUBMIT) {
@@ -305,7 +341,7 @@ client.login(process.env.DISCORD_TOKEN);
 db.registerDBLoadedListener(new DBLoadedListener(async () => {
   const shouldUpdate = false;
   if(shouldUpdate) {
-    InstallGlobalCommands(process.env.APP_ID, await commandCreator.getCommands(db).then());
+    InstallGlobalCommands(process.env.APP_ID, await commandCreator.getCommands(db, 0).then());
   }
 
   db.updateDB(false);

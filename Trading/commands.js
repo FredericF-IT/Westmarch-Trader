@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import { capitalize, currency, rarity } from './utils.js';
 import { DBIO } from './DBIO.js';
+import { getServerSettings } from './app.js';
 
 export class commandCreator{
   /**
@@ -118,12 +119,15 @@ export class commandCreator{
 
   /**
    * @param {DBIO} db 
+   * @param {number} server_id 
    * @return {Promise<Object[]>}
    */
-  static async getCommands(db){
+  static async getCommands(db, server_id){
+    let prefix = (await getServerSettings(server_id)).command_prefix;
+    console.log("Prefix: "+ prefix);
     const WESTMARCH_COMMANDS = {
       type: 1,
-      name: 'wm',
+      name: `${prefix}`,
       description: "The different westmarch commands",
       options: [
         {
@@ -353,9 +357,37 @@ export class commandCreator{
 
     const WESTMARCH_DM_COMMANDS = {
       type: 1,
-      name: 'wm_dm',
+      name: `${prefix}_dm`,
       description: "The different westmarch dm commands",
       options: [
+        {
+          name: 'command',
+          type: 2,
+          description: 'Adjust command settings',
+          options: [
+            {
+              type: 1,
+              name: 'change_prefix',
+              description: "Replace the prefix of commands.",
+              options: [
+                {
+                  type: 3,
+                  name: 'prefix',
+                  description: 'New prefix',
+                  required: true,
+                  min_length: 1,
+                  max_length: 20,
+                },
+              ],
+            },
+            {
+              type: 1,
+              name: 'update',
+              description: "Reloads all commands.",
+              options: [],
+            },
+          ],
+        },
         {
           name: 'additem',
           type: 1,
